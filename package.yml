@@ -1,0 +1,19 @@
+distributable:
+  url: https://github.com/magnusviri/convert_to_tea/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: magnusviri/convert_to_tea
+  strip: /^v/
+
+dependencies:
+  python.org: ^3
+
+build:
+  python-venv.sh {{prefix}}/bin/convert2tea
+
+provides:
+  - bin/convert2tea
+
+test:
+  convert2tea --version
