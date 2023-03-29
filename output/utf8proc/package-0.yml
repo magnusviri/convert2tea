@@ -1,0 +1,17 @@
+distributable:
+  url: https://github.com/JuliaStrings/utf8proc/archive/v{{version}}.tar.gz
+
+versions:
+  - 2.8.0
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: '*'
+  script: |
+    make install prefix={{prefix}}
+  test:
+    script: |
+      echo 'int main() { return 0; }' > test.c
+      $CC test.c -I{{include}} -L{{lib}} -lutf8proc -o test
+      ./test

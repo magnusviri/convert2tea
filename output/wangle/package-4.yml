@@ -1,0 +1,58 @@
+distributable:
+  url: https://github.com/facebook/wangle/releases/download/v{{version}}/wangle-v{{version}}.tar.gz
+
+versions:
+  - 2023.03.27.00
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    tea.xyz/gx/cc: c++
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+  working-directory:
+    wangle
+  script: |
+    cmake . -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=ON $ARGS ${CMAKE_ARGS[@]}
+    make install
+  env:
+    ARGS:
+      - "-DCMAKE_CXX_STANDARD=17"
+      - "-DOPENSSL_ROOT_DIR={{prefix}}"
+      - "-DOPENSSL_INCLUDE_DIR={{prefix}}/include"
+      - "-DOPENSSL_LIBRARIES={{prefix}}/lib"
+      - "-DLIBEVENT_ROOT={{prefix}}"
+      - "-DBoost_NO_BOOST_CMAKE=ON"
+      - "-DBoost_NO_SYSTEM_PATHS=ON"
+      - "-DBOOST_ROOT={{prefix}}"
+      - "-DCFOLLY_INCLUDE_DIR={{prefix}}/include"
+      - "-DCFOLLY_LIBRARY={{prefix}}/lib/libfolly.dylib"
+      - "-DLZ4_ROOT={{prefix}}"
+      - "-DSNAPPY_ROOT_DIR={{prefix}}"
+      - "-DZSTD_ROOT_DIR={{prefix}}"
+    CMAKE_ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - "-DLIBWANGLE_LINK_STATIC=ON"
+      linux:
+        CMAKE_ARGS:
+          - "-DCMAKE_C_COMPILER={{compiler.cc}}"
+          - "-DCMAKE_CXX_COMPILER={{compiler.cxx}}"
+          - "-DBoost_USE_STATIC_LIBS=ON"
+          - "-DBOOST_STATIC_COMPONENTS=on"
+          - "-DLIBSTDCXX_PATH=`{{compiler.cxx}} -print-file-name=libstdc++.a`"
+          - "-DLIBSODIUM_USE_STATIC_LIBS=ON"
+          - "-DLIBSODIUM_ROOT_DIR={{prefix}}"
+          - "-DGFLAGS_ROOT={{prefix}}"
+          - "-DGLOG_ROOT={{prefix}}"
+  post-install: |
+    rm -rf "${prefix}/lib/*.dylib"
+    find "${prefix}" -name "*.a" | xargs "${STRIP}" -S
+
+test: |
+  echo "not implemented"
+
+provides:
+  - bin/EchoClient
+  - bin/EchoServer
+  - lib/libwangle.a

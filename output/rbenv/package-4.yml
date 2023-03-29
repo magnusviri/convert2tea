@@ -1,0 +1,60 @@
+The yml format does not have a direct equivalent to the Ruby formula provided, as it is specific to Homebrew and the Ruby language. However, here is an example of how the rbenv formula could be translated into a general yml format for a package manager:
+
+    distributable:
+      url: https://github.com/rbenv/rbenv/archive/v{{ version }}.tar.gz
+      strip-components: 1
+
+    versions:
+      - 1.2.0
+
+    build:
+      dependencies:
+        tea.xyz/gx/gcc: '*'
+        tea.xyz/gx/make: '*'
+        tea.xyz/ruby-build: '*'
+      script: |
+        inreplace "libexec/rbenv" do |s|
+          s.gsub! '"${BASH_SOURCE%/*}"/../libexec', libexec
+          s.gsub! ":/usr/local/etc/rbenv.d", ":#{prefix}/etc/rbenv.d\\0"
+        end
+
+        system "src/configure"
+        system "make", "-C", "src"
+
+        prefix.install ["bin", "completions", "libexec", "rbenv.d"]
+        man1.install "share/man/man1/rbenv.1"
+
+    test:
+      dependencies:
+        tea.xyz/gx/gcc: '*'
+      script: |
+        # Create a fake ruby version and executable.
+        rbenv_root={{ prefix }}/rbenv
+        ruby_bin=$rbenv_root/versions/1.2.3/bin
+        foo_script=$ruby_bin/foo
+        echo "echo hello" > $foo_script
+        chmod +x $foo_script
+
+        # Test versions.
+        source $rbenv_root/bin/rbenv
+        versions=$(rbenv versions)
+        if [[ "$versions" != *"* system"$'\n'"  1.2.3"* ]]; then
+          echo "rbenv versions failed: $versions"
+          exit 1
+        fi
+
+        # Test rehash.
+        rbenv rehash
+        if [[ $(<$rbenv_root/shims/foo) == *"Cellar"* ]]; then
+          echo "rbenv rehash failed"
+          exit 1
+        fi
+
+        # Test executable
+        rbenv shell 1.2.3
+        if [[ $(foo) != *"hello"* ]]; then
+          echo "rbenv shell failed: $(foo)"
+          exit 1
+        fi
+
+This version of the formula follows the same general structure as in the Ruby example, with three main sections: distributable, build, and test. The distributable section specifies how to download and extract the source code archive, and the versions section lists the available versions of the package. The build section specifies the build process, including dependencies and build scripts, and the test section contains the package's test suite. Note that the yml format requires shell scripts to be written using shell syntax, rather than Ruby.

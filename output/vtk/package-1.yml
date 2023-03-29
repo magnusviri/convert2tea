@@ -1,0 +1,69 @@
+Sorry, as an AI language model, I cannot write YAML code. However, based on the examples provided, here's a YAML template for the project vtk:
+
+```
+distributable:
+  url: https://www.vtk.org/files/release/{{version.major_minor}}/VTK-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  gitlab: vtk/vtk
+  strip: /^VTK /
+
+dependencies:
+  boost.org: ^1
+  double-conversion.org: ^3
+  eigen.org: ^3
+  fontconfig.org: ^2
+  gl2ps.sourceforge.net: ^1
+  glew.sourceforge.net: ^2
+  hdfgroup.org/hdf5: ^1
+  jpeg-turbo.org: ^2
+  jsoncpp.github.io: ^1
+  libogg.org: ^1
+  libpng.org: ^1
+  libtiff.org: ^4
+  lz4.github.io: ^1
+  unidata.ucar.edu/netcdf: ^4
+  pugixml.org: ^1
+  pyqt.io: ^5
+  python.org: ^3.11
+  qt.io: ^5
+  sqlite.org: ^3
+  theora.org: ^1
+  utfcpp.sourceforge.net: ^3
+  tcltk.org: '*'
+  zlib.net: '*'
+
+build:
+  dependencies:
+    cmake.org/cmake: ^3.3
+    fdo-pkg-config.org: '*'
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+    gnu.org/libtool: '*'
+    llvm.org/llvm: ^13
+    mesa3d.org/glu: '*'
+    libaec.org: '*'
+  script: |
+    cmake $ARGS
+    cmake --build . --parallel 1 # Serial, limited by dependencies
+    cmake --install .
+  env:
+    ARGS:
+        - '-DCMAKE_INSTALL_RPATH=#{rpath}'
+        - '-DCMAKE_INSTALL_NAME_DIR=#{opt_lib}'
+        - '-DVTK_WRAP_PYTHON:BOOL=ON'
+        - '-DVTK_PYTHON_VERSION:STRING=3'
+        - '-DVTK_LEGACY_REMOVE:BOOL=ON'
+        - '-DVTK_MODULE_ENABLE_VTK_InfovisBoost:STRING=YES'
+        - '-DVTK_MODULE_ENABLE_VTK_InfovisBoostGraphAlgorithms:STRING=YES'
+        - '-DVTK_MODULE_ENABLE_VTK_RenderingFreeTypeFontConfig:STRING=YES'
+        - '-DBUILD_SHARED_LIBS:BOOL=ON'
+        - '-DPython3_EXECUTABLE:FILEPATH=#{which("python3.11")}'
+        - '-DVTK_GROUP_ENABLE_Qt:STRING=YES'
+        - '-DVTK_QT_VERSION:STRING=5'
+  test: "{{bin}}/vtkpython"
+
+provides:
+  - bin/vtkpython
+```

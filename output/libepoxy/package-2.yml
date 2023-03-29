@@ -1,0 +1,44 @@
+distributable:
+  url: https://download.gnome.org/sources/libepoxy/1.5/libepoxy-1.5.10.tar.xz
+  strip-components: 1
+
+versions:
+  - 1.5.10
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    mesonbuild.com: ^0.47
+    ninja-build.org: 1
+    freetype.org: 2.4
+    fontconfig.org: 2.11
+    pkg-config: 0.25
+    python.org: ^3.4
+  on_linux:
+    dependencies:
+      freeglut.net: 3.0
+      mesa3d.org: 9.2
+  working-directory:
+    build
+  script: |
+    meson .. --prefix={{prefix}} --libdir={{prefix}}/lib --buildtype=release
+    ninja -v
+    ninja install
+  env:
+    PYTHONPATH: /usr/local/lib/python3.11/site-packages
+
+test:
+  script: |
+    export LD_LIBRARY_PATH={{prefix}}/lib
+    export DYLD_FALLBACK_LIBRARY_PATH={{prefix}}/lib
+    cc test.c $(pkg-config --cflags --libs epoxy) -o test
+    ./test
+
+provides:
+  - bin/epoxyinfo
+  - lib/libepoxy.so
+  - include/epoxy/epoxy.h
+  - include/epoxy/gl.h
+  - include/epoxy/glx.h
+  - include/epoxy/egl.h
+  - include/epoxy/wgl.h

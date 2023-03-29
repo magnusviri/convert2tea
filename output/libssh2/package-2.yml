@@ -1,0 +1,40 @@
+distributable:
+  url: https://www.libssh2.org/download/libssh2-1.10.0.tar.gz
+  mirrors:
+    - https://github.com/libssh2/libssh2/releases/download/libssh2-1.10.0/libssh2-1.10.0.tar.gz
+    - http://download.openpkg.org/components/cache/libssh2/libssh2-1.10.0.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: https://www.libssh2.org/
+  github: libssh2/libssh2/releases/tags
+  regex: libssh2[._-]v?(\d+(?:\.\d+)+)\.
+
+provides:
+  - lib/libssh2.dylib
+  - lib/libssh2.1.dylib
+  - lib/libssh2.a
+  - include/libssh2.h
+
+build:
+  dependencies:
+    openssl: ^1.1
+  script: |
+    args=(
+      --disable-silent-rules
+      --disable-examples-build
+      --with-openssl
+      --with-libz
+      --with-libssl-prefix={{ value_for_formula("openssl@1.1").opt_prefix }}
+    )
+    if [ -e buildconf ]; then
+      ./buildconf
+    fi
+    ./configure "${args[@]}"
+    make install
+
+test:
+  test: |
+    (echo '#include <libssh2.h>'; echo 'int main(void) { return 0; }') \
+      | cc -x c - -L{{ lib }} -lssh2 -o test
+    ./test

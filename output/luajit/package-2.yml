@@ -1,0 +1,32 @@
+distributable:
+  url: https://github.com/LuaJIT/LuaJIT/archive/505e2c03de35e2718eef0d2d3660712e06dadf1f.tar.gz
+  strip-components: 1
+
+# Use the version scheme `2.1.0-beta3-yyyymmdd.x` where `yyyymmdd` is the date of the latest commit at the time of updating, and `x` is the number of commits on that date.
+versions:
+  - 2.1.0-beta3-20220501.5
+
+provides:
+  - bin/luajit
+  - lib/libluajit-5.1.dylib
+  - lib/libluajit-5.1.a
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: clang
+    tea.xyz/gx/make: '*'
+    tea.xyz/gx/pkg-config: "*"
+
+  script: |
+    MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | awk -F '.' '{print $1 "." $2}')
+    make PREFIX={{prefix}} CCOPT="$CFLAGS -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -isysroot $SDKROOT" XCFLAGS="$CFLAGS -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -isysroot $SDKROOT" \
+            CC="$CC -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -isysroot $SDKROOT" \
+            LDFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
+    make PREFIX={{prefix}} install
+
+
+test:
+  script: |
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    /usr/local/bin/brew install luajit
+    /usr/local/bin/luajit -e "print('Hello, World!')"

@@ -1,0 +1,46 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/src-highlite/source-highlight-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 3.1.9
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++
+    gnu.org/automake: 1.16
+    gnu.org/autoconf: 2.69
+    brew.boost: '*'
+  script: |
+    autoreconf -i
+    ./configure --disable-dependency-tracking \
+                --prefix={{prefix}} \
+                --with-boost={{brew.boost.prefix}}
+    make install
+    ln -s "#{prefix}/share/bash-completion/completions/source-highlight" \
+          "/usr/local/etc/bash_completion.d/source-highlight"
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c++
+    freedesktop.org/pkg-config: '*'
+  env:
+    cxxflags: $(pkg-config --cflags source-highlight)
+  fixture: |
+    #include <iostream>
+    #include <boost/algorithm/string.hpp>
+    int main()
+    {
+      std::string str("Hello, World!");
+      boost::to_upper(str);
+      std::cout << str << std::endl;
+    }
+  script: |
+    mv $FIXTURE test.cpp
+    g++ test.cpp ${cxxflags} -o test
+    out=$(./test)
+    if test "$out" = "HELLO, WORLD!"; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

@@ -1,0 +1,32 @@
+distributable:
+  url: https://github.com/libusb/libusb/releases/download/v{{version.number}}/libusb-{{version.string}}.tar.bz2
+  strip-components: 1
+
+versions:
+  - number: 1.0.26
+    string: v1.0.26
+
+dependencies:
+  autoconf.net: '*'
+  automake.net: '*'
+  libtool.net: '*'   
+  systemd.net:
+    ubuntu: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./autogen.sh
+    ./configure --disable-dependency-tracking --prefix={{prefix}}
+    make install
+    mkdir {{pkgshare}}/examples
+    cp -r examples/* {{pkgshare}}/examples/
+
+test:
+  script: |
+    cp -r {{pkgshare}}/examples {{testpath}}
+    cd examples
+    {{cc}} listdevs.c -L{{lib}} -I{{include}}/libusb-1.0 -lusb-1.0 -o test
+    ./test

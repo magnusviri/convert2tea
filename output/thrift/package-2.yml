@@ -1,0 +1,46 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=thrift/{{version}}/thrift-{{version}}.tar.gz
+  mirror: https://archive.apache.org/dist/thrift/{{version}}/thrift-{{version}}.tar.gz
+
+# if there’s a github then we can parse the versions
+versions:
+  github: apache/thrift/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++
+    tea.xyz/gx/make: '*'
+    automake: '*'
+    bison: '*'
+    boost: '*'
+    libtool: '*'
+    openssl@1.1: '*'
+    pkg-config: '*'
+  script: |
+    ./bootstrap.sh
+    ./configure --disable-debug --disable-tests --prefix={{prefix}} --libdir={{lib}} --with-openssl={{deps/openssl@1.1/opt_prefix}} --without-python --without-ruby
+    make
+    make install
+
+provides:
+  - bin/thrift
+
+test:
+  fixture: |
+    service MultiplicationService { i32 multiply(1:i32 x, 2:i32 y), }
+  script: |
+    #{bin}/thrift -r --gen cpp $FIXTURE
+    #{ENV.cxx} -std=c++11 gen-cpp/MultiplicationService.cpp gen-cpp/MultiplicationService_server.skeleton.cpp -I#{include}/include -L#{lib} -lthrift
+    require "open3"
+    expected_output = "Starting the test server...\nStarting the test client...\n3\nTest passed\n"
+    output, status = Open3.capture2("#{bin}/thrift -r --gen cpp #{testpath}/test.thrift")
+    server_pid = Process.spawn("#{bin}/thrift -r --gen cpp --gen py -out /tmp #{testpath}/test.thrift")
+    client_output = IO.popen("#{ENV["PYTHON3"]} -c 'import sys; sys.path.insert(0, \"/tmp/gen-py\"); from test import MultiplicationService; transport, protocol = sys.argv[1:]
+    client = MultiplicationService.Client(transport, protocol)
+    transport.open()
+    response = client.multiply(3, 1)
+    print(response)
+    transport.close()' #{testpath}/gen-py #{testpath}/gen-py/thrift/protocol/TBinaryProtocol.py").read.chomp
+    Process.kill("TERM", server_pid)
+    assert_equal expected_output.strip, client_output.strip
+    assert status.success?, "Command exited with code #{status.exitstatus}:\n#{output}"

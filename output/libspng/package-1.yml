@@ -1,0 +1,37 @@
+distributable:
+  url: https://github.com/randy408/libspng/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.7.3
+
+dependencies:
+  zlib.net: "*"
+  mesonbuild.com: ^0.63
+  ninja-build.org: 1
+  freedesktop.org/pkg-config: ^0.29
+
+build:
+  script: |
+    meson setup build $ARGS
+    ninja -C build
+    ninja -C build install
+    cd "{{ prefix }}/lib"
+    mv pkgconfig/* .
+    rmdir pkgconfig
+    ln -s . spng
+  env:
+    ARGS:
+      - --prefix {{ prefix }}
+      - --libdir="{{ prefix }}/lib"
+      - --buildtype=release
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    mv $FIXTURE in.png
+    gcc ../examples/example.c -I../include -L{{ prefix }}/lib -lspng -lz -o example
+    ./example in.png
+  fixture: |
+    # a test fixture is not provided by the original formula, so it's omitted here

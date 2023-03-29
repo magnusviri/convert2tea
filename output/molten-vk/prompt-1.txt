@@ -1,0 +1,178 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project cpanminus:
+
+
+        class Cpanminus < Formula
+          homepage "https://github.com/miyagawa/cpanminus"
+          # Don't use git tags, their naming is misleading
+          url "https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-1.7046.tar.gz"
+          license any_of: ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
+          version_scheme 1
+          head "https://github.com/miyagawa/cpanminus.git", branch: "devel"
+          uses_from_macos "perl"
+          def install
+            cd "App-cpanminus" if build.head?
+            system "perl", "Makefile.PL", "INSTALL_BASE=#{prefix}",
+                                          "INSTALLSITEMAN1DIR=#{man1}",
+                                          "INSTALLSITEMAN3DIR=#{man3}"
+            system "make", "install"
+          end
+          def post_install
+            cpanm_lines = (bin/"cpanm").read.lines
+            return if cpanm_lines.first.match?(%r{^#!/usr/bin/env perl})
+            ohai "Adding `/usr/bin/env perl` shebang to `cpanm`..."
+            cpanm_lines.unshift "#!/usr/bin/env perl\n"
+            (bin/"cpanm").atomic_write cpanm_lines.join
+          end
+          test do
+            assert_match "cpan.metacpan.org", stable.url, "Don't use git tags, their naming is misleading"
+            system "#{bin}/cpanm", "--local-lib=#{testpath}/perl5", "Test::More"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project cpanminus:
+
+
+        distributable:
+          url: https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-{{version.raw}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: miyagawa/cpanminus/tags
+          ignore:
+            - /^1.9/   # invalid versions in the tags for some reason
+            - /^1.79/  # ^^
+            - /^1.71/  # ^^ like wtf?
+
+        dependencies:
+          perl.org: '*'
+
+        companions:
+          tea.xyz/gx/make: '*'
+
+        provides:
+          - bin/cpanm
+
+        build:
+          dependencies:
+            tea.xyz/gx/make: '*'
+          script: |
+            perl Makefile.PL INSTALL_BASE={{prefix}}
+            make install
+
+            fix-shebangs.ts {{prefix}}/bin/cpanm
+
+        test:
+          dependencies:
+            tea.xyz/gx/make: '*'
+          script:
+            cpanm --verbose --local-lib=./out Test::More
+
+
+
+    Here's an example ruby formula for the project molten-vk:
+
+
+        class MoltenVk < Formula
+          homepage "https://github.com/KhronosGroup/MoltenVK"
+          stable do
+            url "https://github.com/KhronosGroup/MoltenVK/archive/v1.2.3.tar.gz"
+            # MoltenVK depends on very specific revisions of its dependencies.
+            # For each resource the path to the file describing the expected
+            # revision is listed.
+          end
+          head do
+            url "https://github.com/KhronosGroup/MoltenVK.git", branch: "master"
+          end
+          depends_on "cmake" => :build
+          depends_on "python@3.11" => :build
+          depends_on xcode: ["11.7", :build]
+          # Requires IOSurface/IOSurfaceRef.h.
+          depends_on macos: :sierra
+          depends_on :macos # Linux does not have a Metal implementation. Not implied by the line above.
+          def install
+            resources.each do |res|
+              res.stage(buildpath/"External"/res.name)
+            end
+            mv "External/SPIRV-Tools", "External/glslang/External/spirv-tools"
+            mv "External/SPIRV-Headers", "External/glslang/External/spirv-tools/external/spirv-headers"
+            # Build glslang
+            cd "External/glslang" do
+              system "./build_info.py", ".",
+                      "-i", "build_info.h.tmpl",
+                      "-o", "build/include/glslang/build_info.h"
+            end
+            # Build spirv-tools
+            mkdir "External/glslang/External/spirv-tools/build" do
+              # Required due to files being generated during build.
+              system "cmake", "..", *std_cmake_args
+              system "make"
+            end
+            # Build ExternalDependencies
+            xcodebuild "ARCHS=#{Hardware::CPU.arch}", "ONLY_ACTIVE_ARCH=YES",
+                       "-project", "ExternalDependencies.xcodeproj",
+                       "-scheme", "ExternalDependencies-macOS",
+                       "-derivedDataPath", "External/build",
+                       "SYMROOT=External/build", "OBJROOT=External/build",
+                       "build"
+            # Build MoltenVK Package
+            xcodebuild "ARCHS=#{Hardware::CPU.arch}", "ONLY_ACTIVE_ARCH=YES",
+                       "-project", "MoltenVKPackaging.xcodeproj",
+                       "-scheme", "MoltenVK Package (macOS only)",
+                       "-derivedDataPath", "#{buildpath}/build",
+                       "SYMROOT=#{buildpath}/build", "OBJROOT=build",
+                       "build"
+            (libexec/"lib").install Dir["External/build/Intermediates/XCFrameworkStaging/Release/" \
+                                        "Platform/lib{SPIRVCross,SPIRVTools,glslang}.a"]
+            glslang_dir = Pathname.new("External/glslang")
+            Pathname.glob("External/glslang/{glslang,SPIRV}/**/*.{h,hpp}") do |header|
+              header.chmod 0644
+              (libexec/"include"/header.parent.relative_path_from(glslang_dir)).install header
+            end
+            (libexec/"include").install "External/SPIRV-Cross/include/spirv_cross"
+            (libexec/"include").install "External/glslang/External/spirv-tools/include/spirv-tools"
+            (libexec/"include").install "External/Vulkan-Headers/include/vulkan" => "vulkan"
+            (libexec/"include").install "External/Vulkan-Headers/include/vk_video" => "vk_video"
+            frameworks.install "Package/Release/MoltenVK/MoltenVK.xcframework"
+            lib.install "Package/Release/MoltenVK/dylib/macOS/libMoltenVK.dylib"
+            lib.install "build/Release/libMoltenVK.a"
+            include.install "MoltenVK/MoltenVK/API" => "MoltenVK"
+            bin.install "Package/Release/MoltenVKShaderConverter/Tools/MoltenVKShaderConverter"
+            frameworks.install "Package/Release/MoltenVKShaderConverter/" \
+                               "MoltenVKShaderConverter.xcframework"
+            include.install Dir["Package/Release/MoltenVKShaderConverter/include/" \
+                                "MoltenVKShaderConverter"]
+            inreplace "MoltenVK/icd/MoltenVK_icd.json",
+                      "./libMoltenVK.dylib",
+                      (lib/"libMoltenVK.dylib").relative_path_from(share/"vulkan/icd.d")
+            (share/"vulkan").install "MoltenVK/icd" => "icd.d"
+          end
+          test do
+            (testpath/"test.cpp").write <<~EOS
+              #include <vulkan/vulkan.h>
+              int main(void) {
+                const char *extensionNames[] = { "VK_KHR_surface" };
+                VkInstanceCreateInfo instanceCreateInfo = {
+                  VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, NULL,
+                  0, NULL,
+                  0, NULL,
+                  1, extensionNames,
+                };
+                VkInstance inst;
+                vkCreateInstance(&instanceCreateInfo, NULL, &inst);
+                return 0;
+              }
+            EOS
+            system ENV.cc, "-o", "test", "test.cpp", "-I#{include}", "-I#{libexec/"include"}", "-L#{lib}", "-lMoltenVK"
+            system "./test"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project molten-vk in the yml format:

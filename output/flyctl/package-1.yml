@@ -1,0 +1,35 @@
+distributable:
+  url: https://github.com/superfly/flyctl/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: superfly/flyctl/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    go.dev: '*'
+  script: |
+    CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -o {{prefix}}/bin/flyctl
+    ln -s {{prefix}}/bin/flyctl {{prefix}}/bin/fly
+  env:
+    LDFLAGS:
+      - -s
+      - -w
+      - -X github.com/superfly/flyctl/internal/buildinfo.environment=production
+      - -X github.com/superfly/flyctl/internal/buildinfo.buildDate={{time.iso8601}}
+      - -X github.com/superfly/flyctl/internal/buildinfo.version={{version}}
+
+provides:
+  - bin/flyctl
+  - bin/fly
+
+test:
+  script: |
+    flyctl version
+    flyctl_status=$(flyctl status 2>&1 || true)
+    if [[ "$flyctl_status" != *"Error No access token available. Please login with 'flyctl auth login'"* ]]; then
+      echo "Unexpected flyctl status output:"
+      echo "$flyctl_status"
+      exit 1
+    fi

@@ -1,0 +1,59 @@
+distributable:
+  url: https://www.leonerd.org.uk/code/libtermkey/libtermkey-{{version}}.tar.gz
+
+versions:
+  - 0.22
+
+build:
+  working-directory: libtermkey-{{version}}
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/config: '*'
+    freedesktop.org/pkg-config: '*'
+    leonerd.org.uk/libtool: '*'
+    luarocks.org/luarocks: '*'
+  script: |
+    ./configure --prefix={{prefix}} --without-examples --without-tests
+    make
+    make install
+  post-build: |
+    sed -i 's/..\/src\//-I{{buildroot}}\/src\//g' ${DESTDIR}[[prefix]]/lib/pkgconfig/libtermkey.pc
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  fixture: |
+    #include <termkey.h>
+    #include <stdio.h>
+
+    int main()
+    {
+      TermKey *tk;
+      int key;
+
+      tk = termkey_new(0, TERMKEY_FLAG_SPACESYMBOL);
+
+      puts("Press Q to quit:");
+
+      while ((key = termkey_waitkey(tk)) != TERMKEY_RES_EOF && key != TERMKEY_RES_KEY && key != TERMKEY_RES_NONE)
+      {
+        if (termkey_is_key(tk, TERMKEY_KEY_CODE_YES) && key == TERMKEY_SYM_Q)
+        {
+          break;
+        }
+      }
+
+      termkey_destroy(tk);
+
+      return 0;
+    }
+  script: |
+    mv $FIXTURE test.c
+    gcc test.c -L{{prefix}}/lib -ltermkey -I{{prefix}}/include -o test
+    echo 'Q' | ./test > output.txt
+    if grep -q 'Q' output.txt; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

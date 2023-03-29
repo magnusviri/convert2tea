@@ -1,0 +1,42 @@
+distributable:
+  url: https://downloads.xiph.org/releases/theora/libtheora-{{version}}.tar.bz2
+  mirror: https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-{{version}}.tar.bz2
+  using: homebrew_curl
+  patches:
+    - url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-pre-0.4.2.418-big_sur.diff
+      sha256: 8f64de70b56eef74c2fc3ff3f3ba417fc68d299158f875ee2a5871a6f033c6f0
+
+versions:
+  url: https://ftp.osuosl.org/pub/xiph/releases/theora/?C=M&O=D
+  regex: href=.*?libtheora[._-]v?(\d+(?:\.\d+)+)\.t
+
+provides:
+  - include/theora
+  - lib/libtheora.dylib
+  - lib/pkgconfig/theora.pc
+
+build:
+  dependencies:
+    libtool: '*'
+    pkgconfig: '*'
+    libogg: '*'
+    libvorbis: '*'
+    autoconf: '*'
+    automake: '*' if os == 'macos'
+  script: |
+    cp -v -- #{Formula["libtool"].opt_share}/libtool/*/config.{guess,sub} .
+    ./autogen.sh if [ '#{version}' == 'HEAD' ]
+    ./configure \
+      --disable-dependency-tracking \
+      --disable-oggtest \
+      --disable-vorbistest \
+      --disable-examples \
+      --prefix="#{prefix}" \
+      --disable-asm if [ '#{version}' == 'HEAD' ]
+    make install
+
+test:
+  command: |
+    (test -f #{bin}/playtheora || test -f #{bin}/playtheora2) || exit 0
+    (#{bin}/playtheora test.ogg || #{bin}/playtheora2 test.ogg) && (#{bin}/encore test.avi < /dev/null) && (#{bin}/theora_comment < /dev/null) && (#{bin}/theora_encoder -v 8 -V 20 -b 300000 test.y4m > test.ogg < /dev/null) && (#{bin}/theora_dec -o /dev/null -O video_delay=1000 test.ogg < /dev/null)
+  skip: "Test requires input media files"

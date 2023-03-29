@@ -1,0 +1,26 @@
+distributable:
+  url: https://github.com/kubernetes-sigs/aws-iam-authenticator/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: kubernetes-sigs/aws-iam-authenticator/tags
+  regex: /v(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/
+
+build:
+  dependencies:
+    go.dev: '*'
+  script: |
+    LD_FLAGS="-s -w -X sigs.k8s.io/aws-iam-authenticator/pkg.Version={{version}} -X sigs.k8s.io/aws-iam-authenticator/pkg.CommitID={{commit}}"
+    go build -ldflags="$LD_FLAGS" -o {{prefix}}/bin/aws-iam-authenticator cmd/aws-iam-authenticator/aws-iam-authenticator.go
+
+provides:
+  - bin/aws-iam-authenticator
+
+test:
+  script: |
+    aws-iam-authenticator version
+    aws-iam-authenticator init -i test
+    contents=$(ls .)
+    for f in "cert.pem" "key.pem" "aws-iam-authenticator.kubeconfig"; do
+      echo "$contents" | grep "$f"
+    done

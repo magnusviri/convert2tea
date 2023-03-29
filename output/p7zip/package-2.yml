@@ -1,0 +1,53 @@
+distributable:
+  url: https://github.com/p7zip-project/p7zip/archive/v{{version}}.tar.gz
+
+versions:
+  - 17.05
+
+build:
+  dependencies:
+    x86-64:
+      tea.xyz/nasm: 2
+    tea.xyz/gx/cc: c99
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+  working-directory:
+    out
+  script: |
+    if [ $PACKAGE_TYPE = "deb" ]; then
+      cmake .. -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="{{prefix}}" \
+          -DCPU_TYPE="x86_64" \
+          -DSHARED_BY_DEFAULT=0 \
+          -DLTO=on \
+          -DTARGET_ARCH_x86_64=on
+      make -j$(nproc)
+      make install
+    else
+      echo "Invalid package type: $PACKAGE_TYPE"
+      exit 1
+    fi
+  env:
+    linux:
+      CONFIG_SHELL: /bin/bash
+      CFLAGS: "-fPIC"
+      LDFLAGS: "-pie"
+      STRIP: objcopy -p --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment
+      PACKAGE_TYPE: "deb"
+      PACKAGE_NAME: "p7zip"
+      PACKAGE_DESCRIPTION: "A file archiver with a high compression ratio"
+      PACKAGE_SECTION: "utils"
+      PACKAGE_MAINTAINER: "Your Name <yourname@example.com>"
+    darwin:
+      PACKAGE_TYPE: "dmg"
+      PACKAGE_NAME: "p7zip"
+      PACKAGE_IDENTIFIER: "com.example.p7zip"
+      PACKAGE_FORMAT: "UDBZ"
+      PACKAGE_VERSION: "{{version}}"
+      PACKAGE_SCRIPTS: |
+        #!/bin/bash
+        /usr/local/bin/7z
+      TEST_COMMAND: "{{prefix}}/bin/7z -h"
+
+provides:
+  - bin/7z

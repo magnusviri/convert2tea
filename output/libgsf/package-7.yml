@@ -1,0 +1,57 @@
+distributable:
+  url: https://download.gnome.org/sources/libgsf/{{version}}/libgsf-{{version}}.tar.xz
+
+versions:
+  - 1.14.50
+
+build:
+  dependencies:
+    x86-64:
+      autoconf: '*'
+      automake: '*'
+      gettext: '*'
+      gtk-doc: '*'
+      libtool: '*'
+      tea.xyz/gx/cc: c99
+      cmake.org: '^3'
+      tea.xyz/gx/make: '*'
+    arm64:
+      cmake.org: '^3'
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/make: '*'
+  working-directory:
+    out
+  script: |
+    cmake .. $ARGS
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+  osx:
+    dependencies:
+      gettext: '*'
+  linux:
+    dependencies:
+      bzip2: '*'
+      libxml2: '*'
+      zlib: '*'
+
+test: |
+  gsf --help
+  echo '#include <gsf/gsf-utils.h>
+  int main()
+  {
+    void
+    gsf_init (void);
+    return 0;
+  }' > test.c
+  cc -I{{include}}/libgsf-1 \
+     -I{{prefix}}/include/glib-2.0 \
+     -I{{prefix}}/lib/glib-2.0/include \
+     test.c -o test
+  ./test
+
+provides:
+  - bin/gsf

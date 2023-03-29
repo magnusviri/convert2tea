@@ -1,0 +1,25 @@
+distributable:
+  url: https://www.ibr.cs.tu-bs.de/projects/libsmi/download/libsmi-{{version.marketing}}.tar.gz
+  mirror: https://www.mirrorservice.org/sites/distfiles.macports.org/libsmi/libsmi-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.5.0
+
+dependencies:
+  autoconf.net: '*'
+  automake.net: '*'
+  libtool.net: '*'
+
+build:
+  script: |
+    autoreconf --force --install --verbose
+    ./configure --disable-debug --disable-dependency-tracking --prefix={{prefix}}
+    make install
+
+provides:
+  - bin/smidiff
+
+test:
+  script: |
+    smidiff -V | grep -F "{{version}}"

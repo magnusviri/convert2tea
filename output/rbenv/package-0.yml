@@ -1,0 +1,53 @@
+distributable:
+  url: https://github.com/rbenv/rbenv/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.2.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    ruby-build: '*'
+  script: |
+    if {{build.stable}}; then
+      inreplace "libexec/rbenv" do |s|
+        s.gsub! '"${BASH_SOURCE%/*}"/../libexec', libexec
+        s.gsub! ":/usr/local/etc/rbenv.d", ":#{homedir}/etc/rbenv.d" if {{homedir}} != "/usr/local"
+      end
+      system "src/configure"
+      system "make", "-C", "src"
+      # compile optional bash extension
+      prefix.install ["bin", "completions", "libexec", "rbenv.d"]
+    else
+      # record exact git revision for `rbenv --version` output
+      git_revision = Utils.git_short_head
+      inreplace "libexec/rbenv---version", /^(version=)"([^"]+)"/, %Q(\\1"\\2-g#{git_revision}")
+      # install man page
+      man1.install "share/man/man1/rbenv.1"
+      # depends_on "ruby-build"
+      prefix.install Dir["*"]
+    fi
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    # create a fake ruby version and executable
+    rbenv_root={{bin}}/rbenv root
+    ruby_bin=$rbenv_root/versions/1.2.3/bin
+    foo_script=$ruby_bin/foo
+    echo "echo hello" > $foo_script
+    chmod +x $foo_script
+    # test versions
+    versions_dir=$rbenv_root/versions
+    versions=$(ls $versions_dir)
+    echo $versions
+    assert_equal 2, $(echo $versions | wc -w | xargs)
+    assert_equal "* system\n1.2.3", $(rbenv versions)
+    # test rehash
+    rbenv rehash
+    assert_false grep "Cellar" $($rbenv_root/shims/foo)
+    # the second `rbenv` call is a shell function; do not add a `bin` prefix
+    assert_equal "hello", $($bin/rbenv init -); rbenv shell 1.2.3 && foo)

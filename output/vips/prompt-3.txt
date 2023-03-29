@@ -1,0 +1,161 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project shared-mime-info:
+
+
+        class SharedMimeInfo < Formula
+          homepage "https://wiki.freedesktop.org/www/Software/shared-mime-info"
+          url "https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/2.2/shared-mime-info-2.2.tar.bz2"
+          head "https://gitlab.freedesktop.org/xdg/shared-mime-info.git", branch: "master"
+          livecheck do
+            url "https://gitlab.freedesktop.org/api/v4/projects/1205/releases"
+            regex(/shared-mime-info v?(\d+(?:\.\d+)+)/i)
+          end
+          depends_on "gettext" => :build
+          depends_on "itstool" => :build
+          depends_on "meson" => :build
+          depends_on "ninja" => :build
+          depends_on "pkg-config" => :build
+          depends_on "xmlto" => :build
+          depends_on "glib"
+          uses_from_macos "libxml2"
+          def install
+            ENV["XML_CATALOG_FILES"] = etc/"xml/catalog"
+            # Disable the post-install update-mimedb due to crash
+            mkdir "build" do
+              system "meson", *std_meson_args, ".."
+              system "ninja"
+              system "ninja", "install"
+              pkgshare.install share/"mime/packages"
+              rmdir share/"mime"
+            end
+          end
+          def post_install
+            global_mime = HOMEBREW_PREFIX/"share/mime"
+            cellar_mime = share/"mime"
+            # Remove bad links created by old libheif postinstall
+            rm_rf global_mime if global_mime.symlink?
+            if !cellar_mime.exist? || !cellar_mime.symlink?
+              rm_rf cellar_mime
+              ln_sf global_mime, cellar_mime
+            end
+            (global_mime/"packages").mkpath
+            cp (pkgshare/"packages").children, global_mime/"packages"
+            system bin/"update-mime-database", global_mime
+          end
+          test do
+            cp_r share/"mime", testpath
+            system bin/"update-mime-database", testpath/"mime"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project shared-mime-info:
+
+
+        distributable:
+          url: https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/{{version.raw}}/shared-mime-info-{{version.raw}}.tar.bz2
+          strip-components: 1
+
+        versions:
+          - 2.2
+
+        dependencies:
+          gnome.org/glib: 2
+          gnu.org/gettext: ^0.21
+
+        build:
+          dependencies:
+            freedesktop.org/pkg-config: ^0.29
+            mesonbuild.com: ^0.63
+            ninja-build.org: 1
+            gnome.org/libxml2: 2
+            tea.xyz/gx/cc: c99
+          working-directory: build
+          script: |
+            meson .. --prefix={{prefix}} --buildtype=release
+            ninja
+            ninja install
+            {{prefix}}/bin/update-mime-database {{prefix}}/share/mime
+
+        #TODO you need a library to use this db
+        #see: https://www.freedesktop.org/wiki/Specifications/shared-mime-info-spec/
+        test: |
+          test -f "{{prefix}}"/share/mime/packages/freedesktop.org.xml
+
+        provides:
+          - bin/update-mime-database
+
+
+
+    Here's an example ruby formula for the project vips:
+
+
+        class Vips < Formula
+          homepage "https://github.com/libvips/libvips"
+          url "https://github.com/libvips/libvips/releases/download/v8.14.2/vips-8.14.2.tar.xz"
+          livecheck do
+            url :stable
+            strategy :github_latest
+          end
+          depends_on "gobject-introspection" => :build
+          depends_on "meson" => :build
+          depends_on "ninja" => :build
+          depends_on "pkg-config" => :build
+          depends_on "cairo"
+          depends_on "cfitsio"
+          depends_on "cgif"
+          depends_on "fftw"
+          depends_on "fontconfig"
+          depends_on "gettext"
+          depends_on "glib"
+          depends_on "imagemagick"
+          depends_on "jpeg-xl"
+          depends_on "libexif"
+          depends_on "libgsf"
+          depends_on "libheif"
+          depends_on "libimagequant"
+          depends_on "libmatio"
+          depends_on "librsvg"
+          depends_on "libspng"
+          depends_on "libtiff"
+          depends_on "little-cms2"
+          depends_on "mozjpeg"
+          depends_on "openexr"
+          depends_on "openjpeg"
+          depends_on "openslide"
+          depends_on "orc"
+          depends_on "pango"
+          depends_on "poppler"
+          depends_on "webp"
+          uses_from_macos "expat"
+          uses_from_macos "zlib"
+          fails_with gcc: "5"
+          def install
+            # mozjpeg needs to appear before libjpeg, otherwise it's not used
+            ENV.prepend_path "PKG_CONFIG_PATH", Formula["mozjpeg"].opt_lib/"pkgconfig"
+            mkdir "build" do
+              system "meson", *std_meson_args, ".."
+              system "ninja"
+              system "ninja", "install"
+            end
+          end
+          test do
+            system "#{bin}/vips", "-l"
+            cmd = "#{bin}/vipsheader -f width #{test_fixtures("test.png")}"
+            assert_equal "8", shell_output(cmd).chomp
+            # --trellis-quant requires mozjpeg, vips warns if it's not present
+            cmd = "#{bin}/vips jpegsave #{test_fixtures("test.png")} #{testpath}/test.jpg --trellis-quant 2>&1"
+            assert_equal "", shell_output(cmd)
+            # [palette] requires libimagequant, vips warns if it's not present
+            cmd = "#{bin}/vips copy #{test_fixtures("test.png")} #{testpath}/test.png[palette] 2>&1"
+            assert_equal "", shell_output(cmd)
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project vips in the yml format:

@@ -1,0 +1,51 @@
+Sorry, as an AI language model, I cannot generate YAML format. However, here is the YAML equivalent of the given Ruby formula for the Scrcpy project:
+
+```
+distributable:
+  url: https://github.com/Genymobile/scrcpy/archive/v{{version}}/scrcpy-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: gcc
+    mesonbuild.com: ^0.50
+    ninja-build.org: 1
+    pkg-config: 1
+    ffmpeg: 4
+    libusb: 1
+    sdl2: 2
+  working-directory:
+    build
+  script: |
+    meson .. --prefix={{prefix}} --libdir={{prefix}}/lib --buildtype=release -Dprebuilt_server={prefix}/prebuilt-server.jar
+    ninja -v
+    ninja install
+  env:
+    CC: clang
+
+resources:
+  - name: prebuilt-server
+    type: file
+    url: https://github.com/Genymobile/scrcpy/releases/download/v{{version}}/scrcpy-server-v{{version}}.jar.sha256
+    sha256: 18c4640de39466c8ab7266090291f685b42a720fb0cb8df0a11a93784f74d2f9
+
+test:
+  script: |
+    adb start-server
+    adb devices -l
+    adb -s SERIAL push ... (to push scrcpy-server.jar)
+    adb -s SERIAL reverse ... tcp:PORT ...
+    adb -s SERIAL shell ...
+
+provides:
+  - bin/scrcpy
+  - bin/scrcpy-server.jar
+
+caveats: |
+  At runtime, adb must be accessible from your PATH.
+  You can install adb from Homebrew Cask:
+    brew install --cask android-platform-tools
+```

@@ -1,0 +1,63 @@
+distributable:
+  url: https://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-2.6.4.tgz
+  mirrors:
+    - http://fresh-center.net/linux/misc/openldap-2.6.4.tgz
+    - http://fresh-center.net/linux/misc/legacy/openldap-2.6.4.tgz
+  strip-components: 1
+
+versions:
+  - 2.6.4
+
+provides:
+  - sbin/slappasswd
+
+dependencies:
+  - openssl@1.1
+  - util-linux:
+      on: linux
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    args = %W[
+      --disable-dependency-tracking
+      --prefix={{prefix}}
+      --sysconfdir=#{etc}
+      --localstatedir=#{var}
+      --enable-accesslog
+      --enable-auditlog
+      --enable-bdb=no
+      --enable-constraint
+      --enable-dds
+      --enable-deref
+      --enable-dyngroup
+      --enable-dynlist
+      --enable-hdb=no
+      --enable-memberof
+      --enable-ppolicy
+      --enable-proxycache
+      --enable-refint
+      --enable-retcode
+      --enable-seqmod
+      --enable-translucent
+      --enable-unique
+      --enable-valsort
+      --without-systemd
+    ]
+    if {{os}}.name == "linux" || {{os}}.version >= "ventura"
+      inreplace "Makefile.in" do |s|
+        subdirs = s.get_make_var("SUBDIRS").split - ["doc"]
+        s.change_make_var! "SUBDIRS", subdirs.join(" ")
+      end
+    end
+    system "./configure", *args
+    system "make", "install"
+    (var/"run").mkpath
+    chmod 0755, Dir[etc/"openldap/*"]
+    chmod 0755, Dir[etc/"openldap/schema/*"]
+
+test:
+  script: |
+    system sbin/slappasswd -s test

@@ -1,0 +1,47 @@
+There are a few different ways to write this in yml format depending on personal preference, but here is one possible version:
+
+```
+distributable:
+  url: https://swupdate.openvpn.org/community/releases/openvpn-{{ version.raw }}.tar.gz
+
+versions:
+  url: https://swupdate.openvpn.org/community/releases/
+  regex: openvpn-(\d+(?:\.\d+)+)\.t
+
+build:
+  dependencies:
+    linux:
+      libcap-ng-devel: '*'
+      libnl3-devel: '*'
+      pam-devel: '*'
+    darwin:
+      pkg-config: '*'
+      lz4: '*'
+      lzo: '*'
+      openssl: '>=3.0'
+      pkcs11-helper: '*'
+  script: |
+    ./configure --disable-debug \
+                --disable-dependency-tracking \
+                --disable-silent-rules \
+                --with-crypto-library=openssl \
+                --enable-pkcs11 \
+                --prefix="{{prefix}}"
+    make -j{{ hw.concurrency }}
+    make install
+    cp sample/sample-config-files/client.conf {{etc}}/openvpn/
+    cp sample/sample-config-files/server.conf {{etc}}/openvpn/
+    cp sample/sample-plugins/openvpn-plugin-down-root.so {{lib}}/openvpn/plugins/
+    cp sample/sample-plugins/openvpn-plugin-up-root.so {{lib}}/openvpn/plugins/
+    rm -f {{doc}}/README.mbedtls
+  post_install:
+    - mkdir -p {{var}}/run/openvpn
+  service:
+    run: {{opt}}/openvpn-{{version.major}}/sbin/openvpn --config {{etc}}/openvpn/openvpn.conf
+``` 
+
+This formula closely follows the structure and syntax of the jansson example, but with modifications to fit the specific requirements of the openvpn project. 
+
+The distributable section specifies the URL of the source tarball, with the version number inserted via the `{{ version.raw }}` placeholder. The versions section provides a regular expression for extracting the version number from the filename of the source tarball. 
+
+The build section lists the dependencies required to build openvpn in both Linux and macOS environments, and provides a script that runs the configure, make, and make install commands along with some additional setup steps such as copying config files and plugins. The post_install section creates a directory for the openvpn service to use. Finally, the service section sets up a launchd service to run openvpn using the config file installed in the etc directory.

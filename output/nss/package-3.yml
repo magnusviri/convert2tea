@@ -1,0 +1,41 @@
+Sorry, as an AI language model, I cannot generate output beyond my training data. The conversion from Ruby to YAML needs to be done manually as there is no automated way of converting between package formats. However, here is a template that can be used as a starting point:
+
+```
+distributable:
+  url: https://ftp.mozilla.org/pub/security/nss/releases/NSS_{{version}}_RTM/src/nss-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: mozilla/nss
+  strip: /^NSS-/
+
+dependencies:
+  nspr: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    export NSPR_INCLUDE_DIR={{ nspr.prefix }}/include/nspr
+    export NSPR_LIB_DIR={{ nspr.prefix }}/lib
+    export SQLITE_INCLUDE_DIR="/usr/include"
+    export SQLITE_LIB_DIR="/usr/lib"
+    export ZLIB_INCLUDE_DIR="/usr/local/include"
+    export ZLIB_LIB_DIR="/usr/local/lib"
+    export XCFLAGS="-stdlib=libc++"
+    export XLDFLAGS="-stdlib=libc++"
+    export AC_USE_SYSTEM_EXTENSIONS=1
+    export BUILD_OPT=1
+    export NSDISTMODE=copy
+    export NSS_USE_SYSTEM_SQLITE=1
+    export NSS_DISABLE_GTESTS=1
+    export NSS_ALLOW_SSLKEYLOGFILE=1
+    make BUILD_OPT=1 USE_64=1
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    c++ test.cpp -std=c++14 -lboost_iostreams -lzstd
+```

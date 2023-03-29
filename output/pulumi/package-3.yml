@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/pulumi/pulumi/archive/v3.60.0.tar.gz
+  strip-components: 1
+
+versions:
+  github: pulumi/pulumi/tags
+  ignore:
+    - /^0\.|^1\.|^2\.|^4\./   # ignore invalid versions
+  map:
+    - match: /^v(.+)$/
+      replace: '$1'
+
+dependencies:
+  go: '*'
+
+build:
+  script: |
+    go mod download
+    make brew
+    install -d bin
+    install -m 755 ${GOPATH}/bin/pulumi* bin/
+    generate-completions-from-executable bin/pulumi gen-completion
+
+test:
+  script: |
+    PULUMI_ACCESS_TOKEN=local://
+    PULUMI_TEMPLATE_PATH=templates
+    pulumi new aws-typescript --generate-only --force -y
+    test -f Pulumi.yaml

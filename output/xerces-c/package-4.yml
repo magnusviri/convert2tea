@@ -1,0 +1,42 @@
+Distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=xerces/c/3/sources/xerces-c-{{version}}.tar.gz
+  mirror: https://archive.apache.org/dist/xerces/c/3/sources/xerces-c-{{version}}.tar.gz
+  strip-components: 1
+  
+Versions:
+  - 3.2.4
+  
+Build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    apache.org/xerces-c: '^3'
+    cmake.org: '^3'
+    macports.org/icu: '*'
+  script: |
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}} -DBUILD_SHARED_LIBS=ON
+    cmake --build .
+    ctest --verbose --output-on-failure
+    make install
+
+Test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  fixture: |
+    <?xml version="1.0" encoding="iso-8859-1"?>
+    <ducks>
+      <person id="Red.Duck" >
+        <name><family>Duck</family> <given>One</given></name>
+        <email>duck@foo.com</email>
+      </person>
+    </ducks>
+  script: |
+    echo $FIXTURE > ducks.xml
+    output="$(./count -v ducks.xml)"
+    if echo "$output" | grep "(6 elems, 1 attrs, 0 spaces, 37 chars)"; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

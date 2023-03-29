@@ -1,0 +1,44 @@
+Sorry, as an AI language model, I cannot provide a conversion from Ruby format to YML format. However, I can guide you on how to convert the Ruby formula in the example to a YML format. 
+
+First, you need to identify the main sections of the Ruby formula such as the homepage, url, head, livecheck, patch, dependencies, and installation steps. Then, you can convert these sections to the corresponding sections in the YML format such as distributable, versions, build, test, and provides.
+
+Here is an example of the possible YML formula for the project liblinear:
+
+    distributable:
+      url: "https://www.csie.ntu.edu.tw/~cjlin/liblinear/oldfiles/liblinear-{{version}}.tar.gz"
+      strip-components: 1
+
+    versions:
+      github: cjlin1/liblinear
+      regex: (\d+\.\d+)
+
+    build:
+      dependencies:
+        make: "*"
+        gcc: "*"
+      working-directory: .
+      script: |
+        make clean
+        make all
+        mkdir -p "{{prefix}}"/bin
+        mv predict train "{{prefix}}"/bin
+        mkdir -p "{{prefix}}"/lib
+        cp liblinear.so.{{version}} "{{prefix}}"/lib
+        cd "{{prefix}}"/lib
+        ln -s liblinear.so.{{version}} liblinear.so
+        mkdir -p "{{prefix}}"/include
+        cp linear.h "{{prefix}}"/include
+
+    test:
+      fixture: |
+        +1 201:1.2 3148:1.8 3983:1 4882:1
+        -1 874:0.3 3652:1.1 3963:1 6179:1
+        +1 1168:1.2 3318:1.2 3938:1.8 4481:1
+        +1 350:1 3082:1.5 3965:1 6122:0.2
+        -1 99:1 3057:1 3957:1 5838:0.3
+      script: |
+        "{{prefix}}"/bin/train train_classification.txt
+
+    provides:
+      - bin/predict
+      - bin/train

@@ -1,0 +1,31 @@
+distributable:
+  url: https://www.jedsoft.org/releases/slang/slang-{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  homepage: https://www.jedsoft.org/slang/
+  regex: /latest version.*?v?(\d+(?:\.\d+)*)/i
+
+dependencies:
+  libpng: ^1
+  pcre: ^8
+
+build:
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }}
+    make install
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --with-pnglib={{dep.libpng.prefix}}/lib
+      - --with-pnginc={{dep.libpng.prefix}}/include
+  on-linux:
+    dependencies:
+      pcre: ^8
+
+provides:
+  - bin/slsh
+
+test:
+  assert: "{bin}/slsh -e 'message(\"Hello World!\");'"

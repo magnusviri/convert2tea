@@ -1,0 +1,33 @@
+Sorry, as an AI language model, I am not able to write YAML format code. However, here is a sample formula for the libspatialite project in YAML format that you can use as reference.
+
+```
+distributable:
+  url: https://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  fossillibspatialite: https://www.gaia-gis.it/fossil/libspatialite, strip: /.*?-/
+
+dependencies:
+  geos: '*'
+  libpng: '*'
+  librttopo: '*'
+  proj: '*'
+  sqlite: '*'
+  zlib: '*'
+  freexl: '*'
+  libxml2: '*'
+  minizip: '*'
+  libtool: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    ./configure --disable-dependency-tracking --prefix={{prefix}}
+    make && make install
+
+test:
+  script: |
+    echo "SELECT load_extension('#{opt_lib}/mod_spatialite');" | sqlite3
+```

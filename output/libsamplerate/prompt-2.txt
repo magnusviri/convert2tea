@@ -1,0 +1,143 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project aria2:
+
+
+        class Aria2 < Formula
+          homepage "https://aria2.github.io/"
+          url "https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0.tar.xz"
+          revision 1
+          depends_on "pkg-config" => :build
+          depends_on "gettext"
+          depends_on "libssh2"
+          depends_on "sqlite"
+          uses_from_macos "libxml2"
+          uses_from_macos "zlib"
+          on_linux do
+            depends_on "openssl@1.1"
+          end
+          def install
+            ENV.cxx11
+            args = %W[
+              --disable-dependency-tracking
+              --prefix=#{prefix}
+              --with-libssh2
+              --without-gnutls
+              --without-libgmp
+              --without-libnettle
+              --without-libgcrypt
+            ]
+            if OS.mac?
+              args << "--with-appletls"
+              args << "--without-openssl"
+            else
+              args << "--without-appletls"
+              args << "--with-openssl"
+            end
+            system "./configure", *args
+            system "make", "install"
+            bash_completion.install "doc/bash_completion/aria2c"
+          end
+          test do
+            system "#{bin}/aria2c", "https://brew.sh/"
+            assert_predicate testpath/"index.html", :exist?, "Failed to create index.html!"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project aria2:
+
+
+        distributable:
+          url: https://github.com/aria2/aria2/releases/download/release-{{ version }}/aria2-{{ version }}.tar.xz
+          strip-components: 1
+
+        versions:
+          github: aria2/aria2
+          strip: /^aria2 /
+
+        provides:
+          - bin/aria2c
+
+        dependencies:
+          zlib.net: ^1
+          openssl.org: ^1
+          libexpat.github.io: '*'
+          sqlite.org: ^3
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            gnupg.org/libgcrypt: ^1
+            gnupg.org/libgpg-error: ^1
+            freedesktop.org/pkg-config: '*'
+          script: |
+            ./configure $ARGS
+            make --jobs {{hw.concurrency}}
+            make install
+          env:
+            ARGS:
+              - --prefix="{{prefix}}"
+              - --with-openssl
+              - --with-libgcrypt
+
+        test: |
+          aria2c -v
+          aria2c https://tea.xyz
+          aria2c --seed-time=0 "magnet:?xt=urn:btih:d984f67af9917b214cd8b6048ab5624c7df6a07a&tr=https%3A%2F%2Facademictorrents.com%2Fannounce.php&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce"
+
+
+    Here's an example ruby formula for the project libsamplerate:
+
+
+        class Libsamplerate < Formula
+          homepage "https://github.com/libsndfile/libsamplerate"
+          url "https://github.com/libsndfile/libsamplerate/archive/0.2.2.tar.gz"
+          depends_on "cmake" => :build
+          depends_on "pkg-config" => :build
+          def install
+            system "cmake", "-S", ".", "-B", "build/shared",
+              *std_cmake_args,
+              "-DBUILD_SHARED_LIBS=ON",
+              "-DLIBSAMPLERATE_EXAMPLES=OFF",
+              "-DBUILD_TESTING=OFF"
+            system "cmake", "--build", "build/shared"
+            system "cmake", "--build", "build/shared", "--target", "install"
+            system "cmake", "-S", ".", "-B", "build/static",
+              *std_cmake_args,
+              "-DBUILD_SHARED_LIBS=OFF",
+              "-DLIBSAMPLERATE_EXAMPLES=OFF",
+              "-DBUILD_TESTING=OFF"
+            system "cmake", "--build", "build/static"
+            system "cmake", "--build", "build/static", "--target", "install"
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <assert.h>
+              #include <samplerate.h>
+              int main() {
+                SRC_DATA src_data;
+                float input[] = {0.1, 0.9, 0.7, 0.4} ;
+                float output[2] ;
+                src_data.data_in = input ;
+                src_data.data_out = output ;
+                src_data.input_frames = 4 ;
+                src_data.output_frames = 2 ;
+                src_data.src_ratio = 0.5 ;
+                int res = src_simple (&src_data, 2, 1) ;
+                assert(res == 0);
+                return 0;
+              }
+            EOS
+            system ENV.cc, "test.c", "-I#{include}", "-L#{opt_lib}", "-lsamplerate", "-o", "test"
+            system "./test"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project libsamplerate in the yml format:

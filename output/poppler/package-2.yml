@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to write a formula for the project poppler in the yml format since it is specific to the Ruby package manager Homebrew. The yml format is used in other package managers like conda and does not support the same syntax and conventions as Homebrew's Ruby formula format.

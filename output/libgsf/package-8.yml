@@ -1,0 +1,56 @@
+distributable:
+  url: https://download.gnome.org/sources/libgsf/{{version}}/libgsf-{{version}}.tar.xz
+
+versions:
+  - 1.14.50
+
+build:
+  dependencies:
+    x86-64:
+      tea.xyz/gx/cc: c99
+      cmake.org: '*'
+      tea.xyz/gx/make: '*'
+      tarball.us/xz: '*'
+    arm64:
+      tea.xyz/gx/cc: c99
+      cmake.org: '*'
+      tea.xyz/gx/make: '*'
+      tarball.us/xz: '*'
+    zUSA:
+      tea.xyz/gx/cc: c99
+      cmake.org: '*'
+      tea.xyz/gx/make: '*'
+      tarball.us/xz: '*'
+  configure:
+    - |
+      if [ -x autogen.sh ];
+        then ./autogen.sh;
+        else ./configure;
+      fi
+  working-directory: ./
+  make: '*'
+  make-install: '*'
+  env:
+    CFLAGS:
+      - -I{{prefix}}/include/libxml2
+      - -L{{prefix}}/lib
+      - -I{{prefix}}/include/glib-2.0
+      - -I{{prefix}}/lib/glib-2.0/include
+      - -I/usr/include/bzip2
+      - -I/usr/include
+      - -fPIC
+    
+test: |
+  gsf --help
+  echo '#include <gsf/gsf-utils.h>
+        int main()
+        {
+            void
+            gsf_init (void);
+            return 0;
+        }' > test.c
+  {{cc}} -I{{prefix}}/include/gsf-1 -I{{prefix}}/include/glib-2.0 -I{{prefix}}/lib/glib-2.0/include test.c -o test
+  ./test
+  
+provides:
+  - bin/gsf

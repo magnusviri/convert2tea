@@ -1,0 +1,198 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project cmake:
+
+
+        class Cmake < Formula
+          homepage "https://www.cmake.org/"
+          url "https://github.com/Kitware/CMake/releases/download/v3.26.2/cmake-3.26.2.tar.gz"
+          mirror "http://fresh-center.net/linux/misc/cmake-3.26.2.tar.gz"
+          mirror "http://fresh-center.net/linux/misc/legacy/cmake-3.26.2.tar.gz"
+          head "https://gitlab.kitware.com/cmake/cmake.git", branch: "master"
+          # The "latest" release on GitHub has been an unstable version before, so we
+          # check the Git tags instead.
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          uses_from_macos "ncurses"
+          on_linux do
+            depends_on "openssl@3"
+          end
+          # The completions were removed because of problems with system bash
+          # The `with-qt` GUI option was removed due to circular dependencies if
+          # CMake is built with Qt support and Qt is built with MySQL support as MySQL uses CMake.
+          # For the GUI application please instead use `brew install --cask cmake`.
+          def install
+            args = %W[
+              --prefix=#{prefix}
+              --no-system-libs
+              --parallel=#{ENV.make_jobs}
+              --datadir=/share/cmake
+              --docdir=/share/doc/cmake
+              --mandir=/share/man
+            ]
+            if OS.mac?
+              args += %w[
+                --system-zlib
+                --system-bzip2
+                --system-curl
+              ]
+            end
+            system "./bootstrap", *args, "--", *std_cmake_args,
+                                               "-DCMake_INSTALL_BASH_COMP_DIR=#{bash_completion}",
+                                               "-DCMake_INSTALL_EMACS_DIR=#{elisp}",
+                                               "-DCMake_BUILD_LTO=ON"
+            system "make"
+            system "make", "install"
+          end
+          def caveats
+            <<~EOS
+              To install the CMake documentation, run:
+                brew install cmake-docs
+            EOS
+          end
+          test do
+            (testpath/"CMakeLists.txt").write("find_package(Ruby)")
+            system bin/"cmake", "."
+            # These should be supplied in a separate cmake-docs formula.
+            refute_path_exists doc/"html"
+            refute_path_exists man
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project cmake:
+
+
+        distributable:
+          url: https://github.com/Kitware/CMake/releases/download/v{{ version }}/cmake-{{ version }}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: Kitware/CMake/releases/tags
+          ignore: /-rc\d/
+
+        detect:
+          cmd: cmake --version
+          regex: cmake version \v
+
+        dependencies:
+          curl.se: '>=5'
+          zlib.net: 1
+          sourceware.org/bzip2: 1
+
+        provides:
+          darwin:
+          - bin/cmake
+          - bin/ccmake
+          - bin/cpack
+          - bin/ctest
+          linux:
+          - bin/cmake
+          - bin/cpack
+          - bin/ctest
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+          script: |-
+            ./bootstrap $ARGS
+            make --jobs {{ hw.concurrency }} install
+            rm -rf {{prefix}}/share/doc  # docs are online
+          env:
+            V: 1
+            ARGS:
+              - --prefix={{ prefix }}
+              - --parallel={{ hw.concurrency }}
+              - --datadir=/var
+              - --docdir=/share/doc
+              - --mandir=/share/man
+              - --system-zlib
+              - --system-bzip2
+              - --system-curl
+              - --
+              - -DCMake_BUILD_LTO=ON
+              - -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+            darwin:
+              ARGS:
+              - -DZLIB_LIBRARY={{deps.zlib.net.prefix}}/lib/libz.dylib
+              - -DZLIB_INCLUDE_DIR={{deps.zlib.net.prefix}}/include
+              - -DCURL_LIBRARY={{deps.curl.se.prefix}}/lib/libcurl.dylib
+              - -DCURL_INCLUDE_DIR={{deps.curl.se.prefix}}/include
+              - -DBZIP2_LIBRARIES={{deps.sourceware.org/bzip2.prefix}}/lib/libbz2.a
+              - -DBZIP2_INCLUDE_DIR={{deps.sourceware.org/bzip2.prefix}}/include
+            linux:
+              ARGS:
+              - -DZLIB_LIBRARY={{deps.zlib.net.prefix}}/lib/libz.so
+              - -DZLIB_INCLUDE_DIR={{deps.zlib.net.prefix}}/include
+              - -DCURL_LIBRARY={{deps.curl.se.prefix}}/lib/libcurl.so
+              - -DCURL_INCLUDE_DIR={{deps.curl.se.prefix}}/include
+              - -DBZIP2_LIBRARIES={{deps.sourceware.org/bzip2.prefix}}/lib/libbz2.so
+              - -DBZIP2_INCLUDE_DIR={{deps.sourceware.org/bzip2.prefix}}/include
+
+          error-log:
+            Bootstrap.cmk/cmake_bootstrap.log
+
+        test:
+          script:
+            cmake --version
+
+
+
+    Here's an example ruby formula for the project suite-sparse:
+
+
+        class SuiteSparse < Formula
+          homepage "https://people.engr.tamu.edu/davis/suitesparse.html"
+          url "https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/v7.0.1.tar.gz"
+          license all_of: [
+            "BSD-3-Clause",
+            "LGPL-2.1-or-later",
+            "GPL-2.0-or-later",
+            "Apache-2.0",
+            "GPL-3.0-only",
+            any_of: ["LGPL-3.0-or-later", "GPL-2.0-or-later"],
+          ]
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          depends_on "cmake" => :build
+          depends_on "metis"
+          depends_on "openblas"
+          uses_from_macos "m4"
+          conflicts_with "mongoose", because: "suite-sparse vendors libmongoose.dylib"
+          def install
+            cmake_args = *std_cmake_args, "-DCMAKE_INSTALL_RPATH=#{rpath}"
+            args = [
+              "INSTALL=#{prefix}",
+              "BLAS=-L#{Formula["openblas"].opt_lib} -lopenblas",
+              "LAPACK=$(BLAS)",
+              "MY_METIS_LIB=-L#{Formula["metis"].opt_lib} -lmetis",
+              "MY_METIS_INC=#{Formula["metis"].opt_include}",
+              "CMAKE_OPTIONS=#{cmake_args.join(" ")}",
+              "JOBS=#{ENV.make_jobs}",
+            ]
+            # Parallelism is managed through the `JOBS` make variable and not with `-j`.
+            ENV.deparallelize
+            system "make", "library", *args
+            system "make", "install", *args
+            lib.install Dir["**/*.a"]
+            pkgshare.install "KLU/Demo/klu_simple.c"
+          end
+          test do
+            system ENV.cc, "-o", "test", pkgshare/"klu_simple.c",
+                   "-L#{lib}", "-lsuitesparseconfig", "-lklu"
+            assert_predicate testpath/"test", :exist?
+            assert_match "x [0] = 1", shell_output("./test")
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project suite-sparse in the yml format:

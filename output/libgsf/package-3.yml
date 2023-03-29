@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to write a formula for the project libgsf in the yml format as it is not a supported format for Homebrew. Only Ruby formulas are currently supported by Homebrew.

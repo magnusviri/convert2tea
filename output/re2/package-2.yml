@@ -1,0 +1,35 @@
+distributable:
+  url: https://github.com/google/re2/archive/refs/tags/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2023-03-01
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c11
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+  script: |
+    cmake .. -DRE2_BUILD_TESTING=OFF -DRE2_BUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX={{prefix}}
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    freedesktop.org/pkg-config: ^0.29
+  env:
+    cxxflags: $(pkg-config --cflags re2)
+  fixture: |
+    #include <re2/re2.h>
+    #include <assert.h>
+    int main() {
+    assert(!RE2::FullMatch("hello", "e"));
+    assert(RE2::PartialMatch("hello", "e"));
+    return 0;
+    }
+  script: |
+    mv $FIXTURE test.cpp
+    g++ -std=c++11 test.cpp ${cxxflags} -o test -L{{lib}} -lre2
+    ./test

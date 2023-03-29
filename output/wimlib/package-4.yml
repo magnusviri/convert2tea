@@ -1,0 +1,46 @@
+distributable:
+  url: https://wimlib.net/downloads/wimlib-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: wimlib/wimlib
+  strip: /^wimlib-/
+
+dependencies:
+  openssl.org: ^3
+
+build:
+  dependencies:
+    tea.xyz/gx/pkg-config: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --disable-debug
+    - --disable-dependency-tracking
+    - --disable-silent-rules
+    - --prefix={{prefix}}
+    - --without-fuse
+    - --without-ntfs-3g
+    - --with-openssl={{Dep["openssl.org"].prefix}}
+  test:
+    script: |
+      mkdir foo
+      size=$(if [[ $(uname) == "Darwin" ]]; then echo "1m"; else echo "1M"; fi)
+      dd if=/dev/random of=foo/bar bs=$size count=1
+      env WIMLIB_IMAGEX_USE_UTF8=1 wimcapture foo bar.wim
+      test -f bar.wim
+      wiminfo bar.wim
+
+provides:
+  - bin/wimarchive
+  - bin/wimappend
+  - bin/wimapply
+  - bin/wimbuild
+  - bin/wimdelete
+  - bin/wiminfo
+  - bin/wimmount
+  - bin/wimmsm
+  - bin/wimunmount
+  - bin/wimvalidate

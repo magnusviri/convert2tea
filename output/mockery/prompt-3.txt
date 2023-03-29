@@ -1,0 +1,110 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project chezmoi:
+
+
+        class Chezmoi < Formula
+          homepage "https://chezmoi.io/"
+          url "https://github.com/twpayne/chezmoi.git",
+              tag:      "v2.33.0",
+              revision: "ced12b81b493670520b177dcc62de2c67172858d"
+          head "https://github.com/twpayne/chezmoi.git", branch: "master"
+          depends_on "go" => :build
+          def install
+            ldflags = %W[
+              -s -w
+              -X main.version=#{version}
+              -X main.commit=#{Utils.git_head}
+              -X main.date=#{time.iso8601}
+              -X main.builtBy=#{tap.user}
+            ]
+            system "go", "build", *std_go_args(ldflags: ldflags)
+            bash_completion.install "completions/chezmoi-completion.bash"
+            fish_completion.install "completions/chezmoi.fish"
+            zsh_completion.install "completions/chezmoi.zsh" => "_chezmoi"
+            prefix.install_metafiles
+          end
+          test do
+            # test version to ensure that version number is embedded in binary
+            assert_match "version v#{version}", shell_output("#{bin}/chezmoi --version")
+            assert_match "built by #{tap.user}", shell_output("#{bin}/chezmoi --version")
+            system "#{bin}/chezmoi", "init"
+            assert_predicate testpath/".local/share/chezmoi", :exist?
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project chezmoi:
+
+
+        distributable:
+          url: https://github.com/twpayne/chezmoi/archive/refs/tags/v{{ version }}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: twpayne/chezmoi/tags
+          strip: /v/
+
+        provides:
+          - bin/chezmoi
+
+        build:
+          script: |
+            go build -v -ldflags="$LDFLAGS"
+            mkdir -p "{{ prefix }}"/bin
+            mv chezmoi "{{ prefix }}"/bin
+          dependencies:
+            go.dev: ^1.18
+            linux:
+              gnu.org/gcc: "*"
+              gnu.org/binutils: "*" # for `as`
+          env:
+            LDFLAGS:
+              - -s
+              - -w
+              - -X main.version={{ version }}
+              - -X main.revision=tea
+            linux:
+              # or segmentation fault
+              # fix found here https://github.com/docker-library/golang/issues/402#issuecomment-982204575
+              LDFLAGS:
+                - -buildmode=pie
+
+        test:
+          script: |
+            export HOME=$(pwd)
+            touch .bashrc
+            chezmoi -S .chezmoi init
+            chezmoi -S .chezmoi add .bashrc
+            ls -la .chezmoi
+            test -f .chezmoi/empty_dot_bashrc
+
+
+
+    Here's an example ruby formula for the project mockery:
+
+
+        class Mockery < Formula
+          homepage "https://github.com/vektra/mockery"
+          url "https://github.com/vektra/mockery/archive/refs/tags/v2.23.1.tar.gz"
+          head "https://github.com/vektra/mockery.git", branch: "master"
+          depends_on "go" => :build
+          def install
+            ldflags = "-s -w -X github.com/vektra/mockery/v2/pkg/logging.SemVer=v#{version}"
+            system "go", "build", *std_go_args(ldflags: ldflags)
+            generate_completions_from_executable(bin/"mockery", "completion")
+          end
+          test do
+            output = shell_output("#{bin}/mockery --keeptree 2>&1", 1)
+            assert_match "Starting mockery dry-run=false version=v#{version}", output
+            output = shell_output("#{bin}/mockery --all --dry-run 2>&1")
+            assert_match "INF Starting mockery dry-run=true version=v#{version}", output
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project mockery in the yml format:

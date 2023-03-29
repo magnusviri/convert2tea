@@ -1,0 +1,25 @@
+distributable:
+  url: https://github.com/virtualsquare/vde-2/archive/refs/tags/v{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: virtualsquare/vde-2/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/autoconf: '*'
+      tea.xyz/gx/automake: '*'
+      tea.xyz/gx/libtool: '*'
+  script: |
+    autoreconf --install
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  script: |
+    vde_switch -v

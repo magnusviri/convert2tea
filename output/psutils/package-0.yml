@@ -1,0 +1,27 @@
+distributable:
+  url: ftp://ftp.knackered.org/pub/psutils/psutils-p17.tar.gz
+  mirror: https://ftp.osuosl.org/pub/blfs/conglomeration/psutils/psutils-p17.tar.gz
+  strip-components: 1
+
+versions:
+  regex: psutils[._-](p\\d+)
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    perl: '*'
+  script: |
+    make -f Makefile.unix PERL=/usr/bin/perl BINDIR="{{prefix}}/bin" INCLUDEDIR="{{prefix}}/pkgshare" MANDIR="{{prefix}}/share/man/man1" install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    showchar Palatino B > test.ps
+    psmerge -omulti.ps test.ps test.ps test.ps test.ps
+    psnup -n 2 multi.ps nup.ps
+    psselect -p1 multi.ps test2.ps

@@ -1,0 +1,80 @@
+- Please note that the yml format provided in the example is for the Homebrew-Utils system and would not work for other package managers.
+
+Here's a possible formula for mariadb in the yml format:
+
+```yaml
+versions:
+  - 10.11.2
+
+distributable:
+  url: https://downloads.mariadb.com/MariaDB/mariadb-{{ version }}/source/mariadb-{{ version }}.tar.gz
+  strip-components: 1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: cxx17
+    tea.xyz/gx/cmake: '*'
+    tea.xyz/gx/groonga: '*'
+    tea.xyz/gx/pkg-config: '*'
+    bison: '*'
+    fmt: '*'
+    openssl@1.1: '*'
+    pcre2: '*'
+    zstd: '*'
+    ncurses: {macos: '*', linux: 'ncurses'}
+    libxml2: {macos: '*', linux: 'libxml2-dev'}
+    bzip2: {macos: '*', linux: 'libbz2-dev'}
+    libxcrypt: {macos: '*', linux: 'libxcrypt-dev'}
+    readline: {linux: 'libedit-dev'}
+    linux-pam: {linux: '*'}
+
+  script: |
+    mkdir build && cd build
+    cmake .. \
+      -DCMAKE_INSTALL_PREFIX={{ prefix }} \
+      -DDEFAULT_CHARSET=utf8mb4 \
+      -DDEFAULT_COLLATION=utf8mb4_general_ci \
+      -DWITH_LIBFMT=system \
+      -DWITH_SSL=system \
+      -DWITH_UNIT_TESTS=OFF \
+      -DINSTALL_INFODIR=share/info \
+      -DINSTALL_DOCDIR=share/doc/mariadb \
+      -DINSTALL_INCLUDEDIR=include/mysql \
+      -DINSTALL_MYSQLSHAREDIR=share/mysql \
+      -DINSTALL_MANDIR=share/man \
+      -DINSTALL_SYSCONFDIR=#{etc} \
+      -DMYSQL_DATADIR=#{var}/mysql \
+      -DCOMPILATION_COMMENT=#{tap.user} \
+      -DPLUGIN_ROCKSDB=NO
+
+    cmake --build . --parallel ${CPU_COUNT}
+    cmake --install .
+
+    rm -rf #{prefix}/data  # don't create databases inside prefix
+    rm -f #{prefix}/mysql-test -f #{prefix}/sql-bench  # save space
+    ln -s #{prefix}/scripts/mysql_install_db #{prefix}/bin  # link installation script
+    chmod +x #{prefix}/support-files/mysql.server
+    ln -s #{prefix}/support-files/mysql.server #{prefix}/bin  # link control script
+    ln -s #{prefix}/support-files/wsrep_sst_common #{prefix}/libexec  # move sourced script
+    {{#linux}}
+    ln -s /etc/apparmor.d/usr.sbin.mysqld #{etc}
+    {{/linux}}
+    echo "!includedir #{etc}/my.cnf.d" > #{etc}/my.cnf  # use Homebrew my.cnf
+    touch #{etc}/my.cnf.d/.homebrew_dont_prune_me
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: cxx17
+    mariadb: '*'
+
+  script: |
+    mysql_install_db --no-defaults --datadir=$(mktemp -d) --auth-root-authentication-method=normal
+    mysqld --basedir=#{prefix} --datadir=$(mktemp -d) --plugin-dir=#{prefix}/lib/plugin \
+      --skip-networking --socket=$(mktemp) \
+      --pid-file=$(mktemp) \
+      --user=#{ENV["USER"]} &
+    mysql -u root -e "SELECT 1 FROM dual"
+
+  requires:
+    mariadb: {commands: [mysql, mysql_install_db, mysqld]}
+```

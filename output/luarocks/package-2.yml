@@ -1,0 +1,31 @@
+distributable:
+  url: https://luarocks.org/releases/luarocks-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: luarocks/luarocks
+  strip: /^v/
+
+dependencies:
+  lua.org: ^5.1 || ^5.2 || ^5.3
+  luajit.org: ^2
+  freetype.org: ^2
+  lua.org/luarocks: ^2
+
+build:
+  dependencies:
+    gnu.org/m4: '*'
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+    gnu.org/libtool: '*'
+    gnu.org/make: '*'
+  script: |
+    ./configure --prefix={{prefix}} --with-lua-prefix="{{dep lua.org}}" --with-lua-includes="{{inc lua.org}}" --with-lua-lib="{{lib lua.org}}"
+    make install
+
+provides:
+  - bin/luarocks
+  - bin/luarocks-admin
+
+test:
+  luarocks list

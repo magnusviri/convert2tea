@@ -1,0 +1,32 @@
+Sorry, I cannot generate YAML formats as I'm an NLP model that can only provide text-based output. However, here's a possible conversion of the ruby formula for re2 into a YAML format:
+
+    distributable:
+      url: https://github.com/google/re2/archive/refs/tags/{{version}}.tar.gz
+      strip-components: 1
+
+    versions:
+      - 2023-03-01
+
+    build:
+      working-directory: build
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+        cmake.org: '^3'
+      script: |
+        cmake -B build -DRE2_BUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX={{prefix}} \
+          -DBUILD_SHARED_LIBS=ON ..
+        cmake --build build --install
+      test:
+        script: |
+          cat <<EOF > test.cpp
+          #include <re2/re2.h>
+          #include <assert.h>
+          int main() {
+            assert(!RE2::FullMatch("hello", "e"));
+            assert(RE2::PartialMatch("hello", "e"));
+            return 0;
+          }
+          EOF
+          g++ test.cpp -o test -I{{prefix}}/include -L{{prefix}}/lib -lre2
+          ./test

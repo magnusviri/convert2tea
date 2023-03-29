@@ -1,0 +1,32 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/smartmontools/smartmontools/{{ version }}/smartmontools-{{ version }}.tar.gz
+
+versions:
+  sourceforge:
+    url: https://sourceforge.net/projects/smartmontools/rss?limit=100
+    version: '(\d+\.)?(\d+\.)?(\d+)'
+  strip: 'smartmontools-'
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --disable-dependency-tracking \
+                --prefix="{{prefix}}" \
+                --sysconfdir="{{etc}}" \
+                --localstatedir="{{var}}" \
+                --with-savestates \
+                --with-attributelog \
+                --with-nvme-devicescan
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    {{bin}}/smartctl --version
+    {{bin}}/smartd --version

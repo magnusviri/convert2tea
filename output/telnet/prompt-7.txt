@@ -1,0 +1,105 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project jansson:
+
+
+        class Jansson < Formula
+          homepage "https://digip.org/jansson/"
+          url "https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz"
+          def install
+            system "./configure", *std_configure_args
+            system "make", "install"
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <jansson.h>
+              #include <assert.h>
+              int main()
+              {
+                json_t *json;
+                json_error_t error;
+                json = json_loads("\\"foo\\"", JSON_DECODE_ANY, &error);
+                assert(json && json_is_string(json));
+                json_decref(json);
+                return 0;
+              }
+            EOS
+            system ENV.cc, "test.c", "-L#{lib}", "-ljansson", "-o", "test"
+            system "./test"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project jansson:
+
+
+        distributable:
+          url: https://github.com/akheron/jansson/releases/download/v{{ version.raw }}/jansson-{{ version.raw }}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: akheron/jansson/tags
+          strip: /^v/
+
+        build:
+          dependencies:
+            linux:
+              gnu.org/gcc: '*'
+            darwin:
+              tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+          script: |
+            ./configure --prefix="{{prefix}}"
+            make --jobs {{ hw.concurrency }} install
+
+        test:
+          dependencies:
+            tea.xyz/gx/cc: c99
+          script: |
+            cc fixture.c -ljansson
+            ./a.out
+
+
+    Here's an example ruby formula for the project telnet:
+
+
+        class Telnet < Formula
+          homepage "https://opensource.apple.com/"
+          url "https://github.com/apple-oss-distributions/remote_cmds/archive/refs/tags/remote_cmds-64.tar.gz"
+          license all_of: ["BSD-4-Clause-UC", "APSL-1.0"]
+          depends_on xcode: :build
+          depends_on :macos
+          conflicts_with "inetutils", because: "both install 'telnet' binaries"
+          def install
+            resource("libtelnet").stage do
+              ENV["SDKROOT"] = MacOS.sdk_path
+              ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version
+              xcodebuild "SYMROOT=build", "-arch", Hardware::CPU.arch
+              libtelnet_dst = buildpath/"telnet.tproj/build/Products"
+              libtelnet_dst.install "build/Release/libtelnet.a"
+              libtelnet_dst.install "build/Release/usr/local/include/libtelnet/"
+            end
+            ENV.append_to_cflags "-isystembuild/Products/"
+            system "make", "-C", "telnet.tproj",
+                           "OBJROOT=build/Intermediates",
+                           "SYMROOT=build/Products",
+                           "DSTROOT=build/Archive",
+                           "CFLAGS=$(CC_Flags) #{ENV.cflags}",
+                           "LDFLAGS=$(LD_Flags) -Lbuild/Products/",
+                           "RC_ARCHS=#{Hardware::CPU.arch}",
+                           "install"
+            bin.install "telnet.tproj/build/Archive/usr/local/bin/telnet"
+            man1.install "telnet.tproj/telnet.1"
+          end
+          test do
+            output = shell_output("#{bin}/telnet india.colorado.edu 13", 1)
+            assert_match "Connected to india.colorado.edu.", output
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project telnet in the yml format:

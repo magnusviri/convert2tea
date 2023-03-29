@@ -1,0 +1,26 @@
+distributable:
+  url: https://github.com/sekrit-twc/zimg/archive/release-{{ version }}.tar.gz
+  strip-components: 1
+ 
+versions:
+  github: sekrit-twc/zimg/releases/tags
+ 
+provides:
+  - bin/test
+ 
+build:
+  dependencies:
+    m4: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |
+    ./autogen.sh
+    ./configure --prefix={{ prefix }}
+    make install
+ 
+test:
+  script: |
+    (echo '#include <assert.h>'; echo '#include <zimg.h>'; echo 'int main()'; echo '{'; echo 'zimg_image_format format;'; echo 'zimg_image_format_default(&format, ZIMG_API_VERSION);'; echo 'assert(ZIMG_MATRIX_UNSPECIFIED == format.matrix_coefficients);'; echo 'return 0;'; echo '}') > $HOME/test.c
+    {{ cc.path }} $HOME/test.c -L{{ lib.path }} -lzimg -o $HOME/test
+    $HOME/test

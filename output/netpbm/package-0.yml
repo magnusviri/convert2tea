@@ -1,0 +1,73 @@
+distributable:
+  url: https://svn.code.sf.net/p/netpbm/code/stable/netpbm-10.86.38.tgz
+
+versions:
+  - 10.86.38
+
+provides:
+  - bin/pngtopam
+  - bin/pamdice
+  - bin/xpmtoppm
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    jasper: '*'
+    jpeg-turbo: '*'
+    libpng: '*'
+    libtiff: '*'
+    flex: '*'
+
+  script: |
+    cp config.mk.in config.mk
+    sed -i 's|/usr/local/netpbm/rgb.txt|{{ prefix }}/misc/rgb.txt|' config.mk
+    sed -i 's|CC .*|CC = {{ c99.path }}|' config.mk
+    sed -i 's|TIFFLIB .*|TIFFLIB = -ltiff|' config.mk
+    sed -i 's|JPEGLIB .*|JPEGLIB = -ljpeg|' config.mk
+    sed -i 's|PNGLIB .*|PNGLIB = -lpng|' config.mk
+    sed -i 's|ZLIB .*|ZLIB = -lz|' config.mk
+    sed -i 's|JASPERLIB .*|JASPERLIB = -ljasper|' config.mk
+    sed -i 's|JASPERHDR_DIR .*|JASPERHDR_DIR = {{ jasper.prefix }}/include/jasper|' config.mk
+    sed -i 's|CFLAGS_SHLIB .*|CFLAGS_SHLIB = -fPIC|' config.mk
+    sed -i 's|NETPBMLIBTYPE .*|NETPBMLIBTYPE = {{ shared_library_suffix }}|' config.mk
+    sed -i 's|NETPBMLIBSUFFIX .*|NETPBMLIBSUFFIX = {{ shared_library_suffix }}|' config.mk
+    sed -i 's|LDSHLIB .*|LDSHLIB = --shared -o $(SONAME)|' config.mk
+    make
+    make package pkgdir={{buildpath}}/stage
+    sed 's|@VERSION@|{{ version.raw }}|; s|@LINKDIR@|{{ lib }}|; s|@INCLUDEDIR@|{{ include }}|' {{buildpath}}/stage/pkgconfig_template > {{buildpath}}/stage/netpbm.pc
+    cp -r {{buildpath}}/stage/* {{prefix}}/
+
+test:
+  script: |
+    pngfile='#{test_fixtures('test.png')}'
+    testpam='#{testpath}/test.pam'
+    #{bin}/pngtopam "$pngfile" -alphapam > "$testpam"
+    #{bin}/pamdice "$testpam" -outstem "#{testpath}/testing"
+    [ -f "#{testpath}/testing_0_0.pam" ]
+    xpm='''/* XPM */
+    static char * favicon_xpm[] = {
+    "16 16 4 1",
+    "  c white",
+    ". c blue",
+    "X c black",
+    "o c red",
+    "                ",
+    "                ",
+    "                ",
+    "                ",
+    "  ....    ....  ",
+    " .    .  .    . ",
+    ".  ..  ..  ..  .",
+    "  .  . .. .  .  ",
+    " .   XXXXXX   . ",
+    " .   XXXXXX   . ",
+    "oooooooooooooooo",
+    "oooooooooooooooo",
+    "oooooooooooooooo",
+    "oooooooooooooooo",
+    "XXXXXXXXXXXXXXXX",
+    "XXXXXXXXXXXXXXXX"};
+    '''
+    ppmout=`#{bin}/xpmtoppm <<<"$xpm"`
+    [ -n "$ppmout" ]

@@ -1,0 +1,38 @@
+distributable:
+  url: https://github.com/rbenv/rbenv/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.2.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    inreplace "libexec/rbenv" do |s|
+      s.gsub! '"${BASH_SOURCE%/*}"/../libexec', libexec if distributable.version == "1.2.0"
+      s.gsub! ":/usr/local/etc/rbenv.d", ":{{ prefix }}/etc/rbenv.d\\0" if "{{ prefix }}".start_with?("/") and "{{ prefix }}" != "/usr/local"
+    end
+    if "{{ head }}" == "true"
+      git_revision=$(/usr/bin/git rev-parse --short HEAD)
+      inreplace "libexec/rbenv---version", /^(version=)"([^"]+)"/, %Q(\\1"\\2-g#{git_revision}")
+      if test "{{ hw.platform }}" = "darwin"; then
+        xcodebuild -target rbenv-man -configuration Release
+        mkdir -p {{ prefix }}/share/man/man1
+        cp build/Release/rbenv-man {{ prefix }}/share/man/man1
+      fi
+    else
+      system "src/configure"
+      system "make", "-C", "src"
+    end
+    prefix={{ prefix }} make --jobs {{hw.concurrency}} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    echo "echo hello" > foo
+    chmod +x foo
+    eval \"$(echo export PATH={{prefix}}/bin:$PATH rbenv init -)\" && rbenv versions
+    eval \"$(echo export PATH={{prefix}}/bin:$PATH rbenv init -)\" && rbenv shell 1.2.0 && ./foo

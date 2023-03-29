@@ -1,0 +1,31 @@
+distributable:
+      url: https://bitbucket.org/multicoreware/x265_git/get/3.5.tar.gz
+      strip-components: 1
+    
+    versions:
+      bitbucket: multicoreware/x265_git
+      strip: /^x265_/
+    
+    provides:
+      - bin/x265
+    
+    dependencies:
+      zlib.net: '*'
+      cmake.org: '*'
+      nasm.bitbucket.io: '*'
+    
+    build:
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+        openssl.org: '*'
+      script: |
+        export CFLAGS="${CFLAGS} -mstackrealign"
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_INSTALL_PREFIX=#{prefix} -DENABLE_PIC:BOOL=ON -DLINKED_10BIT=ON -DLINKED_12BIT=ON
+        make
+        make install
+    
+    test: |
+      x265 --version

@@ -1,0 +1,38 @@
+distributable:
+  url: https://github.com/dloebl/cgif/archive/refs/tags/V{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.3.0
+
+dependencies:
+  gcc: ""
+  mesonbuild.com: ^0.57.0
+  ninja-build.org: 1
+
+build:
+  script: |
+    meson setup builddir $ARGS
+    ninja -C builddir install
+    cd {{ prefix }}/lib
+    mv pkgconfig/* .
+    rmdir pkgconfig
+    ln -s . cgif
+  env:
+    ARGS:
+      - --prefix={{ prefix }}
+      - --libdir={{ prefix }}/lib
+
+test:
+  script: |
+    mv "$FIXTURE" try.c
+    {{ cc }} try.c -lcgif -o try
+    ./try
+  fixture: |
+    #include <cgif.h>
+    int main() {
+      CGIF_Config config = {0};
+      CGIF *cgif;
+      cgif = cgif_newgif(&config);
+      return 0;
+    }

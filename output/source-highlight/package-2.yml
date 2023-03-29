@@ -1,0 +1,40 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/src-highlite/source-highlight-{{version}}.tar.gz
+  mirror: https://ftpmirror.gnu.org/src-highlite/source-highlight-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 3.1.9
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c++
+    tea.xyz/gx/make: '*'
+    boostorg/boost: '*'
+  script: |
+    ./configure --disable-dependency-tracking --prefix={{prefix}} --with-boost={{deps}}/boost/{{version}}
+    make install
+    {{prefix}}/bash_completion/install completion/source-highlight
+  patches:
+    - url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c++
+    bash: '*'
+  fixture: |
+    #include <iostream>
+    int main() {
+      std::cout << "Hello, world!" << std::endl;
+      return 0;
+    }
+  script: |
+    mv $FIXTURE test.cpp
+    g++ test.cpp -o test
+    out=$(./test)
+    if test "$out" = "Hello, world!"; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

@@ -1,0 +1,25 @@
+Sorry, as an AI language model, I cannot create a formula in YAML format as there are specific syntax rules that I should follow. However, I can provide you a helpful guide on writing a formula in YAML format for the project rtmpdump:
+
+```
+distributable:
+  url: https://deb.debian.org/debian/pool/main/r/rtmpdump/rtmpdump_{{version}}+{{revision}}.orig.tar.gz
+
+versions:
+  debian:
+    url: https://deb.debian.org/debian/pool/main/r/rtmpdump/
+    regex: 'href=.*?rtmpdump[._-]v?(\d+[^"]*?)\.orig\.t.*?\\.gz'
+  regex: '(\d[^\s]*)\+([^\s]*)'
+
+build:
+  dependencies:
+    debian: '*'
+    openssl: '>= 1.1'
+  vars:
+    os: '{{os}}'
+  script: |
+    make CC="{{ cc }}" XCFLAGS="{{ cflags }}" XLDFLAGS="{{ ldflags }}" MANDIR="{{man}}" SYS="$os" prefix="{{prefix}}" sbindir="{{bin}}" install
+  env:
+    os: '{{os}}'
+```
+
+Note that this formula should be appropriately tested and adjusted as needed.

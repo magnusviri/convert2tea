@@ -1,0 +1,32 @@
+distributable:
+  url: https://github.com/OSGeo/libgeotiff/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: OSGeo/libgeotiff/releases/tags
+
+provides:
+  - bin/listgeo
+
+build:
+  dependencies:
+    - jpeg-turbo
+    - libtiff
+    - proj
+    - autoconf
+    - automake
+    - libtool
+  script: |
+    ./autogen.sh
+    ./configure {{arguments}} --with-jpeg
+    make
+    make install
+
+test:
+  depends:
+    - libgeotiff
+  script: |
+    (echo "#include <geotiff/geotiffio.h>"; \
+      echo "int main(){GTIFNew(NULL);return 0;}" ) | \
+      ${CC} -x c - -lgeotiff -o test
+    ./test

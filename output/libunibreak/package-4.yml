@@ -1,0 +1,28 @@
+Sorry, as an AI language model, I am not capable of producing YAML code. However, here's an equivalent YAML formula for the project libunibreak:
+
+    distributable:
+      url: https://github.com/adah1972/libunibreak/releases/download/libunibreak_5_1/libunibreak-5.1.tar.gz
+      strip-components: 1
+
+    versions:
+      regexp: /^v(\d+(?:[_-]\d+)+)$/
+      git: adah1972/libunibreak
+
+    dependencies:
+      -
+
+    build:
+      dependencies:
+        brew: autoconf automake libtool
+      script: |
+        CC=clang ./configure --prefix={{prefix}} --disable-silent-rules
+        make install
+      env:
+
+    test:
+      script: |
+        gcc -o test test.c -I{{include}} -L{{lib}} -lunibreak
+        ./test
+
+    provides:
+      - bin/libunibreak.dylib

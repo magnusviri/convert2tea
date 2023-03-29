@@ -1,0 +1,47 @@
+distributable:
+  url: https://github.com/libsndfile/libsndfile/releases/download/{{version}}/libsndfile-{{version}}.tar.xz
+
+versions:
+  github: libsndfile/libsndfile
+  strip: /^v/
+
+dependencies:
+  cmake.org: '*'
+  flac: '*'
+  lame: '*'
+  libogg: '*'
+  libvorbis: '*'
+  mpg123: '*'
+  opus: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake \
+      -DCMAKE_INSTALL_PREFIX={{prefix}} \
+      -DBUILD_SHARED_LIBS=ON \
+      -DBUILD_PROGRAMS=ON \
+      -DENABLE_PACKAGE_CONFIG=ON \
+      -DINSTALL_PKGCONFIG_MODULE=ON \
+      -DBUILD_EXAMPLES=OFF \
+      -DPYTHON_EXECUTABLE={{env.PYTHON}} \
+      -DCMAKE_FIND_FRAMEWORK=LAST \
+      -DCMAKE_INSTALL_RPATH={{rpath}} \
+      {{srcdir}}
+    
+    make --jobs={{hw.concurrency}} VERBOSE=1 install
+
+  env:
+    PYTHON: "{{python.env.PREFIX}}/bin/python3"
+
+test:
+  script: |
+    sndfile-info {{testdir}}/test.wav | grep -q 'Duration'
+
+provides:
+  - bin/sndfile-info
+  - bin/sndfile-play
+  - bin/sndfile-convert
+  - bin/sndfile-cmp

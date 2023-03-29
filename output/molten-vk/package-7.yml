@@ -1,0 +1,79 @@
+distributable:
+  url: https://github.com/KhronosGroup/MoltenVK/archive/v{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: KhronosGroup/MoltenVK/tags
+  ignore:
+    - /^1.9/   # invalid versions in the tags for some reason
+    - /^1.79/  # ^^
+    - /^1.71/  # ^^ like wtf?
+
+dependencies:
+  brew:
+    - cmake
+    - python@3.11
+    - xcode
+  mac: sierra
+  perl.org: '*'
+
+provides:
+  - include/vulkan
+  - include/MoltenVK
+  - include/MoltenVKShaderConverter
+  - lib/libMoltenVK.dylib
+  - bin/MoltenVKShaderConverter
+  - icd.d/MoltenVK_icd.json
+
+build:
+  dependencies:
+    brew: 
+      - cmake
+      - python@3.11
+      - xcode
+  script: |
+    mkdir External
+    cd External
+    curl -L https://github.com/KhronosGroup/SPIRV-Headers/archive/v1.5.4.tar.gz | tar -xz
+    curl -L https://github.com/KhronosGroup/glslang/archive/refs/tags/11.6.0.tar.gz | tar -xz
+    curl -L https://github.com/KhronosGroup/SPIRV-Tools/archive/v2021.2.tar.gz | tar -xz
+    cd ../
+
+    mv External/SPIRV-Tools External/glslang/External/spirv-tools
+    mv External/SPIRV-Headers External/glslang/External/spirv-tools/external/spirv-headers
+
+    mkdir External/glslang/External/spirv-tools/build
+    cd External/glslang/External/spirv-tools/build
+    cmake ..
+    make -j$(sysctl -n hw.physicalcpu)
+    cd ../../../../
+
+    xcodebuild -configuration Release -workspace MoltenVKPackaging.xcworkspace -scheme "MoltenVK Package (macOS only)" CONFIGURATION_BUILD_DIR=build
+    cp build/Release/MoltenVK/dylib/macOS/libMoltenVK.dylib build/Release/
+    cp Package/Release/MoltenVK/dylib/macOS/libMoltenVK.dylib lib/
+    cp build/Release/libMoltenVK.a lib/
+
+    cp -r External/glslang/glslang/Public glslang/
+    cp -r External/SPIRV-Headers spirv-tools/external/
+    cp -r External/Vulkan-Headers/include/vulkan include/
+    cp -r External/Vulkan-Headers/include/vk_video include/
+
+    cp -r MoltenVK/MoltenVK/API include/MoltenVK/
+    cp Package/Release/MoltenVKShaderConverter/Tools/MoltenVKShaderConverter bin/
+
+    cp -r Package/Release/MoltenVKShaderConverter/include/MoltenVKShaderConverter include/
+
+    sed -i '' 's|./libMoltenVK.dylib|../../../../../lib/libMoltenVK.dylib|' MoltenVK/icd/MoltenVK_icd.json
+
+    mkdir -p icd.d
+    cp MoltenVK/icd/MoltenVK_icd.json icd.d/
+
+test:
+  dependencies:
+    brew:
+      - cmake
+      - python@3.11
+      - xcode
+  script:
+    touch test_empty.cpp
+    c++ -std=c++11 -Iinclude -Iinclude/MoltenVK -Llib test_empty.cpp -o test -lMoltenVK -lSPIRV-Cross-core -lSPIRV-Cross-glsl -lSPIRV-Tools-opt -lSPIRV-Tools-reduce -lSPIRV-Tools-link -lSPIRV-Tools -lvulkan```

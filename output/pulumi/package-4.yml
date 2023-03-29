@@ -1,0 +1,43 @@
+distributable:
+  git:
+    url: https://github.com/pulumi/pulumi.git
+    branch: master
+  strip-components: 0
+
+versions:
+  git_tags: pulumi/pulumi/tags
+  ignore:
+    - /^v[0-2]/  # unsupported versions
+
+dependencies:
+  homebrew:
+    - go
+
+build:
+  dependencies:
+    homebrew:
+      - go
+  script: |
+    export GOPATH={{env.HOMEBREW_CACHE}/go_cache}
+    export PATH=$PATH:${GOPATH}/bin
+    mkdir -p ${GOPATH}/{bin,pkg,src}
+    rsync -avP {{distributable}} ${GOPATH}/src/pulumi/
+    cd ${GOPATH}/src/pulumi &&
+      git checkout {{version}}
+    cd ${GOPATH}/src/pulumi/sdk &&
+      go mod download
+    cd ${GOPATH}/src/pulumi/pkg &&
+      go mod download
+    cd ${GOPATH}/src/pulumi &&
+      make brew
+    mv ${GOPATH}/bin/pulumi* {{prefix}}/bin
+    pulumi gen-completion > {{prefix}}/etc/bash_completion.d/pulumi
+
+test:
+  script: |
+    cd {{env.HOMEBREW_CACHE}}/go_cache/src/pulumi
+    export HOME={{env.HOMEBREW_CACHE}}/.pulumi_home
+    export PULUMI_ACCESS_TOKEN="local://"
+    export PULUMI_TEMPLATE_PATH=$(pwd)/templates
+    pulumi new aws-typescript --generate-only --force -y
+    test -f Pulumi.yaml

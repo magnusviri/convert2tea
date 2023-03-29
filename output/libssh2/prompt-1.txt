@@ -1,0 +1,96 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project direnv:
+
+
+        class Direnv < Formula
+          homepage "https://direnv.net/"
+          url "https://github.com/direnv/direnv/archive/v2.32.2.tar.gz"
+          head "https://github.com/direnv/direnv.git", branch: "master"
+          depends_on "go" => :build
+          def install
+            system "make", "install", "PREFIX=#{prefix}"
+          end
+          test do
+            system bin/"direnv", "status"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project direnv:
+
+
+        distributable:
+          url: https://github.com/direnv/direnv/archive/refs/tags/v{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: direnv/direnv/releases/tags
+
+        provides:
+          - bin/direnv
+
+        build:
+          dependencies:
+            go.dev: ^1.18
+            tea.xyz/gx/make: '*'
+          script: |
+            make install PREFIX="{{ prefix }}"
+
+        test:
+          test "$(direnv --version)" = "{{ version }}"
+
+
+
+    Here's an example ruby formula for the project libssh2:
+
+
+        class Libssh2 < Formula
+          homepage "https://www.libssh2.org/"
+          url "https://www.libssh2.org/download/libssh2-1.10.0.tar.gz"
+          mirror "https://github.com/libssh2/libssh2/releases/download/libssh2-1.10.0/libssh2-1.10.0.tar.gz"
+          mirror "http://download.openpkg.org/components/cache/libssh2/libssh2-1.10.0.tar.gz"
+          livecheck do
+            url "https://www.libssh2.org/download/"
+            regex(/href=.*?libssh2[._-]v?(\d+(?:\.\d+)+)\./i)
+          end
+          head do
+            url "https://github.com/libssh2/libssh2.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+          end
+          depends_on "openssl@1.1"
+          uses_from_macos "zlib"
+          def install
+            args = %W[
+              --disable-silent-rules
+              --disable-examples-build
+              --with-openssl
+              --with-libz
+              --with-libssl-prefix=#{Formula["openssl@1.1"].opt_prefix}
+            ]
+            system "./buildconf" if build.head?
+            system "./configure", *std_configure_args, *args
+            system "make", "install"
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <libssh2.h>
+              int main(void)
+              {
+              libssh2_exit();
+              return 0;
+              }
+            EOS
+            system ENV.cc, "test.c", "-L#{lib}", "-lssh2", "-o", "test"
+            system "./test"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project libssh2 in the yml format:

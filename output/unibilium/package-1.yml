@@ -1,0 +1,31 @@
+distributable:
+  url: https://github.com/neovim/unibilium/archive/v{{version.semantic}}.tar.gz
+
+versions:
+  - 2.1.1
+
+dependencies:
+  libtool: '*'
+
+build:
+  prefix: '{{prefix}}'
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  configure:
+    - ./autogen.sh
+    - ./configure --prefix={{prefix}}
+  make: &make
+    command: make
+    parallel: true
+  install:
+    command: make install
+  test:
+    script: |
+      printf "#include <unibilium.h>\nint main(){unibi_dummy();return 0;}" > test.c
+      gcc test.c -L{{prefix}}/lib -lunibilium -o test
+      ./test
+  
+provides:
+  - lib/libunibilium.a
+  - include/unibilium.h

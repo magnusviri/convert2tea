@@ -1,0 +1,36 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.6.tar.gz
+
+versions:
+  - 0.1.6
+
+provides:
+  - include/opencore-amrwb/dec_if.h
+  - lib/libopencore-amrwb.dylib
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/libtool: '*'
+
+  script: |
+    autoreconf -i
+    ./configure --disable-dependency-tracking --prefix={{prefix}}
+    make
+    make install
+
+test:
+  script: |
+    (cat << EOF
+    #include <opencore-amrwb/dec_if.h>
+    int main(void) {
+      void *s = D_IF_init();
+      D_IF_exit(s);
+      return 0;
+    }
+    EOF
+    ) > test.c
+    {{ cc }} test.c -I{{ include }} -L{{ lib }} -lopencore-amrwb -o test
+    ./test

@@ -1,0 +1,154 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project eigen:
+
+
+        class Eigen < Formula
+          homepage "https://eigen.tuxfamily.org/"
+          url "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz"
+          revision 1
+          head "https://gitlab.com/libeigen/eigen.git", branch: "master"
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          depends_on "cmake" => :build
+          conflicts_with "freeling", because: "freeling ships its own copy of eigen"
+          def install
+            mkdir "eigen-build" do
+              args = std_cmake_args
+              args << "-Dpkg_config_libdir=#{lib}" << ".."
+              system "cmake", *args
+              system "make", "install"
+            end
+            (share/"cmake/Modules").install "cmake/FindEigen3.cmake"
+          end
+          test do
+            (testpath/"test.cpp").write <<~EOS
+              #include <iostream>
+              #include <Eigen/Dense>
+              using Eigen::MatrixXd;
+              int main()
+              {
+                MatrixXd m(2,2);
+                m(0,0) = 3;
+                m(1,0) = 2.5;
+                m(0,1) = -1;
+                m(1,1) = m(1,0) + m(0,1);
+                std::cout << m << std::endl;
+              }
+            EOS
+            system ENV.cxx, "test.cpp", "-I#{include}/eigen3", "-o", "test"
+            assert_equal %w[3 -1 2.5 1.5], shell_output("./test").split
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project eigen:
+
+
+        distributable:
+          url: https://gitlab.com/libeigen/eigen/-/archive/{{version}}/eigen-{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 3.4.0
+
+        build:
+          working-directory: build
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            cmake.org: '^3'
+          script: |
+            cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}}
+            make install
+
+            # stuff expects `Eigen` to be in `include` rather than namespaced
+            cd "{{prefix}}"
+            mv include/eigen3/* include
+            cd include
+            rmdir eigen3
+            # but work for stuff that expects the namespace too
+            ln -s eigen3 .
+          test:
+            make test
+
+        test:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            freedesktop.org/pkg-config: ^0.29
+          env:
+            cxxflags: $(pkg-config --cflags eigen3)
+          fixture: |
+            #include <iostream>
+            #include <Eigen/Dense>
+            using Eigen::MatrixXd;
+            int main()
+            {
+              MatrixXd m(2,2);
+              m(0,0) = 3;
+              m(1,0) = 2.5;
+              m(0,1) = -1;
+              m(1,1) = m(1,0) + m(0,1);
+              std::cout << m << std::endl;
+            }
+          script: |
+            mv $FIXTURE test.cpp
+            g++ test.cpp ${cxxflags} -o test
+            ./test > output.txt
+            out=$(./test)
+            if test "$out" = $'  3  -1\n2.5 1.5'; then
+              echo "PASS"
+            else
+              echo "FAIL"
+            fi
+
+
+
+    Here's an example ruby formula for the project libsodium:
+
+
+        class Libsodium < Formula
+          homepage "https://libsodium.org/"
+          url "https://download.libsodium.org/libsodium/releases/libsodium-1.0.18.tar.gz"
+          revision 1
+          livecheck do
+            url "https://download.libsodium.org/libsodium/releases/"
+            regex(/href=.*?libsodium[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          head do
+            url "https://github.com/jedisct1/libsodium.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+          end
+          def install
+            system "./autogen.sh" if build.head?
+            system "./configure", "--disable-debug", "--disable-dependency-tracking",
+                                  "--prefix=#{prefix}"
+            system "make", "check"
+            system "make", "install"
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <assert.h>
+              #include <sodium.h>
+              int main()
+              {
+                assert(sodium_init() != -1);
+                return 0;
+              }
+            EOS
+            system ENV.cc, "test.c", "-I#{include}", "-L#{lib}",
+                           "-lsodium", "-o", "test"
+            system "./test"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project libsodium in the yml format:

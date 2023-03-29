@@ -1,0 +1,93 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project bcrypt:
+
+
+        class Bcrypt < Formula
+          homepage "https://bcrypt.sourceforge.io/"
+          url "https://bcrypt.sourceforge.io/bcrypt-1.1.tar.gz"
+          livecheck do
+            url :homepage
+            regex(/href=.*?bcrypt[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          uses_from_macos "zlib"
+          def install
+            system "make", "CC=#{ENV.cc}",
+                           "CFLAGS=#{ENV.cflags}",
+                           "LDFLAGS=-lz"
+            bin.install "bcrypt"
+            man1.install Utils::Gzip.compress("bcrypt.1")
+          end
+          test do
+            (testpath/"test.txt").write("Hello World!")
+            pipe_output("#{bin}/bcrypt -r test.txt", "12345678\n12345678\n")
+            mv "test.txt.bfe", "test.out.txt.bfe"
+            pipe_output("#{bin}/bcrypt -r test.out.txt.bfe", "12345678\n")
+            assert_equal File.read("test.txt"), File.read("test.out.txt")
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project bcrypt:
+
+
+        distributable:
+          url: https://bcrypt.sourceforge.net/bcrypt-{{version.marketing}}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 1.1.0
+
+        dependencies:
+          zlib.net: '*'
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+          script: |
+            make LDFLAGS=-lz PREFIX={{prefix}} install
+
+        provides:
+          - bin/bcrypt
+
+        test:
+          script: |
+            echo "Hello World!" > test.txt
+            printf '12345678\n12345678\n' | bcrypt -r test.txt
+            mv test.txt.bfe test.out.txt.bfe
+            printf '12345678\n' | bcrypt -r test.out.txt.bfe
+            cat test.out.txt
+
+
+
+
+    Here's an example ruby formula for the project ruby-install:
+
+
+        class RubyInstall < Formula
+          homepage "https://github.com/postmodern/ruby-install#readme"
+          url "https://github.com/postmodern/ruby-install/archive/v0.9.0.tar.gz"
+          head "https://github.com/postmodern/ruby-install.git", branch: "master"
+          depends_on "xz"
+          def install
+            system "make", "install", "PREFIX=#{prefix}"
+            # Ensure uniform bottles across prefixes
+            inreplace man1/"ruby-install.1", "/usr/local", "$HOMEBREW_PREFIX"
+            inreplace [
+              pkgshare/"ruby-install.sh",
+              pkgshare/"truffleruby/functions.sh",
+              pkgshare/"truffleruby-graalvm/functions.sh",
+            ], "/usr/local", HOMEBREW_PREFIX
+          end
+          test do
+            system bin/"ruby-install"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project ruby-install in the yml format:

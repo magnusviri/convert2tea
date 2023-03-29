@@ -1,0 +1,102 @@
+distributable:
+  url: https://www.vtk.org/files/release/{{version.major_minor}}/VTK-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: vtk/vtk
+  strip: /^v/
+
+dependencies:
+  boost.org: ^1
+  doubleconversion.org: ^3
+  eigen.tuxfamily.org: ^3
+  fontconfig.org: ^2
+  freetype.org: ^2
+  gl2ps.com: ^1
+  glew.sourceforge.net: ^2
+  hdfgroup.org: ^1
+  jpegclub.org: ^9
+  jsoncpp.github.io: ^1
+  libogg.org: ^1
+  libpng.org: ^1
+  libtiff.org: ^4
+  lz4.github.io: ^1
+  unidata.ucar.edu/software/netcdf: ^4
+  pugixml.org: ^1
+  pyqt.sourceforge.net: ^5
+  python.org/downloads: ^3.11
+  qt.io/qt5: ^5
+  sqlite.org: ^3
+  theora.org: ^1
+  utfcpp.sourceforge.net: ^3
+  tcl.tk: ^8
+  tkinter.org: ^8
+  zlib.net: ^1
+
+build:
+  dependencies:
+    cmake.org: ^3.15
+  script: |
+    cmake -S . -B build \
+      -DCMAKE_INSTALL_NAME_DIR:STRING=#{lib} \
+      -DCMAKE_INSTALL_RPATH:STRING=#{rpath} \
+      -DCMAKE_PREFIX_PATH=#{get_dependency_prefixes(",")} \
+      -DBUILD_SHARED_LIBS:BOOL=ON \
+      -DVTK_WRAP_PYTHON:BOOL=ON \
+      -DVTK_PYTHON_VERSION:STRING=3 \
+      -DVTK_LEGACY_REMOVE:BOOL=ON \
+      -DVTK_MODULE_ENABLE_VTK_InfovisBoost:STRING=YES \
+      -DVTK_MODULE_ENABLE_VTK_InfovisBoostGraphAlgorithms:STRING=YES \
+      -DVTK_MODULE_ENABLE_VTK_RenderingFreeTypeFontConfig:STRING=YES \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_doubleconversion:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_eigen:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_expat:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_gl2ps:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_glew:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_hdf5:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_jpeg:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_jsoncpp:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_libogg:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_libpng:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_lz4:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_netCDF:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_pugixml:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_pyqt:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_pythontools:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_sqlite:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_theora:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_tiff:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_utf8cpp:BOOL=ON \
+      -DVTK_MODULE_USE_EXTERNAL_VTK_zlib:BOOL=ON \
+      -DVTK_GROUP_ENABLE_Qt:STRING=YES \
+      -DVTK_QT_VERSION:STRING=5 \
+      -DVTK_USE_COCOA:BOOL=ON \
+      -DCMAKE_BUILD_TYPE=None \
+      -DCMAKE_FIND_FRAMEWORK=LAST \
+      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    cmake --build build
+    cmake --install build
+
+provides:
+  - bin/vtkpython
+  - bin/vtkpython3
+  - bin/vtkpython3.11
+  - share/vtk-{version_major_minor}
+
+test: |
+  cmake -S . -B build/test \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_NAME_DIR:STRING=#{lib} \
+    -DCMAKE_INSTALL_RPATH:STRING=#{rpath} \
+    -DCMAKE_PREFIX_PATH=#{get_dependency_prefixes(",")} \
+    -DBUILD_SHARED_LIBS:BOOL=ON \
+    -DVTK_WRAP_PYTHON:BOOL=ON \
+    -DVTK_PYTHON_VERSION:STRING=3 \
+    -DVTK_LEGACY_SILENT:BOOL=ON \
+    -DVTK_LEGACY_REMOVE:BOOL=ON \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+  cmake --build build/test
+  cmake --install build/test
+  export PYTHONPATH=#{lib}/python#{version.major_minor}/site-packages
+  export DYLD_LIBRARY_PATH=#{get_dependency_paths(":")}:#{lib}:$DYLD_LIBRARY_PATH
+  python3.11 -c "import vtk; vtk.vtkTestingObject().Test()"

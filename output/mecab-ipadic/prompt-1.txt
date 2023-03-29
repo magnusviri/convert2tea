@@ -1,0 +1,122 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project cpanminus:
+
+
+        class Cpanminus < Formula
+          homepage "https://github.com/miyagawa/cpanminus"
+          # Don't use git tags, their naming is misleading
+          url "https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-1.7046.tar.gz"
+          license any_of: ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
+          version_scheme 1
+          head "https://github.com/miyagawa/cpanminus.git", branch: "devel"
+          uses_from_macos "perl"
+          def install
+            cd "App-cpanminus" if build.head?
+            system "perl", "Makefile.PL", "INSTALL_BASE=#{prefix}",
+                                          "INSTALLSITEMAN1DIR=#{man1}",
+                                          "INSTALLSITEMAN3DIR=#{man3}"
+            system "make", "install"
+          end
+          def post_install
+            cpanm_lines = (bin/"cpanm").read.lines
+            return if cpanm_lines.first.match?(%r{^#!/usr/bin/env perl})
+            ohai "Adding `/usr/bin/env perl` shebang to `cpanm`..."
+            cpanm_lines.unshift "#!/usr/bin/env perl\n"
+            (bin/"cpanm").atomic_write cpanm_lines.join
+          end
+          test do
+            assert_match "cpan.metacpan.org", stable.url, "Don't use git tags, their naming is misleading"
+            system "#{bin}/cpanm", "--local-lib=#{testpath}/perl5", "Test::More"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project cpanminus:
+
+
+        distributable:
+          url: https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-{{version.raw}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: miyagawa/cpanminus/tags
+          ignore:
+            - /^1.9/   # invalid versions in the tags for some reason
+            - /^1.79/  # ^^
+            - /^1.71/  # ^^ like wtf?
+
+        dependencies:
+          perl.org: '*'
+
+        companions:
+          tea.xyz/gx/make: '*'
+
+        provides:
+          - bin/cpanm
+
+        build:
+          dependencies:
+            tea.xyz/gx/make: '*'
+          script: |
+            perl Makefile.PL INSTALL_BASE={{prefix}}
+            make install
+
+            fix-shebangs.ts {{prefix}}/bin/cpanm
+
+        test:
+          dependencies:
+            tea.xyz/gx/make: '*'
+          script:
+            cpanm --verbose --local-lib=./out Test::More
+
+
+
+    Here's an example ruby formula for the project mecab-ipadic:
+
+
+        class MecabIpadic < Formula
+          homepage "https://taku910.github.io/mecab/"
+          # Canonical url is https://drive.google.com/uc?export=download&id=0B4y35FiV1wh7MWVlSDBCSXZMTXM
+          url "https://deb.debian.org/debian/pool/main/m/mecab-ipadic/mecab-ipadic_2.7.0-20070801+main.orig.tar.gz"
+          version "2.7.0-20070801"
+          # We check the Debian index page because the first-party website uses a Google
+          # Drive download URL and doesn't list the version in any other way, so we
+          # can't identify the newest version there.
+          livecheck do
+            url "https://deb.debian.org/debian/pool/main/m/mecab-ipadic/"
+            regex(/href=.*?mecab-ipadic[._-]v?(\d+(?:\.\d+)+(?:-\d+)?)(?:\+main)?\.orig\.t/i)
+          end
+          depends_on "mecab"
+          link_overwrite "lib/mecab/dic"
+          def install
+            args = %W[
+              --disable-debug
+              --disable-dependency-tracking
+              --prefix=#{prefix}
+              --with-charset=utf8
+              --with-dicdir=#{lib}/mecab/dic/ipadic
+            ]
+            system "./configure", *args
+            system "make", "install"
+          end
+          def caveats
+            <<~EOS
+              To enable mecab-ipadic dictionary, add to #{HOMEBREW_PREFIX}/etc/mecabrc:
+                dicdir = #{HOMEBREW_PREFIX}/lib/mecab/dic/ipadic
+            EOS
+          end
+          test do
+            (testpath/"mecabrc").write <<~EOS
+              dicdir = #{HOMEBREW_PREFIX}/lib/mecab/dic/ipadic
+            EOS
+            pipe_output("mecab --rcfile=#{testpath}/mecabrc", "すもももももももものうち\n", 0)
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project mecab-ipadic in the yml format:

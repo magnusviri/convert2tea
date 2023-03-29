@@ -1,0 +1,31 @@
+distributable:
+  url: https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-boost-8.0.32.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/mysql
+
+versions:
+  mysql: https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/mysql.rb
+  strip: /^mysql-/
+
+dependencies:
+  cmake.org: '*'
+  pkg-config.org: '*'
+  libevent.org: '*'
+  fidoalliance.org/libfido2: '*'
+  openssl.org: '>=1.1'
+  zstd.github.io: '*'
+  zlib.net: '>=1.2.12'
+
+build:
+  dependencies:
+    gcc.gnu.org: '6' # GCC is not supported for El Capitan
+  script: |
+    cmake -DFORCE_INSOURCE_BUILD=1 -DCOMPILATION_COMMENT=Homebrew -DDEFAULT_CHARSET=utf8mb4 -DDEFAULT_COLLATION=utf8mb4_general_ci -DINSTALL_DOCDIR=share/doc/mysql-client -DINSTALL_INCLUDEDIR=include/mysql -DINSTALL_INFODIR=share/info -DINSTALL_MANDIR=share/man -DINSTALL_MYSQLSHAREDIR=share/mysql -DWITH_BOOST=boost -DWITH_EDITLINE=system -DWITH_FIDO=system -DWITH_LIBEVENT=system -DWITH_ZLIB=system -DWITH_ZSTD=system -DWITH_SSL=yes -DWITH_UNIT_TESTS=OFF -DWITHOUT_SERVER=ON -DCMAKE_INSTALL_PREFIX={{prefix}} .
+    make -j {{hw.concurrency}}
+    make install
+
+test:
+  script: |
+    mysql --version | grep {{version.raw}}

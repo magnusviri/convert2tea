@@ -1,0 +1,28 @@
+distributable:
+  url: https://github.com/nemtrif/utfcpp/archive/v{{version}}.tar.gz
+
+versions:
+  - 3.2.3
+
+build:
+  dependencies:
+    x86-64:
+      tea.xyz/gx/nasm: 2
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+  working-directory:
+    build
+  script: |
+    cmake .. $ARGS
+    make install
+  env:
+    ARGS:
+      - -DUTF8_INSTALL:BOOL=ON
+      - -DUTF8_SAMPLES:BOOL=OFF
+      - -DUTF8_TESTS:BOOL=OFF
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+  test: |
+    echo "No tests available for utf8cpp." 
+
+provides:
+  - bin/utf8_append

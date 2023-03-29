@@ -1,0 +1,162 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project eigen:
+
+
+        class Eigen < Formula
+          homepage "https://eigen.tuxfamily.org/"
+          url "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz"
+          revision 1
+          head "https://gitlab.com/libeigen/eigen.git", branch: "master"
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          depends_on "cmake" => :build
+          conflicts_with "freeling", because: "freeling ships its own copy of eigen"
+          def install
+            mkdir "eigen-build" do
+              args = std_cmake_args
+              args << "-Dpkg_config_libdir=#{lib}" << ".."
+              system "cmake", *args
+              system "make", "install"
+            end
+            (share/"cmake/Modules").install "cmake/FindEigen3.cmake"
+          end
+          test do
+            (testpath/"test.cpp").write <<~EOS
+              #include <iostream>
+              #include <Eigen/Dense>
+              using Eigen::MatrixXd;
+              int main()
+              {
+                MatrixXd m(2,2);
+                m(0,0) = 3;
+                m(1,0) = 2.5;
+                m(0,1) = -1;
+                m(1,1) = m(1,0) + m(0,1);
+                std::cout << m << std::endl;
+              }
+            EOS
+            system ENV.cxx, "test.cpp", "-I#{include}/eigen3", "-o", "test"
+            assert_equal %w[3 -1 2.5 1.5], shell_output("./test").split
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project eigen:
+
+
+        distributable:
+          url: https://gitlab.com/libeigen/eigen/-/archive/{{version}}/eigen-{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 3.4.0
+
+        build:
+          working-directory: build
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            cmake.org: '^3'
+          script: |
+            cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}}
+            make install
+
+            # stuff expects `Eigen` to be in `include` rather than namespaced
+            cd "{{prefix}}"
+            mv include/eigen3/* include
+            cd include
+            rmdir eigen3
+            # but work for stuff that expects the namespace too
+            ln -s eigen3 .
+          test:
+            make test
+
+        test:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            freedesktop.org/pkg-config: ^0.29
+          env:
+            cxxflags: $(pkg-config --cflags eigen3)
+          fixture: |
+            #include <iostream>
+            #include <Eigen/Dense>
+            using Eigen::MatrixXd;
+            int main()
+            {
+              MatrixXd m(2,2);
+              m(0,0) = 3;
+              m(1,0) = 2.5;
+              m(0,1) = -1;
+              m(1,1) = m(1,0) + m(0,1);
+              std::cout << m << std::endl;
+            }
+          script: |
+            mv $FIXTURE test.cpp
+            g++ test.cpp ${cxxflags} -o test
+            ./test > output.txt
+            out=$(./test)
+            if test "$out" = $'  3  -1\n2.5 1.5'; then
+              echo "PASS"
+            else
+              echo "FAIL"
+            fi
+
+
+
+    Here's an example ruby formula for the project re2:
+
+
+        class Re2 < Formula
+          homepage "https://github.com/google/re2"
+          url "https://github.com/google/re2/archive/refs/tags/2023-03-01.tar.gz"
+          version "20230301"
+          head "https://github.com/google/re2.git", branch: "main"
+          # The `strategy` block below is used to massage upstream tags into the
+          # YYYYMMDD format used in the `version`. This is necessary for livecheck
+          # to be able to do proper `Version` comparison.
+          livecheck do
+            url :stable
+            regex(/^(\d{2,4}-\d{2}-\d{2})$/i)
+            strategy :git do |tags, regex|
+              tags.map { |tag| tag[regex, 1]&.gsub(/\D/, "") }.compact
+            end
+          end
+          depends_on "cmake" => :build
+          def install
+            ENV.cxx11
+            # Run this for pkg-config files
+            system "make", "common-install", "prefix=#{prefix}"
+            # Build and install static library
+            system "cmake", "-B", "build-static", "-DRE2_BUILD_TESTING=OFF", *std_cmake_args
+            system "make", "-C", "build-static"
+            system "make", "-C", "build-static",  "install"
+            # Build and install shared library
+            system "cmake", "-B", "build-shared", "-DBUILD_SHARED_LIBS=ON", "-DRE2_BUILD_TESTING=OFF", *std_cmake_args
+            system "make", "-C", "build-shared"
+            system "make", "-C", "build-shared", "install"
+          end
+          test do
+            (testpath/"test.cpp").write <<~EOS
+              #include <re2/re2.h>
+              #include <assert.h>
+              int main() {
+                assert(!RE2::FullMatch("hello", "e"));
+                assert(RE2::PartialMatch("hello", "e"));
+                return 0;
+              }
+            EOS
+            system ENV.cxx, "-std=c++11", "test.cpp", "-o", "test",
+                            "-I#{include}", "-L#{lib}", "-lre2"
+            system "./test"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project re2 in the yml format:

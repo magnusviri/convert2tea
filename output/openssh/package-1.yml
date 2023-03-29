@@ -1,0 +1,77 @@
+distributable:
+  url: https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-{{version}}.tar.gz
+  mirror: https://cloudflare.cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 9.3p1
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    pkg-config.org: '*'
+    openssl.org: '@1.1'
+    ldns.nl: '*'
+    libfido2.org: '*'
+    macos_native_deps:
+      - libedit
+      - libxcrypt
+      - zlib
+  on:
+    macos:
+      script: |
+        ENV.append "CPPFLAGS", "-D__APPLE_SANDBOX_NAMED_EXTERNAL__"
+        inreplace "sandbox-darwin.c", "@PREFIX@/share/openssh", "{{etc}}/ssh"
+        patch-sandbox-darwin.c-apple-sandbox-named-external.diff
+        patch-sshd.c-apple-sandbox-named-external.diff
+    linux:
+      dependencies:
+        linux-pam.org: '*'
+      script: |
+        ./configure --prefix={{prefix}} \
+          --sysconfdir={{etc}}/ssh \
+          --with-ldns \
+          --with-libedit \
+          --with-kerberos5 \
+          --with-pam \
+          --with-ssl-dir=$(brew --prefix openssl@1.1) \
+          --with-security-key-builtin \
+          --with-privsep-path={{var}}/lib/sshd
+
+  post-install:
+    macos:
+      - name: recreate-slogin-symlink
+        script: |
+          ln -s {{bin}}/ssh {{bin}}/slogin
+    all:
+      - name: create-sshd-sandbox-profile
+        script: |
+          cd {{etc}}/ssh
+          curl -LO https://raw.githubusercontent.com/Homebrew/formula-patches/33f8d79085d08bc62c1c4567c0a50bf9d25b3402/openssh/com.openssh.sshd.sb
+          mv com.openssh.sshd.sb org.openssh.sshd.sb
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: '^0.29'
+  env:
+    cflags: "$(pkg-config --cflags openssl libfido2 ldns) -I{{prefix}}/include"
+    ldflags: "$(pkg-config --libs openssl libfido2 ldns) -L{{prefix}}/lib"
+  fixture: |
+    #include <stdlib.h>
+    #include <libssh/ssh_api.h>
+    #include <libssh/sftp.h>
+    #include <libssh/server.h>
+    #include <libssh/callbacks.h>
+    #include <unistd.h>
+
+    int main(){
+        return 0;
+    }
+  script: |
+    mkdir {{testdir}}
+    mv $FIXTURE {{testdir}}/test.c
+    (cd {{testdir}} && gcc test.c -o test ${cflags} ${ldflags})
+    {{testdir}}/test

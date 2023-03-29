@@ -1,0 +1,38 @@
+distributable:
+  url: https://github.com/dylanaraps/neofetch/archive/{{version}}/neofetch-{{version}}.tar.gz
+
+versions:
+  - 7.1.0
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    automake: '^1.16'
+    autoconf: '^2.69'
+  script: |
+    autoreconf --install
+    ./configure --prefix={{prefix}}
+    make install
+  on_macos:
+    script: |
+      brew install screenresolution
+      autoreconf --install
+      ./configure --prefix={{prefix}} --with-screenres=$(which screenresolution)
+      make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/bash: '*'
+    freedesktop.org/xdg-utils: '*'
+  fixture: |
+    {{bin}}/neofetch --config none --color_blocks off --disable wm de term gpu
+  script: |
+    out=$( $FIXTURE | head -n1 )
+    if test "$out" = " $(hostname)" -o "$(hostname)" ; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

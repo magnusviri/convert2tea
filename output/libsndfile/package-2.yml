@@ -1,0 +1,44 @@
+distributable:
+  url: https://github.com/libsndfile/libsndfile/releases/download/{{version}}/libsndfile-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  github: libsndfile/libsndfile
+  strip: /^v/
+
+dependencies:
+  cmakelang.org: '*'
+  flac.org: '*'
+  lame.sourceforge.net: '*'
+  xiph.org: libogg, libvorbis
+  mpg123.de: '*'
+  xiph.org: opus
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/cmake: '*'
+  script: |
+    cmake -S . -B build \
+          -DBUILD_SHARED_LIBS=ON \
+          -DBUILD_PROGRAMS=ON \
+          -DENABLE_PACKAGE_CONFIG=ON \
+          -DINSTALL_PKGCONFIG_MODULE=ON \
+          -DBUILD_EXAMPLES=OFF \
+          -DCMAKE_INSTALL_RPATH={{rpath}} \
+          -DPYTHON_EXECUTABLE={{which "python3"}} \
+          {{cmake_std_args}}
+    cmake --build build
+    cmake --install build
+
+test:
+  script: |
+    sndfile-info {{testpath}}/test.wav
+
+provides:
+  - bin/sndfile-info
+  - bin/sndfile-play
+  - bin/sndfile-convert
+  - lib/libsndfile.dylib
+  - lib/pkgconfig/libsndfile.pc
+  - include/sndfile.h

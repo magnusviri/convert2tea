@@ -1,0 +1,58 @@
+Sorry, as an AI language model, I cannot provide a definitive answer as there are multiple correct ways to format the formula in YAML. However, here is a possible solution:
+
+    distributable:
+      url: https://ftp.mozilla.org/pub/security/nss/releases/NSS_{{ version }}_RTM/src/nss-{{ version }}.tar.gz
+      strip-components: 1
+
+    versions:
+      github: mozilla/nss
+      strip: /^NSS_/
+
+    dependencies:
+      github.com/mozillazg/nspr: '*'
+      homebrew/core/sqlite: '*'
+      homebrew/core/zlib: '*'
+
+    build:
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+      script: |
+        cd nss
+        make BUILD_OPT=1 USE_64=1 \
+          NSPR_INCLUDE_DIR={{ (Dependency('mozillazg/nspr').install_path/'include'/'nspr').realpath }} \
+          NSPR_LIB_DIR={{ (Dependency('mozillazg/nspr').install_path/'lib').realpath }} \
+          NSS_ALLOW_SSLKEYLOGFILE=1 NSS_DISABLE_GTESTS=1 NSS_USE_SYSTEM_SQLITE=1
+        cd ../dist
+        mkdir -p {{prefix}}/bin {{prefix}}/lib/pkgconfig {{prefix}}/include/nss
+        for os in {{OS.kernel_name}}*; do
+          [[ -d "${os}" ]] || continue
+          cp -r $os/bin/* {{prefix}}/bin/
+          cp -r $os/lib/* {{prefix}}/lib/
+        done
+        cp -r public/{dbm,nss}/* {{prefix}}/include/nss
+        rm {{prefix}}/lib/libssl.a
+        cat > {{prefix}}/bin/nss-config <<EOF
+        #!/usr/bin/env bash
+        pkg-config "$@" nss
+        EOF
+        cat > {{prefix}}/lib/pkgconfig/nss.pc <<EOF
+        prefix={{prefix}}
+        exec_prefix=\${prefix}
+        libdir=\${exec_prefix}/lib
+        includedir=\${prefix}/include/nss
+        Name: NSS
+        Description: Mozilla Network Security Services
+        Version: {{version}}
+        Requires: nspr >= 4.12
+        Libs: -L\${libdir} -lnss3 -lnssutil3 -lsmime3 -lssl3
+        Cflags: -I\${includedir}
+        EOF
+
+    test:
+      dependencies:
+        tea.xyz/gx/cc: c99
+      script: |
+        printf 'It'\''s a secret to everyone.\n' > passwd
+        {{prefix}}/bin/certutil -N -d $PWD -f passwd
+        {{prefix}}/bin/certutil -L -d $PWD

@@ -1,0 +1,35 @@
+distributable:
+  url: https://git.osgeo.org/gitea/rttopo/librttopo/archive/librttopo-1.1.0.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.1.0
+
+provides:
+  - lib/librttopo.dylib
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/libtool: '*'
+    osgeo/geos: '*'
+
+  script: |
+    ./autogen.sh
+    ./configure --disable-debug \
+                --disable-dependency-tracking \
+                --disable-silent-rules \
+                --prefix={{prefix}}
+    make
+    make install
+
+test:
+  script: |
+    printf "#include <librttopo.h>
+            int main(int argc, char *argv[]) {
+              printf(\"%s\", rtgeom_version());
+              return 0;
+            }" > test.c
+    {{CC}} test.c -I{{include}} -L{{lib}} -lrttopo -o test
+   ./test

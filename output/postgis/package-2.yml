@@ -1,0 +1,41 @@
+distributable:
+  url: https://download.osgeo.org/postgis/source/postgis-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: postgis/postgis
+  strip: /^postgis-/
+
+provides:
+  - bin/shp2pgsql
+
+dependencies:
+  gdal.org: '*'
+  geos: '*'
+  json-c.github.io: ^0
+  libiconv: 1.*
+  pcre.org: '*'
+  postgresql.org: ^14
+  proj.org: '*'
+  protobuf-c.github.io: ^1
+  sfcgal.org: '*'
+
+build:
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --with-projdir={{ `brew --prefix proj` }}
+      - --with-geosconfig={{ `brew --prefix geos` }}/bin/geos-config
+      - --with-gdalconfig={{ `brew --prefix gdal` }}/bin/gdal-config
+      - --with-jsondir={{ `brew --prefix json-c` }}
+      - --with-pcredir={{ `brew --prefix pcre` }}
+      - --with-protobufdir={{ `brew --prefix protobuf-c` }}
+      - --with-xml2config={{ `brew --prefix libxml2` }}/bin/xml2-config
+
+test: |
+  shp2pgsql -v
+  brew test -v postgis

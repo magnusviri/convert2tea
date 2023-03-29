@@ -1,0 +1,55 @@
+distributable:
+  url: https://github.com/LuaJIT/LuaJIT/archive/505e2c03de35e2718eef0d2d3660712e06dadf1f.tar.gz
+  strip-components: 1
+
+# When https://gitlab.com/LuaJIT/LuaJIT/-/merge_requests/1 is merged, then switch to
+#   https://github.com/LuaJIT/LuaJIT/archive/{{ version.raw }}/LuaJIT-{{ version.raw }}.tar.gz
+
+versions:
+  - 2.1.0-beta3-20230221.4
+
+provides:
+  - bin/luajit
+  - lib/libluajit.dylib
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: clang
+    tea.xyz/gx/make: '*'
+
+  script: |
+    # Override the hardcoded gcc.
+    # Remove the "-march=i686".
+    # Both changes were discussed upstream.
+    sed -i.bak 's/^CC=gcc/CC=clang/' src/Makefile
+    sed -i.bak 's/-march=\w\+//' src/Makefile
+
+    # Per https://luajit.org/install.html: If MACOSX_DEPLOYMENT_TARGET is not set, then it is
+    # forced to 10.4, which breaks compile on Mojave.
+    # Save current value.
+    old_macosx_deployment_target=$(echo $MACOSX_DEPLOYMENT_TARGET)
+    export MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
+
+    # Pass `Q= E=@:` to build verbosely.
+    verbose_args="Q= E=@:"
+
+    # Build with PREFIX=$HOMEBREW_PREFIX so that luajit can find modules outside its own keg.
+    # This allows us to avoid having to set `LUA_PATH` and `LUA_CPATH` for non-vendored modules.
+    make amalg PREFIX=#{HOMEBREW_PREFIX} $verbose_args
+    make install PREFIX=#{prefix} $verbose_args
+    cp -Rf doc/* #{doc}/
+
+    # v2.1 branch doesn't install symlink for luajit.
+    # This breaks tools like `luarocks` that require the `luajit` bin to be present.
+    ln -s "#{bin}/luajit-#{versions.first}" "#{bin}/luajit"
+
+    # LuaJIT doesn't automatically symlink unversioned libraries:
+    # https://github.com/Homebrew/homebrew-core/issues/45854.
+    ln -s "#{lib}/libluajit-5.1.dylib" "#{lib}/libluajit.dylib"
+    ln -s "#{lib}/libluajit-5.1.a" "#{lib}/libluajit.a"
+
+test:
+  script: |
+    #{bin}/luajit -e 'local ffi = require("ffi");ffi.cdef("int printf(const char *fmt, ...);");ffi.C.printf("Hello, %s!\\n", "#{ENV["USER"]}")'
+
+  skip: true

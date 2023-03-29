@@ -1,0 +1,35 @@
+distributable:
+      url: https://download.savannah.gnu.org/releases/lzip/lzlib/lzlib-1.13.tar.gz
+      mirror: https://download-mirror.savannah.gnu.org/releases/lzip/lzlib/lzlib-1.13.tar.gz
+      strip-components: 1
+      
+    versions:
+      github: n/a
+      release:
+        url: https://download.savannah.gnu.org/releases/lzip/lzlib/
+        regex: 'href=.*?lzlib[._-]v?(\d+(?:\.\d+)+)\.t/i'
+      
+    provides:
+      - lib/liblz.a
+      
+    build:
+      dependencies:
+        autoconf-archive: latest
+        gcc: latest
+        make: latest
+      script: |
+        ./configure --prefix="{{ prefix }}" CC="{{ cc }}" CFLAGS="{{ cflags }}"
+        make
+        make check
+        make install
+      
+    test:
+      script: |
+        > test.c echo "#include <stdio.h>
+                        #include <stdint.h>
+                        #include \"lzlib.h\"
+                        int main (void) {
+                          printf (\"%s\", LZ_version());
+                        }"
+        {{ cc }} test.c -L{{ lib }} -I{{ include }} -llz -o test
+        test $(./test) = {{ version }}

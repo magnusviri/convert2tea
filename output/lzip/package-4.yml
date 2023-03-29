@@ -1,0 +1,30 @@
+distributable:
+  url: https://download-mirror.savannah.gnu.org/releases/lzip/lzip-{{ version.raw }}.tar.gz
+
+versions:
+  github: n/a
+  strip: ""
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      gnu.org/make: '*'
+    darwin:
+      tea.xyz/gx/cc: c++
+      tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}" CXXFLAGS="{{cflags}}" CXX="{{cc}}"
+    make --jobs {{ hw.concurrency }} check
+    make install
+
+test:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c++
+  script: |
+    cp data.txt #{testpath}
+    cd #{testpath} && lzip data.txt && lzip -d data.txt.lz
+    diff data.txt data.txt.lz.out

@@ -1,0 +1,40 @@
+distributable:
+  url: https://svn.code.sf.net/p/netpbm/code/stable.zip
+  strip-components: 1
+
+# Maintainers: Look at https://sourceforge.net/p/netpbm/code/HEAD/tree/
+# for stable versions and matching revisions.
+
+# TODO: implement livecheck
+
+versions:
+  - 10.86.38
+
+# TODO: Implement dependencies
+
+provides:
+  - bin/pngtopnm
+  - bin/ppmtogif
+  - bin/pnmtopng
+  - bin/pnmtopngalpha
+  - bin/pnmtops
+  - bin/pnmtotiff
+  - bin/ppmtojpeg
+  - bin/pnmtoplainpnm
+  - bin/pnmscalefixed
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/flex: '*'
+    tea.xyz/gx/make: '*'
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/wget: '*'
+    tea.xyz/gx/xpm: '*'
+
+  script: |
+    make
+    make prefix={{prefix}} install
+
+test:
+  script: echo no way to test this

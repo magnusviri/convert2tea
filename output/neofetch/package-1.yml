@@ -1,0 +1,56 @@
+distributable:
+  url: https://github.com/dylanaraps/neofetch/archive/{{version}}/neofetch-{{version}}.tar.gz
+
+versions:
+  - 7.1.0
+
+build:
+  working-directory: neofetch-{{version}}
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    freedesktop.org/pkg-config: '*'
+  script: |
+    make
+    make install PREFIX={{prefix}}
+  on_macos:
+    working-directory: neofetch-{{version}}
+    dependencies:
+      karabiner-elements.org: '*'
+    script: |
+      make
+      make install PREFIX={{prefix}}
+      # Change default terminal emulator for demo purposes
+      sed -i '' 's#TERMINFO=.*#TERMINFO="/usr/share/terminfo/power/rxvt-unicode-256color:tc=rxvt-unicode-256color"#' neofetch-config
+      # Launch demo
+      term rxvt-unicode-256color -e ./neofetch
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  fixture: |
+    #include <stdlib.h>
+    #include <string.h>
+    #include <stdio.h>
+    int main(void) {
+      char buf[1024];
+      FILE *f = popen("neofetch --config none --color_blocks off --disable wm de term gpu", "r");
+      while (fgets(buf, sizeof(buf), f) != NULL) {}
+      pclose(f);
+      if (!strstr(buf, "DE:")) {
+          return EXIT_FAILURE;
+      }
+      if (!strstr(buf, "WM:")) {
+          return EXIT_FAILURE;
+      }
+      if (!strstr(buf, "TERM:")) {
+          return EXIT_FAILURE;
+      }
+      if (!strstr(buf, "GPU:")) {
+          return EXIT_FAILURE;
+      }
+      return EXIT_SUCCESS;
+    }
+  script: |
+    gcc -o test $FIXTURE
+    ./test

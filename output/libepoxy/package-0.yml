@@ -1,0 +1,34 @@
+distributable:
+  url: https://download.gnome.org/sources/libepoxy/1.5/libepoxy-1.5.10.tar.xz
+  strip-components: 1
+
+versions:
+  - 1.5.10
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    mesonbuild.com: ^0.47
+    ninja-build.org: 1
+    pkg-config: '*'
+    python.org: 3.11
+  working-directory:
+    build
+  script: |
+    meson .. --prefix={{prefix}} --libdir={{prefix}}/lib --buildtype=release
+    ninja -v
+    ninja install
+  env:
+    CC: clang
+
+test:
+  script: |
+    testpath=$(mktemp -d)
+    (cd $testpath && curl -LO https://gist.githubusercontent.com/ae6f84e9b17f394fb364d19fba884a94/raw/adebedbc7961f8b1ec98b4cba4ad441aa9e5628a/gl.c && {{bin}}cc -o gl gl.c -lepoxy && ./gl)
+
+provides:
+  - bin/epoxy-callbacks-test
+  - bin/epoxy-extension-test
+  - bin/epoxy-info
+  - bin/epoxy-test
+  - bin/epoxy-trivial-test

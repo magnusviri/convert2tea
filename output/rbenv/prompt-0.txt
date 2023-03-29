@@ -1,0 +1,141 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project mpdecimal:
+
+
+        class Mpdecimal < Formula
+          homepage "https://www.bytereef.org/mpdecimal/"
+          url "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-2.5.1.tar.gz"
+          livecheck do
+            url "https://www.bytereef.org/mpdecimal/download.html"
+            regex(/href=.*?mpdecimal[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          def install
+            system "./configure", "--prefix=#{prefix}"
+            system "make"
+            system "make", "install"
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <assert.h>
+              #include <mpdecimal.h>
+              #include <string.h>
+              int main() {
+                mpd_context_t ctx;
+                mpd_t *a, *b, *result;
+                char *rstring;
+                mpd_defaultcontext(&ctx);
+                a = mpd_new(&ctx);
+                b = mpd_new(&ctx);
+                result = mpd_new(&ctx);
+                mpd_set_string(a, "0.1", &ctx);
+                mpd_set_string(b, "0.2", &ctx);
+                mpd_add(result, a, b, &ctx);
+                rstring = mpd_to_sci(result, 1);
+                assert(strcmp(rstring, "0.3") == 0);
+                mpd_del(a);
+                mpd_del(b);
+                mpd_del(result);
+                mpd_free(rstring);
+                return 0;
+              }
+            EOS
+            system ENV.cc, "test.c", "-o", "test", "-L#{lib}", "-lmpdec"
+            system "./test"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project mpdecimal:
+
+
+        distributable:
+          url: https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-{{ version }}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 2.5.1
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+          script: |
+            ./configure --prefix={{ prefix }}
+            make --jobs {{hw.concurrency}} install
+            rm -rf {{prefix}}/share  # docs are online
+
+            if test {{hw.platform}} = darwin; then
+              install_name_tool -change \
+                @rpath/libmpdec.3.dylib \
+                @loader_path/libmpdec.3.dylib \
+                {{prefix}}/lib/libmpdec++.dylib
+            fi
+
+        test:
+          dependencies:
+            tea.xyz/gx/cc: c99
+          script: |
+            cc test.c -o test -lmpdec
+            ./test
+
+
+
+    Here's an example ruby formula for the project rbenv:
+
+
+        class Rbenv < Formula
+          homepage "https://github.com/rbenv/rbenv#readme"
+          url "https://github.com/rbenv/rbenv/archive/v1.2.0.tar.gz"
+          head "https://github.com/rbenv/rbenv.git", branch: "master"
+          depends_on "ruby-build"
+          uses_from_macos "ruby" => :test
+          def install
+            inreplace "libexec/rbenv" do |s|
+              # TODO: The following line can be removed in the next release.
+              # rbenv/rbenv/pull/1428 (`brew audit` doesn't like URLs of merged PRs.)
+              s.gsub! '"${BASH_SOURCE%/*}"/../libexec', libexec if build.stable?
+              s.gsub! ":/usr/local/etc/rbenv.d", ":#{HOMEBREW_PREFIX}/etc/rbenv.d\\0" if HOMEBREW_PREFIX.to_s != "/usr/local"
+            end
+            if build.head?
+              # Record exact git revision for `rbenv --version` output
+              git_revision = Utils.git_short_head
+              inreplace "libexec/rbenv---version", /^(version=)"([^"]+)"/,
+                                                   %Q(\\1"\\2-g#{git_revision}")
+              # Install manpage
+              man1.install "share/man/man1/rbenv.1"
+            else
+              # Compile optional bash extension.
+              # TODO: This can probably be removed in the next release.
+              # rbenv/rbenv/pull/1428 (`brew audit` doesn't like URLs of merged PRs.)
+              system "src/configure"
+              system "make", "-C", "src"
+            end
+            prefix.install ["bin", "completions", "libexec", "rbenv.d"]
+          end
+          test do
+            # Create a fake ruby version and executable.
+            rbenv_root = Pathname(shell_output("#{bin}/rbenv root").strip)
+            ruby_bin = rbenv_root/"versions/1.2.3/bin"
+            foo_script = ruby_bin/"foo"
+            foo_script.write "echo hello"
+            chmod "+x", foo_script
+            # Test versions. The second `rbenv` call is a shell function; do not add a `bin` prefix.
+            versions = shell_output("eval \"$(#{bin}/rbenv init -)\" && rbenv versions").split("\n")
+            assert_equal 2, versions.length
+            assert_match(/\* system/, versions[0])
+            assert_equal("  1.2.3", versions[1])
+            # Test rehash.
+            system bin/"rbenv", "rehash"
+            refute_match "Cellar", (rbenv_root/"shims/foo").read
+            # The second `rbenv` call is a shell function; do not add a `bin` prefix.
+            assert_equal "hello", shell_output("eval \"$(#{bin}/rbenv init -)\" && rbenv shell 1.2.3 && foo").chomp
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project rbenv in the yml format:

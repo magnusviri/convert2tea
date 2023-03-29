@@ -1,0 +1,45 @@
+distributable:
+  url: https://github.com/open-source-parsers/jsoncpp/archive/{{ version }}.tar.gz
+  github:
+    owner: open-source-parsers
+    repo: jsoncpp
+    releases: jsoncpp-(.*)
+  filter: jsoncpp-{{ version }}
+
+versions:
+  - 1.9.5
+
+dependencies:
+  - tea.xyz/gx/meson: ^0.57
+  - ninja-build.org: 1
+
+build:
+  script: |
+    meson setup $MESON_ARGS
+    ninja -v
+    ninja install -v
+  env:
+    MESON_ARGS:
+      - --prefix={{ prefix }}
+      - --libdir={{ prefix }}/lib
+      - --buildtype=release
+
+test:
+  dependencies:
+    - tea.xyz/gx/cc: c++
+  script: |
+    cat > test.cpp <<EOF
+    #include <json/json.h>
+    int main() {
+        Json::Value root;
+        Json::CharReaderBuilder builder;
+        std::string errs;
+        std::istringstream stream1;
+        stream1.str("[1, 2, 3]");
+        return Json::parseFromStream(builder, stream1, &root, &errs) ? 0: 1;
+    }
+    EOF
+    g++ -std=c++11 test.cpp -o test -I{{ prefix }}/include/jsoncpp -L{{ prefix }}/lib -ljsoncpp
+    ./test
+  fixture: |
+    [1, 2, 3]

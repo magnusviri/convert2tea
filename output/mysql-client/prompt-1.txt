@@ -1,0 +1,245 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project erlang:
+
+
+        class Erlang < Formula
+          homepage "https://www.erlang.org/"
+          # Download tarball from GitHub; it is served faster than the official tarball.
+          # Don't forget to update the documentation resource along with the url!
+          url "https://github.com/erlang/otp/releases/download/OTP-25.3/otp_src_25.3.tar.gz"
+          livecheck do
+            url :stable
+            regex(/^OTP[._-]v?(\d+(?:\.\d+)+)$/i)
+          end
+          head do
+            url "https://github.com/erlang/otp.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+          end
+          depends_on "openssl@1.1"
+          depends_on "unixodbc"
+          depends_on "wxwidgets" # for GUI apps like observer
+          uses_from_macos "libxslt" => :build
+          def install
+            # Unset these so that building wx, kernel, compiler and
+            # other modules doesn't fail with an unintelligible error.
+            %w[LIBS FLAGS AFLAGS ZFLAGS].each { |k| ENV.delete("ERL_#{k}") }
+            # Do this if building from a checkout to generate configure
+            system "./otp_build", "autoconf" unless File.exist? "configure"
+            args = %W[
+              --enable-dynamic-ssl-lib
+              --enable-hipe
+              --enable-shared-zlib
+              --enable-smp-support
+              --enable-threads
+              --enable-wx
+              --with-odbc=#{Formula["unixodbc"].opt_prefix}
+              --with-ssl=#{Formula["openssl@1.1"].opt_prefix}
+              --without-javac
+            ]
+            if OS.mac?
+              args << "--enable-darwin-64bit"
+              args << "--enable-kernel-poll" if MacOS.version > :el_capitan
+              args << "--with-dynamic-trace=dtrace" if MacOS::CLT.installed?
+            end
+            system "./configure", *std_configure_args, *args
+            system "make"
+            system "make", "install"
+            # Build the doc chunks (manpages are also built by default)
+            ENV.deparallelize { system "make", "docs", "DOC_TARGETS=chunks" }
+            ENV.deparallelize { system "make", "install-docs" }
+            doc.install resource("html")
+          end
+          def caveats
+            <<~EOS
+              Man pages can be found in:
+                #{opt_lib}/erlang/man
+              Access them with `erl -man`, or add this directory to MANPATH.
+            EOS
+          end
+          test do
+            assert_equal version, resource("html").version, "`html` resource needs updating!"
+            system "#{bin}/erl", "-noshell", "-eval", "crypto:start().", "-s", "init", "stop"
+            (testpath/"factorial").write <<~EOS
+              #!#{bin}/escript
+              %% -*- erlang -*-
+              %%! -smp enable -sname factorial -mnesia debug verbose
+              main([String]) ->
+                  try
+                      N = list_to_integer(String),
+                      F = fac(N),
+                      io:format("factorial ~w = ~w\n", [N,F])
+                  catch
+                      _:_ ->
+                          usage()
+                  end;
+              main(_) ->
+                  usage().
+              usage() ->
+                  io:format("usage: factorial integer\n").
+              fac(0) -> 1;
+              fac(N) -> N * fac(N-1).
+            EOS
+            chmod 0755, "factorial"
+            assert_match "usage: factorial integer", shell_output("./factorial")
+            assert_match "factorial 42 = 1405006117752879898543142606244511569936384000000000", shell_output("./factorial 42")
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project erlang:
+
+
+        distributable:
+          url: https://github.com/erlang/otp/releases/download/OTP-{{ version.raw }}/otp_src_{{ version.raw }}.tar.gz
+          strip-components: 1
+
+        provides:
+          - bin/ct_run
+          - bin/dialyzer
+          - bin/epmd
+          - bin/erl
+          - bin/erlc
+          - bin/escript
+          - bin/run_erl
+          - bin/to_erl
+          - bin/typer
+
+        interprets:
+          extensions: erl
+          args: escript
+
+        versions:
+          github: erlang/otp
+          strip: /^OTP /
+
+        dependencies:
+          openssl.org: '*'
+          invisible-island.net/ncurses: '*'
+
+        runtime:
+          env:
+            ERL_ROOTDIR: ${{prefix}}/lib/erlang
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            perl.org: '>=5'
+          script: |
+            export ERL_TOP=$(pwd)
+            ./configure $ARGS
+            make -j {{hw.concurrency}}
+            make install
+          env:
+            CC: cc
+            CXX: c++
+            LD: ld
+            ARGS:
+              - --disable-debug
+              - --disable-silent-rules
+              - --prefix={{prefix}}
+              - --enable-dynamic-ssl-lib
+              - --enable-hipe
+              - --enable-smp-support
+              - --enable-threads
+              - --enable-pie
+              - --with-ssl={{deps.openssl.org.prefix}}
+              - --without-javac
+            darwin:
+              ARGS:
+                - --enable-darwin-64bit
+                - --enable-kernel-poll
+                - --with-dynamic-trace=dtrace
+
+        test:
+          script: |
+            epmd -kill || true
+            epmd -daemon -address 127.0.0.1 -relaxed_command_check
+            test "$(escript $FIXTURE 10)" = "factorial 10 = 3628800"
+            epmd -kill || true
+
+          env:
+            ERL_DIST_PORT: 8001
+          fixture: |
+            #!/usr/bin/env escript
+            %% -*- erlang -*-
+            %%! -smp enable -sname factorial -mnesia debug verbose
+            main([String]) ->
+                try
+                    N = list_to_integer(String),
+                    F = fac(N),
+                    io:format("factorial ~w = ~w\n", [N,F])
+                catch
+                    _:_ ->
+                        usage()
+                end;
+            main(_) ->
+                usage().
+
+            usage() ->
+                io:format("usage: factorial integer\n").
+
+            fac(0) -> 1;
+            fac(N) -> N * fac(N-1).
+
+
+    Here's an example ruby formula for the project mysql-client:
+
+
+        class MysqlClient < Formula
+          homepage "https://dev.mysql.com/doc/refman/8.0/en/"
+          url "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-boost-8.0.32.tar.gz"
+          livecheck do
+            formula "mysql"
+          end
+          keg_only "it conflicts with mysql (which contains client libraries)"
+          depends_on "cmake" => :build
+          depends_on "pkg-config" => :build
+          depends_on "libevent"
+          depends_on "libfido2"
+          # GCC is not supported either, so exclude for El Capitan.
+          depends_on macos: :sierra if DevelopmentTools.clang_build_version < 900
+          depends_on "openssl@1.1"
+          depends_on "zlib" # Zlib 1.2.12+
+          depends_on "zstd"
+          uses_from_macos "libedit"
+          fails_with gcc: "5"
+          def install
+            # -DINSTALL_* are relative to `CMAKE_INSTALL_PREFIX` (`prefix`)
+            args = %W[
+              -DFORCE_INSOURCE_BUILD=1
+              -DCOMPILATION_COMMENT=Homebrew
+              -DDEFAULT_CHARSET=utf8mb4
+              -DDEFAULT_COLLATION=utf8mb4_general_ci
+              -DINSTALL_DOCDIR=share/doc/#{name}
+              -DINSTALL_INCLUDEDIR=include/mysql
+              -DINSTALL_INFODIR=share/info
+              -DINSTALL_MANDIR=share/man
+              -DINSTALL_MYSQLSHAREDIR=share/mysql
+              -DWITH_BOOST=boost
+              -DWITH_EDITLINE=system
+              -DWITH_FIDO=system
+              -DWITH_LIBEVENT=system
+              -DWITH_ZLIB=system
+              -DWITH_ZSTD=system
+              -DWITH_SSL=yes
+              -DWITH_UNIT_TESTS=OFF
+              -DWITHOUT_SERVER=ON
+            ]
+            system "cmake", ".", *std_cmake_args, *args
+            system "make", "install"
+          end
+          test do
+            assert_match version.to_s, shell_output("#{bin}/mysql --version")
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project mysql-client in the yml format:

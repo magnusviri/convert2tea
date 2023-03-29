@@ -1,0 +1,31 @@
+distributable:
+  url: https://www.jedsoft.org/releases/slang/slang-{{version}}.tar.bz2
+
+versions:
+  github: jedbrown/slang
+  strip: /^SLang /
+
+dependencies:
+  libpng.org: ^1
+  pcre.org: ^8 if os.linux
+
+build:
+  dependencies:
+    gnu.org/make: '*'
+    llvm.org: * if os.mac
+  script: |
+    ./configure ARGS
+    make --jobs {{ hw.concurrency }} all
+    make install
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --with-pnglib={{libpng}}
+      - --with-pnginc={{libpng.include}}
+
+provides:
+  - bin/slsh
+  - bin/slang-config
+
+test:
+  command: slsh -e 'message(\"Hello World!\");'

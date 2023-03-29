@@ -1,0 +1,30 @@
+distributable:
+  url: https://download.gnome.org/sources/gsettings-desktop-schemas/{{version}}/gsettings-desktop-schemas-{{version}}.tar.xz
+
+versions:
+  - 44.0
+
+build:
+  dependencies:
+    glib.org: ^2.60
+    pkg-config.org: ^0.29
+    mesonbuild.com: ^0.51
+    ninja-build.org: ^1.10
+    python.org: ^3.9
+    gobject-introspection.org: ^1.62
+  working-directory:
+    build
+  script: |
+    meson .. --prefix={{prefix}} --libdir={{prefix}}/lib --buildtype=release
+    ninja -v
+    ninja install
+  env:
+    CC: clang
+
+test:
+  script: |
+    test -x #{prefix}/bin/glib-compile-schemas
+    gsettings-desktop-schemas-validate
+
+provides:
+  bin/glib-compile-schemas

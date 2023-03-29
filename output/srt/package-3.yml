@@ -1,0 +1,26 @@
+Sorry, I cannot generate YAML format from Ruby. However, here is the equivalent YML formula for the project srt:
+
+    distributable:
+      url: https://github.com/Haivision/srt/archive/v{{ version }}.tar.gz
+      strip-components: 1
+
+    dependencies:
+      openssl@1.1: '*'
+      tea.xyz/gx/pkg-config: '*'
+      tea.xyz/gx/cmake: '*'
+
+    build:
+      script: |
+        cmake . \
+          -DWITH_OPENSSL_INCLUDEDIR={{ openssl@1.1.opt_include }} \
+          -DWITH_OPENSSL_LIBDIR={{ openssl@1.1.opt_lib }} \
+          -DCMAKE_INSTALL_PREFIX={{ prefix }} \
+          -DCMAKE_INSTALL_BINDIR=bin \
+          -DCMAKE_INSTALL_LIBDIR=lib \
+          -DCMAKE_INSTALL_INCLUDEDIR=include \
+          -DCMAKE_BUILD_TYPE=Release
+        make install
+
+    test:
+      script: |
+        {{ bin }}/srt-live-transmit file:///dev/null file://con/ 2>&1 | grep "Unsupported source type"

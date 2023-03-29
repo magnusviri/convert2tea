@@ -1,0 +1,26 @@
+distributable:
+  url: https://www.freedesktop.org/software/uchardet/releases/uchardet-{{ version.raw }}.tar.xz
+  strip-components: 1
+
+versions:
+  webpage:
+    url: https://www.freedesktop.org/wiki/Software/uchardet/
+    xpath: 'normalize-space(//div[@class="pagecontent"]/ul/li/a[contains(@href,"releases")]/text())'
+  strip: /^uchardet-/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    freedesktop.org/cmake: '*'
+  script: |
+    cmake . -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  script: |
+    cc fixture.c -luchardet
+    ./a.out

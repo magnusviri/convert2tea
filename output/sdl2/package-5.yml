@@ -1,0 +1,28 @@
+distributable:
+  url: https://github.com/libsdl-org/SDL/releases/download/release-{{ version }}/SDL2-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: libsdl-org/SDL
+  strip: /^release-/
+
+dependencies:
+  tea.xyz/facebook/zstd: ^1
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*' # only for HEAD build
+    tea.xyz/gx/automake: '*' # only for HEAD build
+    tea.xyz/gx/libtool: '*' # only for HEAD build
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    [[ -f autogen.sh ]] && ./autogen.sh
+    ./configure --prefix={{ prefix }} --enable-hidapi {{'--without-x' if OS.mac?}}
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    sdl2-config --version

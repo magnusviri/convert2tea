@@ -1,0 +1,38 @@
+distributable:
+  url: https://www.gnupg.org/ftp/gcrypt/pinentry/pinentry-{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  regex: /pinentry[._-]v?(\d+(?:\.\d+)+)\.t/i
+
+dependencies:
+  gnupg.org/libassuan: ^2
+  gnupg.org/libgpg-error: ^1
+  libsecret.org: '*' # On Linux only
+
+build:
+  dependencies:
+    freedesktop.org/pkg-config: ^0.29
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+      - --disable-dependency-tracking
+      - --disable-silent-rules
+      - --prefix={{prefix}}
+      - --disable-pinentry-fltk
+      - --disable-pinentry-gnome3
+      - --disable-pinentry-gtk2
+      - --disable-pinentry-qt
+      - --disable-pinentry-qt5
+      - --disable-pinentry-tqt
+      - --enable-pinentry-tty
+
+provides:
+  - bin/pinentry
+  - bin/pinentry-tty
+
+test:
+  pinentry --version
+  pinentry-tty --version

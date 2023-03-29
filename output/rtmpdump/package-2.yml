@@ -1,0 +1,33 @@
+Unfortunately, I cannot generate a YAML formula from the provided Ruby formula as both formats are different and require a different syntax. However, here's an example YAML formula for the project rtmpdump that follows the structure of the provided example:
+
+```yaml
+distributable:
+  url: https://deb.debian.org/debian/pool/main/r/rtmpdump/rtmpdump_{{version}}.orig.tar.gz
+
+# Use Debian package versions as GitHub doesn't mirror those
+versions:
+  deb.debian.org: debian/pool/main/r/rtmpdump
+
+build:
+  dependencies:
+    openssl.org: OpenSSL_1_1_1-stable
+    zlib.net: '*'
+  working-directory: .
+  script: |
+    export CFLAGS="${CFLAGS} -O3 -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-unused-result"
+    ./configure --prefix="{{prefix}}" --mandir="{{man}}"
+    make
+    make install
+
+provides:
+  - bin/rtmpdump
+  - bin/rtmpsuck
+  - bin/rtmpsrv
+  - bin/streams
+
+test:
+  script: |
+    "{{bin}}/rtmpdump" -h | grep 'RTMPDump v'
+```
+
+Note: This YAML formula may require some adjustments to work.

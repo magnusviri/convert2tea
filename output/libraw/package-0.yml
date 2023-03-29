@@ -1,0 +1,42 @@
+distributable:
+  url: https://www.libraw.org/data/LibRaw-{{version}}.tar.gz
+
+versions:
+  - 0.21.1
+
+build:
+  working-directory: LibRaw-{{version}}
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    file: '*'
+    autoconf.org: '*'
+    automake.org: '*'
+    gnu.org/m4: '*'
+    coreutils.org: '*'
+    libtool.org: '*'
+    freedesktop.org/pkg-config: '*'
+    jasper.org: '*'
+    libjpeg-turbo.org: '*'
+    littlecms.org: '*'
+  configure: |
+    {{env}} ./configure --prefix={{prefix}} --disable-dependency-tracking --disable-static
+  build-script:
+    - make
+  install:
+    - make install
+    - cp -r samples {{prefix}}
+    - cp -r doc {{prefix}}
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    "libraw.org": '{{version}}'
+  fixture:
+    url: https://raw.githubusercontent.com/Homebrew/formula-patches/d18917599f480fe05861f2df3cac95940ff7f28d/libraw/homebrew-librawtestfile.tar.gz
+    destination: librawtestfile
+  script:
+    - curl -O https://www.libraw.org/data/{{fixture}}/RAW_NIKON_D1.NEF
+    - raw-identify -u RAW_NIKON_D1.NEF
+    - simple_dcraw -v -T RAW_NIKON_D1.NEF >output.txt
+    - file -b output.txt | grep -q TIFF

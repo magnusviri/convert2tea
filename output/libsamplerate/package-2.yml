@@ -1,0 +1,27 @@
+distributable:
+  url: https://github.com/libsndfile/libsamplerate/archive/{{ version }}.tar.gz
+  skip_osx_unzip_fix: true
+
+versions:
+  github: libsndfile/libsamplerate
+  strip: /^v/
+
+provides:
+  - bin/sndfile-resample
+
+dependencies:
+  zlib.net: '*'
+  libsndfile.github.io: ^1
+
+build:
+  dependencies:
+    tea.xyz/gx/cmake: '*'
+    freedesktop.org/pkg-config: '*'
+  script: |
+    cmake -S . -B build -DBUILD_SHARED_LIBS=ON -DLIBSAMPLERATE_EXAMPLES=OFF -DBUILD_TESTING=OFF
+    cmake --build build
+    cmake --install build --prefix "{{ prefix }}"
+
+test: |
+  sndfile-resample --version
+  sndfile-resample -to 44100 test.wav test_resampled.wav

@@ -1,0 +1,117 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project circleci:
+
+
+        class Circleci < Formula
+          homepage "https://circleci.com/docs/2.0/local-cli/"
+          # Updates should be pushed no more frequently than once per week.
+          url "https://github.com/CircleCI-Public/circleci-cli.git",
+              tag:      "v0.1.25519",
+              revision: "8b2a4d0a5ffbfb298d785ca8d39d5807cddf37da"
+          head "https://github.com/CircleCI-Public/circleci-cli.git", branch: "master"
+          depends_on "go" => :build
+          def install
+            ldflags = %W[
+              -s -w
+              -X github.com/CircleCI-Public/circleci-cli/version.packageManager=homebrew
+              -X github.com/CircleCI-Public/circleci-cli/version.Version=#{version}
+              -X github.com/CircleCI-Public/circleci-cli/version.Commit=#{Utils.git_short_head}
+            ]
+            system "go", "build", *std_go_args(ldflags: ldflags)
+            generate_completions_from_executable(bin/"circleci", "--skip-update-check", "completion",
+                                                shells: [:bash, :zsh])
+          end
+          test do
+            # assert basic script execution
+            assert_match(/#{version}\+.{7}/, shell_output("#{bin}/circleci version").strip)
+            (testpath/".circleci.yml").write("{version: 2.1}")
+            output = shell_output("#{bin}/circleci config pack #{testpath}/.circleci.yml")
+            assert_match "version: 2.1", output
+            # assert update is not included in output of help meaning it was not included in the build
+            assert_match(/update.+This command is unavailable on your platform/, shell_output("#{bin}/circleci help 2>&1"))
+            assert_match "`update` is not available because this tool was installed using `homebrew`.",
+              shell_output("#{bin}/circleci update")
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project circleci:
+
+
+        distributable:
+          url: https://github.com/CircleCI-Public/circleci-cli/archive/refs/tags/v{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: CircleCI-Public/circleci-cli/tags 
+          strip: /^v/
+
+        build:
+          dependencies:
+            tea.xyz/gx/make: '*'
+            go.dev: '*'
+          script: |
+            go build -ldflags="$LDFLAGS" -o {{prefix}}/bin/circleci
+          env:
+            LDFLAGS:
+              - -s
+              - -w
+              - -X github.com/CircleCI-Public/circleci-cli/version.packageManager=tea
+              - -X github.com/CircleCI-Public/circleci-cli/version.Version={{version}}
+
+        provides:
+          - bin/circleci
+
+        test:
+          script: |
+            circleci version
+            echo "{version: 2.1}" > .circleci.yml 
+            circleci config pack .circleci.yml
+
+
+
+    Here's an example ruby formula for the project gitlab-runner:
+
+
+        class GitlabRunner < Formula
+          homepage "https://gitlab.com/gitlab-org/gitlab-runner"
+          url "https://gitlab.com/gitlab-org/gitlab-runner.git",
+              tag:      "v15.10.1",
+              revision: "dcfb4b66a1f4d78aeb8bfdd1647a7ccb5597835d"
+          head "https://gitlab.com/gitlab-org/gitlab-runner.git", branch: "main"
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          depends_on "go" => :build
+          def install
+            proj = "gitlab.com/gitlab-org/gitlab-runner"
+            ldflags = %W[
+              -X #{proj}/common.NAME=gitlab-runner
+              -X #{proj}/common.VERSION=#{version}
+              -X #{proj}/common.REVISION=#{Utils.git_short_head(length: 8)}
+              -X #{proj}/common.BRANCH=#{version.major}-#{version.minor}-stable
+              -X #{proj}/common.BUILT=#{time.strftime("%Y-%m-%dT%H:%M:%S%:z")}
+            ]
+            system "go", "build", *std_go_args(ldflags: ldflags)
+          end
+          service do
+            run [opt_bin/"gitlab-runner", "run", "--syslog"]
+            environment_variables PATH: std_service_path_env
+            working_dir Dir.home
+            keep_alive true
+            macos_legacy_timers true
+            process_type :interactive
+          end
+          test do
+            assert_match version.to_s, shell_output("#{bin}/gitlab-runner --version")
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project gitlab-runner in the yml format:

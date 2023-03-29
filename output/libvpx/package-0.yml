@@ -1,0 +1,30 @@
+distributable:
+  url: https://github.com/webmproject/libvpx/archive/v{{version}}.tar.gz
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    if: 'hw.cpu.arch == "intel"'
+    org.yasm: '*'
+  working-directory: macbuild
+  script: |
+    ../configure --prefix="{{prefix}}" \
+                 --disable-dependency-tracking \
+                 --disable-examples \
+                 --disable-unit-tests \
+                 --enable-pic \
+                 --enable-shared \
+                 --enable-vp9-highbitdepth \
+    {% if hw.cpu.arch == "intel" %}
+    --enable-runtime-cpu-detect
+    {% endif %}
+    make install
+
+provides:
+  - lib/libvpx.a
+  - lib/libvpx.dylib
+
+test:
+  script: |
+    ar -x {{lib}}/libvpx.a

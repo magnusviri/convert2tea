@@ -1,0 +1,31 @@
+distributable:
+  url: https://mandoc.bsd.lv/snapshots/mandoc-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: kristapsdz/mandoc
+  strip: /^mandoc-/
+
+dependencies:
+  tea.xyz/gx/cc: c99
+  facebook.com/zlib: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    autoreconf -fi
+    ./configure --prefix={{prefix}} --mandir=#{man} --disable-dependency-tracking --disable-silent-rules
+    make
+    make install
+
+test:
+  script: |
+    src="{$(manpath | cut -d: -f2 | grep -v ^#{HOMEBREW_PREFIX}/man)}"
+    export MANPATH="#{HOMEBREW_PREFIX}/share/man:$src"
+    echo "Xr{-Thtml,-man}"/>mandoc.html 
+    mandoc -Thtml $(mandoc -I os-version) /usr/share/man/man1/mandoc.1 
+    mandoc -Tman  $(mandoc -I os-version) /usr/share/man/man1/mandoc.1

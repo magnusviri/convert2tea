@@ -1,0 +1,53 @@
+distributable:
+  url: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/metis-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  glaros.dtc.umn.edu/gkhome/metis/metis/download:
+    regex: href=.*?/metis[._-]v?(\d+(?:\.\d+)+)\.t
+
+detect:
+  cmd: gpmetis
+  regex: METIS (\d+(?:\.\d+)+)
+
+dependencies:
+  cmake: '*'
+
+provides:
+  - bin/gpmetis
+  - bin/gpmetis64
+  - bin/gpmetis-5.1.0
+  - bin/gpmetis-5.1.0-openmp
+  - bin/gpmetis-openmp
+  - bin/gpmetis-seq
+  - bin/mpmetis
+  - bin/m2gmetis
+  - bin/mcmetis
+  - bin/graphchk
+
+build:
+  script: |-
+    make config prefix={{ prefix }} shared=1
+    make
+    make install
+    mv {{prefix}}/share/metis/* {{prefix}}/share
+    rmdir {{prefix}}/share/metis
+  env:
+    MAKEFLAGS: -j{{ hw.ncpus }}
+
+test:
+  script:
+    - brew install --HEAD tea-xyz/gx/cc
+    - brew install --HEAD tea-xyz/gx/make
+    - >
+      for name in 4elt copter2 mdual; do
+        cp {{prefix}}/share/graphs/$name.graph $name.graph
+        graphchk $name.graph
+        gpmetis $name.graph 2
+        ndmetis $name.graph
+      done
+    - >
+      cp {{prefix}}/share/graphs/test.mgraph .
+      cp {{prefix}}/share/graphs/metis.mesh .
+      gpmetis test.mgraph 2
+      mpmetis metis.mesh 2

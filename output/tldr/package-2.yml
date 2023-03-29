@@ -1,0 +1,34 @@
+distributable:
+  url: https://github.com/tldr-pages/tldr-c-client/archive/v{{version}}.tar.gz
+
+versions:
+  - 1.5.0
+
+build:
+  working-directory: tldr-c-client-{{version}}
+  dependencies:
+    tea.xyz/gx/cc: c11
+    tea.xyz/gx/make: '*'
+    zip.org: '*'
+    freedesktop.org/pkg-config: '*'
+    openssl.org: '*'
+  script: |
+    make PREFIX={{prefix}} LIBZIP_PREFIX=$(pkg-config --variable=prefix libzip) all install
+    bash completion/complete.bash > tldr
+    cp tldr {{prefix}}/etc/bash_completion.d
+    zsh completion/complete.zsh > _tldr
+    cp _tldr {{prefix}}/share/zsh/site-functions
+    fish completion/complete.fish > tldr.fish
+    cp tldr.fish {{prefix}}/share/fish/vendor_completions.d
+  post_install: |
+    if [ ! -f ~/.tldrrc ]; then cp {{prefix}}/share/tldr/tldrrc.sample ~/.tldrrc; fi
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    freedesktop.org/pkg-config: '*'
+    libzip.so: '*'
+  fixture: |
+    brew
+  script: |
+    echo "${FIXTURE}" | ./tldr -f

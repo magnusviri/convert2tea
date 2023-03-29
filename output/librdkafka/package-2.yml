@@ -1,0 +1,26 @@
+distributable:
+  url: https://github.com/edenhill/librdkafka/archive/refs/tags/v2.0.2.tar.gz
+  strip-components: 1
+
+versions:
+  - 2.0.2
+
+provides:
+  - lib/librdkafka.dylib
+  - lib/librdkafka++.dylib
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: clang
+    tea.xyz/gx/cmake: '*'
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/python: 3.11
+    tea.xyz/gx/brew: openssl@1.1 lz4 lzlib zstd
+
+  script: |
+    cmake -B build -DCMAKE_INSTALL_PREFIX={{prefix}} -DENABLE_EXAMPLES=OFF -DENABLE_TESTING=OFF .
+    cmake --build build --parallel --config Release
+    cmake --build build --target install --config Release
+
+test:
+  script: echo no way to test this

@@ -1,0 +1,21 @@
+distributable:
+  url: https://mandoc.bsd.lv/snapshots/mandoc-{{version}}.tar.gz
+
+versions:
+  gitlab: mandoc/mandoc
+  strip: /^mandoc-/
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure
+    make
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    mandoc -Thtml -Ostyle={{share}}/examples/example.style.css {{man1}}/mandoc.1

@@ -1,0 +1,30 @@
+distributable:
+  url: "http://www.qhull.org/download/qhull-2020-src-8.0.2.tgz"
+  strip-components: 0
+
+versions:
+  - "2020.2"
+
+provides:
+  - bin/qconvex
+  - bin/rbox
+
+build:
+  dependencies:
+    tea.xyz/gx/cmake: '*'
+
+  script: |
+    cmake . {{cmake_args}}
+    make
+    make install
+
+test:
+  script: |
+    input=$(rbox c D2)
+    output=$(echo $input | qconvex s n 2>&1)
+    if echo $output | grep 'Number of facets: 4' > /dev/null; then
+      echo 'Qhull test passed!'
+    else
+      echo 'Qhull test failed'
+      exit 1
+    fi

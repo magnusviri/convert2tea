@@ -1,0 +1,31 @@
+distributable:
+  url: https://download-mirror.savannah.gnu.org/releases/lzip/lzip-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  savannah: lzip/releases
+  strip: /^lzip-/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}" CXX={{env "CXX"}} CXXFLAGS={{env "CFLAGS"}}
+    make --jobs={{ hw.concurrency }} check
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    path={{testpath}}/data.txt
+    original_contents="."*1000
+    echo ${original_contents} > ${path}
+    {{bin}}/lzip ${path}
+    test ! -f ${path}
+    {{bin}}/lzip -d ${path}.lz
+    test "${original_contents}" = "`cat ${path}`"

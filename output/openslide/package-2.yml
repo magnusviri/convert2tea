@@ -1,0 +1,40 @@
+distributable:
+  url: https://github.com/openslide/openslide/releases/download/v{{version}}/openslide-{{version}}.tar.xz
+
+versions:
+  - 3.4.1
+
+build:
+  working-directory: openslide-{{version}}
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    freedesktop.org/pkg-config: '*'
+    linuxfoundation.org/sqlite: '*'
+    cairographics.org: '*'
+    gdk-pixbuf.org: '*'
+    gnome.org/glib: '*'
+    libjpeg-turbo.org: '*'
+    libpng.org: '*'
+    libtiff.org: '*'
+    xmlsoft.org/libxml2: '*'
+    openjpeg.org: '*'
+  script:
+    - ./configure --prefix={{prefix}}
+    - make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c
+  fixture:
+    url: https://raw.githubusercontent.com/Homebrew/test-bot/master/fixtures/test.openslide.svs
+  script:
+    - |-
+      export PKG_CONFIG_PATH={{prefix}}/lib/pkgconfig
+      export LD_LIBRARY_PATH={{prefix}}/lib
+      ./openslide-show-properties CMU-1-Small-Region.svs
+      if [ $? -eq 0 ]; then
+        echo "PASS"
+      else
+        echo "FAIL"
+      fi

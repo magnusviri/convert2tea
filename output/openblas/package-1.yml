@@ -1,0 +1,51 @@
+distributable:
+  url: https://github.com/xianyi/OpenBLAS/archive/v{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.3.22
+
+dependencies:
+  gcc: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make CC={{gx.cc}} FC=gfortran RUNTIME_CPU_DETECTION=1 USE_OPENMP=1 \
+    DYNAMIC_ARCH=1 NUM_THREADS=56 \
+    MACOSX_DEPLOYMENT_TARGET={{system.version}} \
+    TARGET={{system.cpu}} \
+    libs netlib shared PREFIX={{prefix}}
+    make PREFIX={{prefix}} install
+    find lib -name libopenblas* | while read libname; do
+      ln -s "${libname}" "$(dirname "${libname}")/lib$(
+        basename "${libname}" | sed -E 's/^lib([^.]+).*/\1/').dylib"
+    done
+
+provides:
+  - bin/blas-test
+  - bin/blas_thread_test
+
+test:
+  script: |
+    printf '#include <stdio.h>
+    #include <stdlib.h>
+    #include <math.h>
+    #include "cblas.h"
+    int main(void) {
+      int i;
+      double A[6] = {1.0, 2.0, 1.0, -3.0, 4.0, -1.0};
+      double B[6] = {1.0, 2.0, 1.0, -3.0, 4.0, -1.0};
+      double C[9] = {.5, .5, .5, .5, .5, .5, .5, .5, .5};
+      cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans,
+        3, 3, 2, 1, A, 3, B, 3, 2, C, 3);
+      for (i = 0; i < 9; i++)
+        printf("\"%lf\"", C[i]);
+      printf("\\n");
+      if (fabs(C[0]-11) > 1.e-5) abort();
+      if (fabs(C[4]-21) > 1.e-5) abort();
+      return 0;
+    }' | cc -xc - -L{{prefix}}/lib -lopenblas -o {{pkg.name}}
+    ./{{pkg.name}} | cmp -s - {{DATA_DIR}}/verify.blas_expected_output

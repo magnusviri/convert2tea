@@ -1,0 +1,46 @@
+distributable:
+  url: https://github.com/google/re2/archive/refs/tags/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2023-03-01
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c11
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+  script: |
+    mkdir -p "${INSTALL_PREFIX}"
+    # Run this for pkg-config files
+    make common-install prefix="${INSTALL_PREFIX}"
+    # Build and install static library
+    cmake .. -DBUILD_SHARED_LIBS=OFF -DRE2_BUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}"
+    make
+    make install
+    # Build and install shared library
+    cmake .. -DBUILD_SHARED_LIBS=ON -DRE2_BUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}"
+    make
+    make install
+  env:
+    INSTALL_PREFIX: "{{prefix}}"
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    freedesktop.org/pkg-config: ^0.29
+  env:
+    cxxflags: $(pkg-config --cflags re2)
+  fixture: |
+    #include <re2/re2.h>
+    #include <assert.h>
+    int main() {
+      assert(!RE2::FullMatch("hello", "e"));
+      assert(RE2::PartialMatch("hello", "e"));
+      return 0;
+    }
+  script: |
+    mv $FIXTURE test.cpp
+    g++ -std=c++11 test.cpp ${cxxflags} -L"${INSTALL_PREFIX}/lib" -lre2 -o test
+    ./test

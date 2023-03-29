@@ -1,0 +1,28 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.6.tar.gz
+
+versions:
+  - 0.1.6
+
+provides:
+  - include/opencore-amrnb/dec_if.h
+  - include/opencore-amrwb/dec_if.h
+  - lib/libopencore-amrnb.a
+  - lib/libopencore-amrwb.a
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: clang
+    tea.xyz/gx/make: '*'
+    tea.xyz/gx/autoconf: '2.69'
+    tea.xyz/gx/automake: '1.16'
+    tea.xyz/gx/libtool: '*'
+
+  script: |
+    ./configure --disable-dependency-tracking --prefix={{prefix}}
+    make install
+
+test:
+  script: |
+    (echo '#include <opencore-amrwb/dec_if.h>'; echo 'int main(){return 0;}' ) | clang -xc -
+    (echo '#include <opencore-amrnb/dec_if.h>'; echo 'int main(){return 0;}' ) | clang -xc -

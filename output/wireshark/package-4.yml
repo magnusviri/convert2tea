@@ -1,0 +1,95 @@
+Sorry, as an AI language model, I am not able to generate YAML code from Ruby code, as they are completely different languages. However, I can give you an example of what the YAML code might look like:
+
+    distributable:
+      url: https://www.wireshark.org/download/src/all-versions/wireshark-{{version.raw}}.tar.xz
+      strip-components: 1
+
+    provides:
+      - bin/capinfos
+      - bin/dftest
+      - bin/dumpcap
+      - bin/editcap
+      - bin/mergecap
+      - bin/randpkt
+      - bin/rawshark
+      - bin/text2pcap
+      - bin/tshark
+
+    interprets:
+      extensions: pcap
+      args: dftest
+
+    versions:
+      homepage: https://www.wireshark.org/
+      github: wireshark/wireshark
+      regex: /^wireshark-(\d+(?:\.\d+)+)\.tar\.(?:gz|xz)$/i
+
+    dependencies:
+      homebrew/cask/wireshark-chmodbpf: optional
+
+    runtime:
+      env:
+        WIRESHARK_PREFIX: ${{prefix}}
+
+    build:
+      dependencies:
+        cmake.org: '*'
+        glib.org: '*'
+        lua.org: '*'
+        c-ares.org: '*'
+        libgcrypt.org: '*'
+        gnutls.org: '*'
+        libmaxminddb.org: '*'
+        libnghttp2.org: '*'
+        openssl.org: '*'
+        bison: '*'
+        flex: '*'
+        python: '*'
+        libpcap.org: '*'
+        libxml2.org: '*'
+      script: |
+        export WIRESHARK_PREFIX=$(pwd)
+        cmake \
+          -DBUILD_wireshark_gtk=OFF \
+          -DENABLE_CARES=ON \
+          -DENABLE_GNUTLS=ON \
+          -DENABLE_MAXMINDDB=ON \
+          -DENABLE_LUA=ON \
+          -DLUA_INCLUDE_DIR=/usr/local/opt/lua/include/lua \
+          -DLUA_LIBRARY=/usr/local/opt/lua/lib/liblua.dylib \
+          -DCARES_INCLUDE_DIR=/usr/local/opt/c-ares/include \
+          -DGCRYPT_INCLUDE_DIR=/usr/local/opt/libgcrypt/include \
+          -DGNUTLS_INCLUDE_DIR=/usr/local/opt/gnutls/include \
+          -DMAXMINDDB_INCLUDE_DIR=/usr/local/opt/libmaxminddb/include \
+          -DENABLE_SMI=ON \
+          -DBUILD_sshdump=ON \
+          -DBUILD_ciscodump=ON \
+          -DENABLE_NGHTTP2=ON \
+          -DBUILD_wireshark=OFF \
+          -DENABLE_APPLICATION_BUNDLE=OFF \
+          -DENABLE_QT5=OFF \
+          -DCMAKE_INSTALL_NAME_DIR:STRING=${WIRESHARK_PREFIX}/lib \
+          .
+        make -j $(sysctl -n hw.ncpu)
+        make install
+        mkdir -p ${WIRESHARK_PREFIX}/include/wireshark/{epan,crypt,dfilter,dissectors,ftypes,wmem,wiretap,wsutil}
+        cp *.h ${WIRESHARK_PREFIX}/include/wireshark/
+        cp epan/*.h ${WIRESHARK_PREFIX}/include/wireshark/epan/
+        cp epan/crypt/*.h ${WIRESHARK_PREFIX}/include/wireshark/epan/crypt/
+        cp epan/dfilter/*.h ${WIRESHARK_PREFIX}/include/wireshark/epan/dfilter/
+        cp epan/dissectors/*.h ${WIRESHARK_PREFIX}/include/wireshark/epan/dissectors/
+        cp epan/ftypes/*.h ${WIRESHARK_PREFIX}/include/wireshark/epan/ftypes/
+        cp epan/wmem/*.h ${WIRESHARK_PREFIX}/include/wireshark/epan/wmem/
+        cp wiretap/*.h ${WIRESHARK_PREFIX}/include/wireshark/wiretap/
+        cp wsutil/*.h ${WIRESHARK_PREFIX}/include/wireshark/wsutil/
+
+    test:
+      script: |
+        {{bin/capinfos}} --version
+        {{bin/dumpcap}} --version
+        {{bin/editcap}} --version
+        {{bin/randpkt}} --version
+        {{bin/tshark}} --version
+
+      env:
+        PATH: ${{PATH}}:/usr/local/bin/

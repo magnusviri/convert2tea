@@ -1,0 +1,42 @@
+distributable:
+  url: https://github.com/nghttp2/nghttp2/archive/refs/tags/v1.52.0.tar.gz
+  strip-components: 1
+
+build:
+  dependencies:
+    tea.xyz/gx/gcc: '*'
+    tea.xyz/gx/make: '*'
+    pkgconfig: '*'
+    c-ares.org: ^1
+    jemalloc.net: ^5
+    libev: ^4
+    nghttp2.org: ^1
+    openssl.org: ^1.1
+    xz: '*'
+    apple.com/xcode: !ruby/regexp /Xcode .*?/
+  working-directory: .
+  script: |
+    autoreconf -ivf
+    ./configure --prefix="{{prefix}}" \
+                --disable-silent-rules \
+                --enable-app \
+                --disable-examples \
+                --disable-hpack-tools \
+                --disable-python-bindings \
+                --without-systemd \
+                PKG_CONFIG_PATH="{{prefix}}/lib/pkgconfig"
+    make -j{{hw.concurrency}}
+    make install
+  env:
+    LANG: "en_US.UTF-8"
+
+provides:
+  - bin/nghttp
+  - include/nghttp2
+  - lib/libnghttp2.*
+
+test:
+  script: |
+    {{bin_path}}/nghttp -nv https://nghttp2.org
+    test ! -d {{lib_path}}/libnghttp2.dylib
+```

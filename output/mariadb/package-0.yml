@@ -1,0 +1,113 @@
+- Please note that some of the information from the example formula is not directly applicable to the yml format.
+
+    Here's the yml format formula for the project mariadb:
+
+        distributable:
+          url: https://downloads.mariadb.com/MariaDB/mariadb-{{ version }}/source/mariadb-{{ version }}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 10.11.2
+
+        build:
+          dependencies:
+            tea.xyz/gx/bison: '*'
+            tea.xyz/gx/cmake: '*'
+            tea.xyz/gx/fmt: '*'
+            tea.xyz/gx/pkg-config: '*'
+            bzip2: '*'
+            groonga: '*'
+            libxcrypt: '*'
+            libxml2: '*'
+            ncurses: '*'
+            openssl@1.1: '*'
+            pcre2: '*'
+            zlib: '*'
+            linux-pam: !darwin
+            readline: !darwin
+          script: |
+            export CXXFLAGS="$CXXFLAGS -std=c++11"
+            [[ $ARCH -eq 64 ]] && export CFLAGS="$CFLAGS -m64"
+            export CC="$CC --sysroot $SYSROOT"
+            export CXX="$CXX --sysroot $SYSROOT"
+            export CPPFLAGS="$CPPFLAGS -I/$NDK_ROOT/sysroot/usr/include"
+            export LDFLAGS="$LDFLAGS -L/$NDK_ROOT/sysroot/usr/lib"
+            export LIBS="-landroid-shmem -lc -lm -llog -lz -lc++_shared -lstdc++"
+            export PATH="$PATH:$NDK_ROOT/toolchains/llvm/prebuilt/$HOST_TAG/bin"
+            export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/$NDK_ROOT/sysroot/usr/lib/pkgconfig"
+            export EXEEXT=""
+            export ac_cv_func_malloc_0_nonnull=yes
+            export ac_cv_func_realloc_0_nonnull=yes
+
+            # Set basedir and ldata so that mysql_install_db can find the server 
+            # without needing an explicit path to be set. This can still
+            # be overridden by calling --basedir= when calling.
+            sed -i.bak 's/basedir=\/usr/basedir={{ prefix }}/g' scripts/mysql_install_db.sh
+            sed -i.bak 's/ldata=\/var\/lib/ldata={{ var }}\/mysql/g' scripts/mysql_install_db.sh
+            rm scripts/mysql_install_db.sh.bak
+
+            # Use Homebrew's version of Groonga
+            rm -r storage/mroonga/vendor/groonga
+
+            # -DINSTALL_* are relative to prefix
+            cmake \
+              -DCMAKE_INSTALL_PREFIX={{ prefix }} \
+              -DMYSQL_DATADIR={{ var }}/mysql \
+              -DINSTALL_INCLUDEDIR=include/mysql \
+              -DINSTALL_MANDIR=share/man \
+              -DINSTALL_DOCDIR=share/doc/mariadb \
+              -DINSTALL_INFODIR=share/info \
+              -DINSTALL_MYSQLSHAREDIR=share/mysql \
+              -DWITH_LIBFMT=system \
+              -DCOMPILATION_COMMENT="{{ tap.user }}" \
+              -DWITH_UNIT_TESTS=OFF \
+              -DDEFAULT_CHARSET=utf8mb4 \
+              -DDEFAULT_COLLATION=utf8mb4_general_ci \
+              -DWITH_SSL=system \
+              -DWITH_ZLIB=system \
+              -DWITH_REPLICATION=ON \
+              -DWITH_EXTRA_CHARSETS=all \
+              -DWITH_ARCHIVE_STORAGE_ENGINE=1 \
+              -DWITH_BLACKHOLE_STORAGE_ENGINE=1 \
+              -DWITH_FEDERATED_STORAGE_ENGINE=1 \
+              -DWITH_ROCKSDB=OFF \
+              -DPLUGIN_TOKUDB=NO \
+              -DPLUGIN_ROCKSDB=NO \
+              -DPLUGIN_SPIDER=NO \
+              -DWITHOUT_MROONGA_STORAGE_ENGINE=1 \
+              -DWITHOUT_OQGRAPH_STORAGE_ENGINE=1 \
+              -DWITHOUT_TOKUDB_STORAGE_ENGINE=1 \
+              -DWITHOUT_SPHINX_STORAGE_ENGINE=1 \
+              -DWITHOUT_MARIABACKUP=no \
+              -DWITH_PAM=OFF \
+              -DWITH_EMBEDDED_SERVER=OFF .
+
+            make -j{{ hw.concurrency }}
+            make install
+
+            # Fix my.cnf to point to {{ etc }} instead of /etc
+            mkdir -p {{ etc }}/my.cnf.d
+            sed "s!includedir /etc/my.cnf.d!includedir {{ etc }}/my.cnf.d!" \
+              {{ prefix }}/my.cnf > {{ etc }}/my.cnf
+
+        test:
+          script: |
+            {{ bin }}/mysql_install_db --no-defaults --datadir={{ testdir }}/mysql --auth-root-authentication-method=normal
+            port=`{{ free_port }}`
+            {{ bin }}/mysqld --no-defaults --datadir={{ testdir }}/mysql --port=$port --tmpdir={{ testdir }}/tmp --pid-file={{ testdir }}/mysql.pid &
+            MYSQLOPTS="-S {{ testdir }}/mysql/mysql.sock -u root -proot -P $port"
+            while ! echo 'SELECT 1' | {{ bin }}/mysql $MYSQLOPTS &>/dev/null; do sleep 1; done
+            {{ bin }}/mysql $MYSQLOPTS -t -e 'SELECT VERSION()'
+            kill `cat {{ testdir }}/mysql/mysql.pid`
+          
+        caveats: |
+          If you need to have mariadb first in your PATH, run:
+            echo 'export PATH="/usr/local/opt/mariadb/bin:$PATH"' >> ~/.bash_profile
+          For compilers to find mariadb you may need to set:
+            export LDFLAGS="-L/usr/local/opt/mariadb/lib"
+            export CPPFLAGS="-I/usr/local/opt/mariadb/include"
+          For pkg-config to find mariadb you may need to set:
+            export PKG_CONFIG_PATH="/usr/local/opt/mariadb/lib/pkgconfig"
+          A "/etc/my.cnf" from another install may interfere with a Homebrew-built
+          server starting up correctly.
+          MySQL is configured to only allow connections from localhost by default.

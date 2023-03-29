@@ -1,0 +1,134 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project librist:
+
+
+        class Librist < Formula
+          homepage "https://code.videolan.org/rist/"
+          url "https://code.videolan.org/rist/librist/-/archive/v0.2.7/librist-v0.2.7.tar.gz"
+          revision 3
+          head "https://code.videolan.org/rist/librist.git", branch: "master"
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          depends_on "meson" => :build
+          depends_on "ninja" => :build
+          depends_on "cjson"
+          depends_on "mbedtls"
+          def install
+            ENV.append "LDFLAGS", "-Wl,-rpath,#{rpath}"
+            system "meson", "setup", "--default-library", "both", "-Dfallback_builtin=false", *std_meson_args, "build", "."
+            system "meson", "compile", "-C", "build"
+            system "meson", "install", "-C", "build"
+          end
+          test do
+            assert_match "Starting ristsender", shell_output("#{bin}/ristsender 2>&1", 1)
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project librist:
+
+
+        distributable:
+          url: https://code.videolan.org/rist/librist/-/archive/v{{version}}/librist-v{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 0.2.7
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            mesonbuild.com: ^0.47
+            ninja-build.org: 1
+          working-directory:
+            build
+          script: |
+            meson .. --prefix={{prefix}} --libdir={{prefix}}/lib --buildtype=release
+            ninja -v
+            ninja install
+          env:
+            CC: clang
+
+        test:
+          script: |
+            ristsrppasswd test test
+
+        provides:
+          - bin/rist2rist
+          - bin/ristreceiver
+          - bin/ristsender
+          - bin/ristsrppasswd
+
+
+
+    Here's an example ruby formula for the project libepoxy:
+
+
+        class Libepoxy < Formula
+          homepage "https://github.com/anholt/libepoxy"
+          url "https://download.gnome.org/sources/libepoxy/1.5/libepoxy-1.5.10.tar.xz"
+          # We use a common regex because libepoxy doesn't use GNOME's "even-numbered
+          # minor is stable" version scheme.
+          livecheck do
+            url :stable
+            regex(/libepoxy[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          depends_on "meson" => :build
+          depends_on "ninja" => :build
+          depends_on "pkg-config" => :build
+          depends_on "python@3.11" => :build
+          on_linux do
+            depends_on "freeglut"
+          end
+          def install
+            mkdir "build" do
+              system "meson", *std_meson_args, ".."
+              system "ninja"
+              system "ninja", "install"
+            end
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <epoxy/gl.h>
+              #ifdef OS_MAC
+              #include <OpenGL/CGLContext.h>
+              #include <OpenGL/CGLTypes.h>
+              #include <OpenGL/OpenGL.h>
+              #endif
+              int main()
+              {
+                  #ifdef OS_MAC
+                  CGLPixelFormatAttribute attribs[] = {0};
+                  CGLPixelFormatObj pix;
+                  int npix;
+                  CGLContextObj ctx;
+                  CGLChoosePixelFormat( attribs, &pix, &npix );
+                  CGLCreateContext(pix, (void*)0, &ctx);
+                  #endif
+                  glClear(GL_COLOR_BUFFER_BIT);
+                  #ifdef OS_MAC
+                  CGLReleasePixelFormat(pix);
+                  CGLReleaseContext(pix);
+                  #endif
+                  return 0;
+              }
+            EOS
+            args = %w[-lepoxy]
+            args += %w[-framework OpenGL -DOS_MAC] if OS.mac?
+            args += %w[-o test]
+            system ENV.cc, "test.c", "-L#{lib}", *args
+            system "ls", "-lh", "test"
+            system "file", "test"
+            system "./test"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project libepoxy in the yml format:

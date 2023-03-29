@@ -1,0 +1,28 @@
+distributable:
+  url: https://github.com/FredHucht/pstree/archive/refs/tags/v2.40.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/pstree
+
+versions:
+  github: FredHucht/pstree
+  strip: 'v'
+
+build:
+  dependencies:
+    gcc: '*'
+    make: '*'
+  script: |
+    make
+    mkdir -p ${PREFIX}/bin ${PREFIX}/share/man/man1
+    install -m 755 pstree ${PREFIX}/bin/
+    install -m 644 pstree.1 ${PREFIX}/share/man/man1/
+  env:
+    CFLAGS: "-O2 -Wall" 
+
+test:
+  script: |
+    lines=$(pstree $$)
+    echo "${lines}" | grep -q "pstree $$"
+  timeout: "1m"

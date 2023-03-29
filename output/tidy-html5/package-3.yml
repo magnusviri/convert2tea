@@ -1,0 +1,29 @@
+Sorry, as an AI language model, I cannot write code. However, here is an example formula for the project tidy-html5 in the yml format:
+
+distributable:
+  url: https://github.com/htacg/tidy-html5/archive/{{version}}.tar.gz
+
+versions:
+  github: htacg/tidy-html5
+  strip: /^v/
+
+dependencies:
+  cmake.org: ^3
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    tea.xyz/gx/cmake: '*'
+  script: |
+    cmake $ARGS .
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX={{prefix}}
+
+provides:
+  - bin/tidy
+
+test:
+  command: tidy -v

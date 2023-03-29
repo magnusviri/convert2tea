@@ -1,0 +1,46 @@
+distributable:
+  url: https://github.com/tldr-pages/tldr-c-client/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.5.0
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    curl.haxx.se/libcurl: '*'
+    libzip.org: '*'
+    freedesktop.org/pkg-config: '*'
+  script: |
+    make PREFIX={{prefix}}
+
+    # Add bash completions
+    mkdir -p {{bash_completion}}
+    cp autocomplete/complete.bash ${{bash_completion}}/tldr
+
+    # Add zsh completions
+    mkdir -p {{zsh_completion}}
+    cp autocomplete/complete.zsh ${{zsh_completion}}/_tldr
+
+    # Add fish completions
+    mkdir -p {{fish_completion}}
+    cp autocomplete/complete.fish ${{fish_completion}}/tldr.fish
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: '^0.29'
+  fixture: |
+    #include <cstdio>
+    int main()
+    {
+      std::printf("Hello, tldr!");
+      return 0;
+    }
+  script: |
+    mv $FIXTURE main.c
+    {{cc}} -Wall -Wextra -o test main.c $(pkg-config --cflags --libs libzip libcurl)
+    ./test
+    tldr --version

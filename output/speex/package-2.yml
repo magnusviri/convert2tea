@@ -1,0 +1,38 @@
+distributable:
+  url: https://downloads.xiph.org/releases/speex/speex-{{version}}.tar.gz
+  using: homebrew_curl
+  mirror: https://ftp.osuosl.org/pub/xiph/releases/speex/speex-{{version}}.tar.gz
+  livecheck:
+    url: https://ftp.osuosl.org/pub/xiph/releases/speex/?C=M&O=D
+    regex: href=.*?speex[._-]v?(\d+(?:\.\d+)+)\.t
+
+dependencies:
+  pkg-config: build
+  libogg: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure {{config.args}}
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    cat > test.c << EOF
+    #include <speex/speex.h>
+    int main()
+    {
+        SpeexBits bits;
+        void *enc_state;
+        speex_bits_init(&bits);
+        enc_state = speex_encoder_init(&speex_nb_mode);
+        speex_bits_destroy(&bits);
+        speex_encoder_destroy(enc_state);
+        return 0;
+    }
+    EOF
+    {{compiler.cc}} test.c -L{{libs}} -lspeex -o test
+    ./test

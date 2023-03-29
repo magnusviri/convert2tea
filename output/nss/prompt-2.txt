@@ -1,0 +1,245 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project boost:
+
+
+        class Boost < Formula
+          homepage "https://www.boost.org/"
+          url "https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.bz2"
+          revision 1
+          head "https://github.com/boostorg/boost.git", branch: "master"
+          livecheck do
+            url "https://www.boost.org/users/download/"
+            regex(/href=.*?boost[._-]v?(\d+(?:[._]\d+)+)\.t/i)
+            strategy :page_match do |page, regex|
+              page.scan(regex).map { |match| match.first.tr("_", ".") }
+            end
+          end
+          depends_on "icu4c"
+          depends_on "xz"
+          depends_on "zstd"
+          uses_from_macos "bzip2"
+          uses_from_macos "zlib"
+          def install
+            # Force boost to compile with the desired compiler
+            open("user-config.jam", "a") do |file|
+              if OS.mac?
+                file.write "using darwin : : #{ENV.cxx} ;\n"
+              else
+                file.write "using gcc : : #{ENV.cxx} ;\n"
+              end
+            end
+            # libdir should be set by --prefix but isn't
+            icu4c_prefix = Formula["icu4c"].opt_prefix
+            bootstrap_args = %W[
+              --prefix=#{prefix}
+              --libdir=#{lib}
+              --with-icu=#{icu4c_prefix}
+            ]
+            # Handle libraries that will not be built.
+            without_libraries = ["python", "mpi"]
+            # Boost.Log cannot be built using Apple GCC at the moment. Disabled
+            # on such systems.
+            without_libraries << "log" if ENV.compiler == :gcc
+            bootstrap_args << "--without-libraries=#{without_libraries.join(",")}"
+            # layout should be synchronized with boost-python and boost-mpi
+            args = %W[
+              --prefix=#{prefix}
+              --libdir=#{lib}
+              -d2
+              -j#{ENV.make_jobs}
+              --layout=tagged-1.66
+              --user-config=user-config.jam
+              install
+              threading=multi,single
+              link=shared,static
+            ]
+            # Boost is using "clang++ -x c" to select C compiler which breaks C++14
+            # handling using ENV.cxx14. Using "cxxflags" and "linkflags" still works.
+            args << "cxxflags=-std=c++14"
+            args << "cxxflags=-stdlib=libc++" << "linkflags=-stdlib=libc++" if ENV.compiler == :clang
+            system "./bootstrap.sh", *bootstrap_args
+            system "./b2", "headers"
+            system "./b2", *args
+          end
+          test do
+            (testpath/"test.cpp").write <<~EOS
+              #include <boost/algorithm/string.hpp>
+              #include <boost/iostreams/device/array.hpp>
+              #include <boost/iostreams/device/back_inserter.hpp>
+              #include <boost/iostreams/filter/zstd.hpp>
+              #include <boost/iostreams/filtering_stream.hpp>
+              #include <boost/iostreams/stream.hpp>
+              #include <string>
+              #include <iostream>
+              #include <vector>
+              #include <assert.h>
+              using namespace boost::algorithm;
+              using namespace boost::iostreams;
+              using namespace std;
+              int main()
+              {
+                string str("a,b");
+                vector<string> strVec;
+                split(strVec, str, is_any_of(","));
+                assert(strVec.size()==2);
+                assert(strVec[0]=="a");
+                assert(strVec[1]=="b");
+                // Test boost::iostreams::zstd_compressor() linking
+                std::vector<char> v;
+                back_insert_device<std::vector<char>> snk{v};
+                filtering_ostream os;
+                os.push(zstd_compressor());
+                os.push(snk);
+                os << "Boost" << std::flush;
+                os.pop();
+                array_source src{v.data(), v.size()};
+                filtering_istream is;
+                is.push(zstd_decompressor());
+                is.push(src);
+                std::string s;
+                is >> s;
+                assert(s == "Boost");
+                return 0;
+              }
+            EOS
+            system ENV.cxx, "test.cpp", "-std=c++14", "-o", "test", "-L#{lib}", "-lboost_iostreams",
+                            "-L#{Formula["zstd"].opt_lib}", "-lzstd"
+            system "./test"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project boost:
+
+
+        distributable:
+          url: https://boostorg.jfrog.io/artifactory/main/release/{{ version }}/source/boost_{{version.major}}_{{version.minor}}_{{version.patch}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: boostorg/boost
+          strip: /^boost-/
+
+        dependencies:
+          facebook.com/zstd: ^1
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+          script: |
+            ./bootstrap.sh --prefix={{ prefix }}
+            ./b2 install --prefix={{ prefix }}
+
+        test:
+          dependencies:
+            tea.xyz/gx/cc: c99
+          script: |
+            c++ test.cpp -std=c++14 -lboost_iostreams -lzstd
+            ./a.out
+
+
+
+    Here's an example ruby formula for the project nss:
+
+
+        class Nss < Formula
+          homepage "https://firefox-source-docs.mozilla.org/security/nss/index.html"
+          url "https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_89_RTM/src/nss-3.89.tar.gz"
+          livecheck do
+            url "https://ftp.mozilla.org/pub/security/nss/releases/"
+            regex(%r{href=.*?NSS[._-]v?(\d+(?:[._]\d+)+)[._-]RTM/?["' >]}i)
+            strategy :page_match do |page, regex|
+              page.scan(regex).map { |match| match.first.tr("_", ".") }
+            end
+          end
+          depends_on "nspr"
+          uses_from_macos "sqlite"
+          uses_from_macos "zlib"
+          conflicts_with "arabica", because: "both install `mangle` binaries"
+          conflicts_with "resty", because: "both install `pp` binaries"
+          def install
+            ENV.deparallelize
+            cd "nss"
+            args = %W[
+              BUILD_OPT=1
+              NSS_ALLOW_SSLKEYLOGFILE=1
+              NSS_DISABLE_GTESTS=1
+              NSS_USE_SYSTEM_SQLITE=1
+              NSPR_INCLUDE_DIR=#{Formula["nspr"].opt_include}/nspr
+              NSPR_LIB_DIR=#{Formula["nspr"].opt_lib}
+              USE_64=1
+            ]
+            # Remove the broken (for anyone but Firefox) install_name
+            inreplace "coreconf/Darwin.mk", "-install_name @executable_path", "-install_name #{lib}"
+            inreplace "lib/freebl/config.mk", "@executable_path", lib
+            system "make", "all", *args
+            # We need to use cp here because all files get cross-linked into the dist
+            # hierarchy, and Homebrew's Pathname.install moves the symlink into the keg
+            # rather than copying the referenced file.
+            cd "../dist"
+            bin.mkpath
+            os = OS.kernel_name
+            Dir.glob("#{os}*/bin/*") do |file|
+              cp file, bin unless file.include? ".dylib"
+            end
+            include_target = include + "nss"
+            include_target.mkpath
+            Dir.glob("public/{dbm,nss}/*") { |file| cp file, include_target }
+            lib.mkpath
+            libexec.mkpath
+            Dir.glob("#{os}*/lib/*") do |file|
+              if file.include? ".chk"
+                cp file, libexec
+              else
+                cp file, lib
+              end
+            end
+            # resolves conflict with openssl, see legacy-homebrew#28258
+            rm lib/"libssl.a"
+            (bin/"nss-config").write config_file
+            (lib/"pkgconfig/nss.pc").write pc_file
+          end
+          test do
+            # See: https://developer.mozilla.org/docs/Mozilla/Projects/NSS/tools/NSS_Tools_certutil
+            (testpath/"passwd").write("It's a secret to everyone.")
+            system "#{bin}/certutil", "-N", "-d", pwd, "-f", "passwd"
+            system "#{bin}/certutil", "-L", "-d", pwd
+          end
+          # A very minimal nss-config for configuring firefox etc. with this nss,
+          # see https://bugzil.la/530672 for the progress of upstream inclusion.
+          def config_file
+            <<~EOS
+              #!/bin/sh
+              for opt; do :; done
+              case "$opt" in
+                --version) opt="--modversion";;
+                --cflags|--libs) ;;
+                *) exit 1;;
+              esac
+              pkg-config "$opt" nss
+            EOS
+          end
+          def pc_file
+            <<~EOS
+              prefix=#{prefix}
+              exec_prefix=${prefix}
+              libdir=${exec_prefix}/lib
+              includedir=${prefix}/include/nss
+              Name: NSS
+              Description: Mozilla Network Security Services
+              Version: #{version}
+              Requires: nspr >= 4.12
+              Libs: -L${libdir} -lnss3 -lnssutil3 -lsmime3 -lssl3
+              Cflags: -I${includedir}
+            EOS
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project nss in the yml format:

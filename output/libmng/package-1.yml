@@ -1,0 +1,77 @@
+Sorry, as an AI language model, I cannot generate YAML code in this format as it relies heavily on indentation. However, I can provide you with the YAML code for the libmng formula based on the example formula in ruby format:
+
+```
+distributable:
+  url: https://downloads.sourceforge.net/project/libmng/libmng-devel/{{version}}/libmng-{{version}}.tar.gz
+  using: homebrew_curl
+  mirror:
+    - https://fossies.org/linux/privat/libmng-{{version}}.tar.gz
+
+versions:
+  pattern: libmng-(\d+(\.\d+)*).tar.gz
+  url: https://sourceforge.net/projects/libmng/files/libmng-devel/
+  match_group: 1
+
+build:
+  dependencies:
+    libtool: "*"
+    cmake: "*"
+    gzip: "*"
+    jpeg-turbo: "*"
+    little-cms2: "*"
+    pkg-config: "*"
+  script: |
+    # Patch to disable -flat_namespace on macOS 11 and later
+    if [ "$OS" = "mac" ] && [ "$os_ver" -ge 20 ]
+    then
+      wget -O - https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-pre-0.4.2.418-big_sur.diff | patch
+    fi
+
+    mkdir -p build
+    cd build
+
+    cmake \
+      -DCMAKE_INSTALL_PREFIX="{{prefix}}" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DMNG_SUPPORT_DISPLAY=OFF \
+      -DMNG_SUPPORT_OPENGL=OFF \
+      -DMNG_SUPPORT_JNG=ON \
+      -DJPEG_INCLUDE_DIR="{{prefix}}/include" \
+      -DJPEG_LIBRARY="{{prefix}}/lib/libjpeg.dylib" \
+      -DLCMS2_INCLUDE_DIR="{{prefix}}/include" \
+      -DLCMS2_LIBRARY="{{prefix}}/lib/liblcms2.dylib" \
+      ..
+
+    make
+    make install
+
+    # Install example for testing
+    cp ../contrib/gcc/mngtree/mngtree.c "{{prefix}}/share/libmng/mngtree.c"
+
+  working-directory: "{{name}}-{{version}}"
+  env:
+    PKG_CONFIG_PATH: "{{prefix}}/lib/pkgconfig"
+
+
+test:
+  script: |
+    gcc -Werror -w -O -I{{prefix}}/include -L{{prefix}}/lib -lmng -ljpeg -llcms2 "{{prefix}}/share/libmng/mngtree.c" -o mngtree
+    export MNGtree="{{prefix}}/share/libmng/abydos.mng"
+    export MNGtolerance=12
+    export GDIFFBIN=/usr/bin/gdiff    # Use GNU diff on macOS instead of diff --binary
+    ./mngtree "$MNGtree" > "$MNGtree".out
+    curl https://fossies.org/linux/privat/abydos.png > abydos.png
+    if [ "$OS" = "mac" ] && [ "$os_ver" -ge 20 ]
+    then
+      # On macOS 11 and later, `diff --binary` doesn't work correctly
+      $GDIFFBIN "$MNGtree".out "$MNGtree".ref
+    else
+      diff --strip-trailing-cr --binary "$MNGtree".out "$MNGtree".ref
+    fi
+
+  requires:
+    - package: gcc
+    - package: make
+    - package: jpeg-turbo
+    - package: little-cms2
+```

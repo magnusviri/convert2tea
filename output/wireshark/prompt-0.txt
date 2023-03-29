@@ -1,0 +1,275 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project erlang:
+
+
+        class Erlang < Formula
+          homepage "https://www.erlang.org/"
+          # Download tarball from GitHub; it is served faster than the official tarball.
+          # Don't forget to update the documentation resource along with the url!
+          url "https://github.com/erlang/otp/releases/download/OTP-25.3/otp_src_25.3.tar.gz"
+          livecheck do
+            url :stable
+            regex(/^OTP[._-]v?(\d+(?:\.\d+)+)$/i)
+          end
+          head do
+            url "https://github.com/erlang/otp.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+          end
+          depends_on "openssl@1.1"
+          depends_on "unixodbc"
+          depends_on "wxwidgets" # for GUI apps like observer
+          uses_from_macos "libxslt" => :build
+          def install
+            # Unset these so that building wx, kernel, compiler and
+            # other modules doesn't fail with an unintelligible error.
+            %w[LIBS FLAGS AFLAGS ZFLAGS].each { |k| ENV.delete("ERL_#{k}") }
+            # Do this if building from a checkout to generate configure
+            system "./otp_build", "autoconf" unless File.exist? "configure"
+            args = %W[
+              --enable-dynamic-ssl-lib
+              --enable-hipe
+              --enable-shared-zlib
+              --enable-smp-support
+              --enable-threads
+              --enable-wx
+              --with-odbc=#{Formula["unixodbc"].opt_prefix}
+              --with-ssl=#{Formula["openssl@1.1"].opt_prefix}
+              --without-javac
+            ]
+            if OS.mac?
+              args << "--enable-darwin-64bit"
+              args << "--enable-kernel-poll" if MacOS.version > :el_capitan
+              args << "--with-dynamic-trace=dtrace" if MacOS::CLT.installed?
+            end
+            system "./configure", *std_configure_args, *args
+            system "make"
+            system "make", "install"
+            # Build the doc chunks (manpages are also built by default)
+            ENV.deparallelize { system "make", "docs", "DOC_TARGETS=chunks" }
+            ENV.deparallelize { system "make", "install-docs" }
+            doc.install resource("html")
+          end
+          def caveats
+            <<~EOS
+              Man pages can be found in:
+                #{opt_lib}/erlang/man
+              Access them with `erl -man`, or add this directory to MANPATH.
+            EOS
+          end
+          test do
+            assert_equal version, resource("html").version, "`html` resource needs updating!"
+            system "#{bin}/erl", "-noshell", "-eval", "crypto:start().", "-s", "init", "stop"
+            (testpath/"factorial").write <<~EOS
+              #!#{bin}/escript
+              %% -*- erlang -*-
+              %%! -smp enable -sname factorial -mnesia debug verbose
+              main([String]) ->
+                  try
+                      N = list_to_integer(String),
+                      F = fac(N),
+                      io:format("factorial ~w = ~w\n", [N,F])
+                  catch
+                      _:_ ->
+                          usage()
+                  end;
+              main(_) ->
+                  usage().
+              usage() ->
+                  io:format("usage: factorial integer\n").
+              fac(0) -> 1;
+              fac(N) -> N * fac(N-1).
+            EOS
+            chmod 0755, "factorial"
+            assert_match "usage: factorial integer", shell_output("./factorial")
+            assert_match "factorial 42 = 1405006117752879898543142606244511569936384000000000", shell_output("./factorial 42")
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project erlang:
+
+
+        distributable:
+          url: https://github.com/erlang/otp/releases/download/OTP-{{ version.raw }}/otp_src_{{ version.raw }}.tar.gz
+          strip-components: 1
+
+        provides:
+          - bin/ct_run
+          - bin/dialyzer
+          - bin/epmd
+          - bin/erl
+          - bin/erlc
+          - bin/escript
+          - bin/run_erl
+          - bin/to_erl
+          - bin/typer
+
+        interprets:
+          extensions: erl
+          args: escript
+
+        versions:
+          github: erlang/otp
+          strip: /^OTP /
+
+        dependencies:
+          openssl.org: '*'
+          invisible-island.net/ncurses: '*'
+
+        runtime:
+          env:
+            ERL_ROOTDIR: ${{prefix}}/lib/erlang
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            perl.org: '>=5'
+          script: |
+            export ERL_TOP=$(pwd)
+            ./configure $ARGS
+            make -j {{hw.concurrency}}
+            make install
+          env:
+            CC: cc
+            CXX: c++
+            LD: ld
+            ARGS:
+              - --disable-debug
+              - --disable-silent-rules
+              - --prefix={{prefix}}
+              - --enable-dynamic-ssl-lib
+              - --enable-hipe
+              - --enable-smp-support
+              - --enable-threads
+              - --enable-pie
+              - --with-ssl={{deps.openssl.org.prefix}}
+              - --without-javac
+            darwin:
+              ARGS:
+                - --enable-darwin-64bit
+                - --enable-kernel-poll
+                - --with-dynamic-trace=dtrace
+
+        test:
+          script: |
+            epmd -kill || true
+            epmd -daemon -address 127.0.0.1 -relaxed_command_check
+            test "$(escript $FIXTURE 10)" = "factorial 10 = 3628800"
+            epmd -kill || true
+
+          env:
+            ERL_DIST_PORT: 8001
+          fixture: |
+            #!/usr/bin/env escript
+            %% -*- erlang -*-
+            %%! -smp enable -sname factorial -mnesia debug verbose
+            main([String]) ->
+                try
+                    N = list_to_integer(String),
+                    F = fac(N),
+                    io:format("factorial ~w = ~w\n", [N,F])
+                catch
+                    _:_ ->
+                        usage()
+                end;
+            main(_) ->
+                usage().
+
+            usage() ->
+                io:format("usage: factorial integer\n").
+
+            fac(0) -> 1;
+            fac(N) -> N * fac(N-1).
+
+
+    Here's an example ruby formula for the project wireshark:
+
+
+        class Wireshark < Formula
+          homepage "https://www.wireshark.org"
+          url "https://www.wireshark.org/download/src/all-versions/wireshark-4.0.4.tar.xz"
+          mirror "https://1.eu.dl.wireshark.org/src/all-versions/wireshark-4.0.4.tar.xz"
+          head "https://gitlab.com/wireshark/wireshark.git", branch: "master"
+          livecheck do
+            url "https://www.wireshark.org/download.html"
+            regex(/href=.*?wireshark[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          depends_on "cmake" => :build
+          depends_on "c-ares"
+          depends_on "glib"
+          depends_on "gnutls"
+          depends_on "libgcrypt"
+          depends_on "libmaxminddb"
+          depends_on "libnghttp2"
+          depends_on "libsmi"
+          depends_on "libssh"
+          depends_on "lua"
+          uses_from_macos "bison" => :build
+          uses_from_macos "flex" => :build
+          uses_from_macos "python" => :build
+          uses_from_macos "libpcap"
+          uses_from_macos "libxml2"
+          def install
+            args = %W[
+              -DENABLE_CARES=ON
+              -DENABLE_GNUTLS=ON
+              -DENABLE_MAXMINDDB=ON
+              -DBUILD_wireshark_gtk=OFF
+              -DENABLE_PORTAUDIO=OFF
+              -DENABLE_LUA=ON
+              -DLUA_INCLUDE_DIR=#{Formula["lua"].opt_include}/lua
+              -DLUA_LIBRARY=#{Formula["lua"].opt_lib/shared_library("liblua")}
+              -DCARES_INCLUDE_DIR=#{Formula["c-ares"].opt_include}
+              -DGCRYPT_INCLUDE_DIR=#{Formula["libgcrypt"].opt_include}
+              -DGNUTLS_INCLUDE_DIR=#{Formula["gnutls"].opt_include}
+              -DMAXMINDDB_INCLUDE_DIR=#{Formula["libmaxminddb"].opt_include}
+              -DENABLE_SMI=ON
+              -DBUILD_sshdump=ON
+              -DBUILD_ciscodump=ON
+              -DENABLE_NGHTTP2=ON
+              -DBUILD_wireshark=OFF
+              -DENABLE_APPLICATION_BUNDLE=OFF
+              -DENABLE_QT5=OFF
+              -DCMAKE_INSTALL_NAME_DIR:STRING=#{lib}
+            ]
+            system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
+            system "cmake", "--build", "build"
+            system "cmake", "--install", "build"
+            # Install headers
+            (include/"wireshark").install Dir["*.h"]
+            (include/"wireshark/epan").install Dir["epan/*.h"]
+            (include/"wireshark/epan/crypt").install Dir["epan/crypt/*.h"]
+            (include/"wireshark/epan/dfilter").install Dir["epan/dfilter/*.h"]
+            (include/"wireshark/epan/dissectors").install Dir["epan/dissectors/*.h"]
+            (include/"wireshark/epan/ftypes").install Dir["epan/ftypes/*.h"]
+            (include/"wireshark/epan/wmem").install Dir["epan/wmem/*.h"]
+            (include/"wireshark/wiretap").install Dir["wiretap/*.h"]
+            (include/"wireshark/wsutil").install Dir["wsutil/*.h"]
+          end
+          def caveats
+            <<~EOS
+              This formula only installs the command-line utilities by default.
+              Install Wireshark.app with Homebrew Cask:
+                brew install --cask wireshark
+              If your list of available capture interfaces is empty
+              (default macOS behavior), install ChmodBPF:
+                brew install --cask wireshark-chmodbpf
+            EOS
+          end
+          test do
+            system bin/"randpkt", "-b", "100", "-c", "2", "capture.pcap"
+            output = shell_output("#{bin}/capinfos -Tmc capture.pcap")
+            assert_equal "File name,Number of packets\ncapture.pcap,2\n", output
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project wireshark in the yml format:

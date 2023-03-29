@@ -1,0 +1,104 @@
+distributable:
+  url: https://github.com/openjdk/jdk19u/archive/refs/tags/jdk-{{ version.raw }}-ga.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/jcmd
+  - bin/jconsole
+  - bin/jdb
+  - bin/jdeps
+  - bin/jhat
+  - bin/jinfo
+  - bin/jmap
+  - bin/jps
+  - bin/jrunscript
+  - bin/jsadebugd
+  - bin/jstack
+  - bin/jstat
+  - bin/jstatd
+  - include/jni.h
+
+interprets:
+  extensions: java,class,jar,jmod,jimage,jdwp
+  args: java
+
+relocatable:
+  libs:
+    - lib/security/cacerts
+    - lib/jspawnhelper
+    - lib/libjli.dylib
+  paths:
+    - lib/jvm/java
+    - lib/jvm/jdk
+    - lib/server
+    - include
+
+versions:
+  github: openjdk/jdk18u
+  strip: /^jdk-/
+
+dependencies:
+  expat: "*"
+  freetype: "*"
+  giflib: "*"
+  harfbuzz: "*"
+  libffi: "*"
+  libpng: "*"
+  lcms2: "*"
+  nspr: "*"
+  nss: "*"
+  perl: ">=5.26"
+  xorgproto: "*"
+
+patches:
+  - https://raw.githubusercontent.com/Linuxbrew/homebrew-core/main/Formula/openjdk/fix-build-on-arm64.patch
+
+runtime:
+  env:
+    JAVA_HOME: ${{prefix}}/opt/openjdk
+    JDK_HOME: ${{prefix}}/opt/openjdk
+  shell: /usr/bin/false
+
+build:
+  dependencies:
+    tea: c99
+    make: "*"
+    xcode: "*"
+  script: |
+    bash configure --disable-warnings-as-errors \
+                   --enable-headless-only \
+                   --with-freetype=$FREETYPE \
+                   --with-harfbuzz=$HARFBUZZ \
+                   --with-lcms=$LCMS2 \
+                   --with-nspr=$NSPR \
+                   --with-nss=$NSS \
+                   --with-x=$XORGPROTO \
+                   --with-devkit=/usr \
+                   --with-native-debug-symbols=none \
+                   --with-debug-level=release \
+                   --with-jvm-variants=server \
+                   --with-extra-cflags="$EXTRA_CFLAGS" \
+                   --with-boot-jdk=$JAVA_HOME \
+                   --with-milestone=GA \
+                   --with-vendor-bug-url=$ISSUES_URL \
+                   --with-vendor-name=Openjdk \
+                   --with-vendor-url=https://github.com/openjdk/ \
+                   --with-version-build={{ revision }} \
+                   --openjdk-target=arm64-darwin
+    make images
+  env:
+    FREETYPE: /usr/local
+    HARFBUZZ: /usr/local
+    LCMS2: /usr/local
+    NSPR: /usr/local
+    NSS: /usr/local
+    XORGPROTO: /usr/local
+    EXTRA_CFLAGS: "-isysroot $MACOS_SDK_PATH -mmacosx-version-min=$MIN_MACOS_VERSION"
+    ISSUES_URL: https://github.com/openjdk/homebrew-openjdk/issues
+
+test:
+  commands:
+    - java -version
+    - javac -version
+  env:
+    JAVA_HOME: ${{prefix}}/opt/openjdk

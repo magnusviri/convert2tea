@@ -1,0 +1,36 @@
+distributable:
+  url: https://bitbucket.org/multicoreware/x265_git/get/3.5.tar.gz
+
+versions:
+  bitbucket: multicoreware/x265_git
+  strip: /^x265_git/
+
+provides:
+  - bin/x265
+
+dependencies:
+  cmake.org: ^3.5
+  gnu.org/nasm: ^2.14
+  apple.com/xcode: '>=10.3'
+
+build:
+  dependencies:
+    fsf.org/make: '*'
+  script: |
+    mkdir build && cd build
+    cmake .. \
+      -DCMAKE_INSTALL_PREFIX="{{prefix}}" \
+      -DEXTRA_LIBS="-L." \
+      -DENABLE_HDR10_PLUS=ON \
+      -DLINKED_10BIT=ON \
+      -DLINKED_12BIT=ON \
+      -DENABLE_CLI=OFF \
+      -DEXTRA_LIB="x265_main.a;x265_main10.a;x265_main12.a" \
+      -DCMAKE_INSTALL_RPATH="{{rpath}}"
+    make -j "{{cpu.logical}}"
+    make install
+
+test: |
+  x265 --version
+  echo -e "\xC0\xFF\xEE" | x265 --input-res 80x80 --fps 1 --output test.265 -
+  [ -f test.265 ]

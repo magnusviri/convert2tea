@@ -1,0 +1,35 @@
+distributable:
+  url: https://github.com/carlobaldassi/liblqr/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: carlobaldassi/liblqr/releases/tags
+
+detect:
+  cmd: lqr-carver
+  regex: \d+\.\d+\.\d+
+
+dependencies:
+  tea.xyz/gx/cc: c11
+  tea.xyz/gx/make: '*'
+  glib: '*'
+
+provides:
+  - bin/lqr-carver
+  - include/lqr-1/lqr.h
+  - lib/liblqr.a
+  - lib/liblqr.dylib
+  - lib/pkgconfig/liblqr.pc
+
+build:
+  script: |-
+    autoreconf -ivf
+    ./configure --prefix={{prefix}}
+    make --jobs {{ hw.concurrency }}
+    make install
+  env:
+    V: 1
+
+test:
+  script:
+    lqr-carver --version

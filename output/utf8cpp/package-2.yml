@@ -1,0 +1,34 @@
+distributable:
+  url: https://github.com/nemtrif/utfcpp/archive/v{{version}}.tar.gz
+
+versions:
+  - 3.2.3
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    cmake.org: ^3
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  working-directory:
+    build
+  script: |
+    cmake .. $ARGS
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DUTF8_INSTALL:BOOL=ON
+      - -DUTF8_SAMPLES:BOOL=OFF
+      - -DUTF8_TESTS:BOOL=OFF
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+  test: |
+    cd build
+    (echo '#include <utf8.h>'; echo 'int main(){}') > test.cpp
+    tea xyz/gx/cc <<< $'-I{{prefix}}/include -L{{prefix}}/lib -lutf8cpp' test.cpp
+    (./a.out || echo 'test failed') | grep -v .
+    exit $PIPESTATUS[0]
+
+provides:
+  - bin/utf8_append

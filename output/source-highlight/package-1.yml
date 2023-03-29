@@ -1,0 +1,65 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/src-highlite/source-highlight-{{version}}.tar.gz
+  mirror: https://ftpmirror.gnu.org/src-highlite/source-highlight-{{version}}.tar.gz
+
+versions:
+  - 3.1.9
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c++11
+    tea.xyz/gx/make: '*'
+    boostorg/boost: '*'
+  patch:
+    url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff
+  script: |
+    ./configure --disable-dependency-tracking \
+      --prefix={{prefix}} \
+      --with-boost={{depsPath}}/boost/include
+    make install
+    ln -s {{prefix}}/bin/source-highlight /usr/local/bin/source-highlight
+  postBuild: |
+    bash_completion_prefix={{prefix}} \
+    srcdir={{working_directory}} \
+    bash -x completion/source-highlight > {{bash_completion_path}}/source-highlight
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c++11
+  env:
+    PATH: '{{prefix}}/bin:'$PATH
+  fixture: |
+    #include <iostream>
+    #include <cstdlib>
+    #include <regex>
+    int main() {
+      const std::regex version_regex(R"(GNU Source-highlight (\S+))");
+      std::string output = "no output";
+      FILE *p = popen("source-highlight -V 2>&1", "r");
+      if (p != nullptr) {
+        char buffer[16];
+        output.clear();
+        while (fgets(buffer, 16, p) != nullptr) {
+          output += buffer;
+        }
+        pclose(p);
+      }
+      std::smatch matches;
+      if (std::regex_search(output, matches, version_regex)) {
+        std::cout << matches[1].str() << std::endl;
+        return EXIT_SUCCESS;
+      }
+      std::cerr << "Failed to extract version from output '" << output << "'" << std::endl;
+      return EXIT_FAILURE;
+    }
+
+  script: |
+    mv $FIXTURE test.cpp
+    g++ -std=c++11 test.cpp -o test
+    ./test > output.txt
+    if [[ "$(cat output.txt)" == "{{version}}"* ]]; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

@@ -1,0 +1,50 @@
+This is the formula for the project speex in the yml format:
+
+    distributable:
+      url: https://downloads.xiph.org/releases/speex/speex-{{version.raw}}.tar.gz
+      homebrew_curl: true
+
+    versions:
+      url: https://downloads.xiph.org/releases/speex/
+      regex: '<a href=.+?speex[._-]v?((\d+\.)*\d+)\.t'
+
+    dependencies:
+      pkg-config: build
+      libogg: '*'
+
+    provides:
+      - lib/libspeex.dylib
+      - include/speex/speex.h
+
+    build:
+      script: |
+        ./configure --prefix={{prefix}}
+        make install
+
+    test:
+      script: |
+        echo "#include <speex/speex.h>
+          int main()
+          {
+              SpeexBits bits;
+              void *enc_state;
+              speex_bits_init(&bits);
+              enc_state = speex_encoder_init(&speex_nb_mode);
+              speex_bits_destroy(&bits);
+              speex_encoder_destroy(enc_state);
+              return 0;
+          }" > test.c
+        {{#cross_compiling}}
+        {{#macos}}
+        export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
+        {{/macos}}
+        {{#ios}}
+        export SDKROOT=$(xcrun --sdk iphoneos --show-sdk-path)
+        {{/ios}}
+        ./configure --host={{host}} --prefix={{prefix}}
+        {{/cross_compiling}}
+        {{^cross_compiling}}
+        ./configure --prefix={{prefix}}
+        {{/cross_compiling}}
+        make
+        ./test

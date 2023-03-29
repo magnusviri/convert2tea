@@ -1,0 +1,52 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=thrift/{{version}}/thrift-{{version}}.tar.gz
+
+versions:
+  github: apache/thrift/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/bison: '*'
+    tea.xyz/gx/boost: '*'
+    tea.xyz/gx/libtool: '*'
+    tea.xyz/gx/make: '*'
+    tea.xyz/gx/openssl: '*'
+    tea.xyz/gx/pkg-config: '*'
+    zlib.net: '*'
+  script: |
+    if test -f bootstrap.sh; then
+      ./bootstrap.sh
+      ./configure --disable-debug --disable-tests --prefix="{{prefix}}" --libdir="{{lib}}" \
+        --with-openssl="{{gx.pkg_config_for "openssl" "prefix"}}" \
+        --without-python --without-perl --without-php --without-php_extension \
+        --without-ruby --without-dart --without-go --without-d --without-haxe --without-lua \
+        --without-erlang --without-nodejs --without-nodets --without-netstd --without-kotlin \
+        --without-java --without-swift --without-rs --without-py3
+    else
+      ./configure --disable-debug --disable-tests --prefix="{{prefix}}" --libdir="{{lib}}" \
+        --with-openssl="{{gx.pkg_config_for "openssl" "prefix"}}" \
+        --without-python --without-perl --without-php --without-php_extension \
+        --without-ruby --without-dart --without-go --without-d --without-haxe --without-lua \
+        --without-erlang --without-nodejs --without-nodets --without-netstd --without-kotlin \
+        --without-java --without-swift --without-rs --without-py3
+    fi
+    make
+    make install
+
+provides:
+  - bin/thrift
+
+test:
+  script: |
+    testpath=$(mktemp -d)
+    (cd $testpath && \
+      echo 'service MultiplificationService { i32 multiply(1:i32 x, 2:i32 y) }' > test.thrift && \
+      thrift -r --gen cpp test.thrift && \
+      c++ -std=c++11 -I{{include}}/include \
+        -L{{lib}} -lthrift \
+        gen-cpp/MultiplicationService.cpp \
+        gen-cpp/MultiplicationService_server.skeleton.cpp)
+  fixture: |
+    echo "Test fixture not available for Thrift."

@@ -1,0 +1,39 @@
+distributable:
+  url: https://github.com/randy408/libspng/archive/v{{ version }}.tar.gz
+
+versions:
+  - 0.7.3
+
+dependencies:
+  zlib.net: ^1.2
+
+build:
+  dependencies:
+    mesonbuild.com: ^0.55
+    ninja-build.org: 1
+    freedesktop.org/pkg-config: ^0.29
+  script: |
+    meson build $ARGS
+    ninja -C build -v
+    ninja -C build install -v
+    cp examples/example.c "{{prefix}}"
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --libdir={{prefix}}/lib
+      - --buildtype=release
+
+test:
+  dependencies:
+    zlib.net: ^1.2
+    tea.xyz/gx/cc: c99
+  script: |
+    example=$(mktemp)
+    cp "{{prefix}}/example.c" $example
+    gcc $example -lspng -o example
+    output=$(./example test.png)
+    echo "$output" | grep -q "width: 8"
+    echo "$output" | grep -q "height: 8"
+    echo "$output" | grep -q "bit depth: 1"
+    echo "$output" | grep -q "color type: 3"
+  fixture: "test.png"

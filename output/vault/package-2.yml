@@ -1,0 +1,45 @@
+distributable:
+  url: https://github.com/hashicorp/vault/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+# use the github API to fetch versions
+versions:
+  github: hashicorp/vault/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/go: '^1.16.4'
+    tea.xyz/gx/gox: '*'
+    python: 3.11
+    nodejs: 18
+  working-directory: -
+  script: |
+    go get github.com/mjibson/esc
+
+    make bootstrap static-dist dev-ui
+    mkdir -p "{{prefix}}"/bin
+    mv bin/vault "{{prefix}}"/bin
+
+provides:
+  - bin/vault
+
+service:
+  run: |
+    "{{prefix}}"/bin/vault server -dev
+  keep-alive: true
+  working-directory: "{{var}}"
+  log-path: "{{var}}/log/vault.log"
+  error-log-path: "{{var}}/log/vault.log"
+
+test:
+  fixture: |
+    # test fixture not provided, so just test server status
+  script: |
+    # start a dev server
+    port="$(shuf -i 2000-65000 -n 1)"
+    export VAULT_DEV_LISTEN_ADDRESS=127.0.0.1:$port
+    (nohup "{{prefix}}"/bin/vault server -dev &)
+    sleep 5
+
+    # test status API
+    curl -s -H "X-Vault-Token: $$VAULT_TOKEN" http://127.0.0.1:$port/v1/sys/health | grep -q '{"initialized":true'

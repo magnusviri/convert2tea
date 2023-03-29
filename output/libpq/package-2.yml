@@ -1,0 +1,52 @@
+distributable:
+  url: https://ftp.postgresql.org/pub/source/v{{ version }}/postgresql-{{ version }}.tar.bz2
+
+versions:
+  ftp: postgresql.org/pub/source/
+  regex: "href=[\\\"']?v?(\\d+(?:\\.\\d+)+)/?"
+
+provides:
+  - lib/libpq.dylib
+  - include/postgresql/libpq-fe.h
+  - include/postgresql/pg_config.h
+
+build:
+  dependencies:
+    krb5: '*'
+    openssl@1.1: '*'
+    zlib: '*'
+  environment:
+    CPPFLAGS: "-I{{ include }}/postgresql"
+    LDFLAGS: "-L{{ lib }} -lpq -lz -lssl -lcrypto"
+  script: |
+    ./configure --disable-debug \
+    --prefix={{ prefix }} \
+    --with-gssapi \
+    --with-openssl \
+    --libdir={{ lib }} \
+    --includedir={{ include }}/postgresql \
+    --includedir-server={{ include }}/postgresql/server \
+    --includedir-internal={{ include }}/postgresql/internal
+    make && make install
+
+test:
+  script: |
+    echo '#include <stdlib.h>
+          #include <stdio.h>
+          #include <libpq-fe.h>
+          int main()
+          {
+              const char *conninfo;
+              PGconn     *conn;
+              conninfo = "dbname = postgres";
+              conn = PQconnectdb(conninfo);
+              if (PQstatus(conn) != CONNECTION_OK)
+              {
+                  printf("Connection to database attempted and failed");
+                  PQfinish(conn);
+                  exit(0);
+              }
+              return 0;
+            }' > libpq.c
+    {{ cc }} libpq.c -L{{ lib }} -I{{ include }}/postgresql -lssl -lcrypto -lpq -lz -Wall -o libpqtest
+    assert_equal "Connection to database attempted and failed", shell_output("./libpqtest")

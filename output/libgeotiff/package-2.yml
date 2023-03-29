@@ -1,0 +1,26 @@
+distributable:
+  url: https://github.com/OSGeo/libgeotiff/releases/download/{{ version }}/libgeotiff-{{ version }}.tar.gz
+
+versions:
+  github: OSGeo/libgeotiff/tags
+
+provides:
+  - bin/listgeo
+
+build:
+  dependencies:
+    jpeg-turbo: '*'
+    libtiff: '*'
+    proj: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |
+    ./autogen.sh
+    ./configure {{ arguments }} --with-jpeg
+    make
+    make install
+
+test:
+  test: |
+    [[ "$(listgeo --version)" == "1.7.1" ]]

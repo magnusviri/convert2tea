@@ -1,0 +1,144 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project doxygen:
+
+
+        class Doxygen < Formula
+          homepage "https://www.doxygen.nl/"
+          url "https://doxygen.nl/files/doxygen-1.9.6.src.tar.gz"
+          mirror "https://downloads.sourceforge.net/project/doxygen/rel-1.9.6/doxygen-1.9.6.src.tar.gz"
+          head "https://github.com/doxygen/doxygen.git", branch: "master"
+          livecheck do
+            url "https://www.doxygen.nl/download.html"
+            regex(/href=.*?doxygen[._-]v?(\d+(?:\.\d+)+)[._-]src\.t/i)
+          end
+          depends_on "bison" => :build
+          depends_on "cmake" => :build
+          uses_from_macos "flex" => :build, since: :big_sur
+          uses_from_macos "python" => :build
+          fails_with :gcc do
+            version "6"
+            cause "Need gcc>=7.2. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66297"
+          end
+          def install
+            system "cmake", "-S", ".", "-B", "build",
+                            "-DPYTHON_EXECUTABLE=#{which("python3") || which("python")}",
+                            *std_cmake_args
+            system "cmake", "--build", "build"
+            system "cmake", "--install", "build"
+            system "cmake", "-S", ".", "-B", "build", "-Dbuild_doc=1", *std_cmake_args
+            man1.install buildpath.glob("build/man/*.1")
+          end
+          test do
+            system bin/"doxygen", "-g"
+            system bin/"doxygen", "Doxyfile"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project doxygen:
+
+
+
+        distributable:
+           url: https://github.com/doxygen/doxygen/archive/refs/tags/Release_{{version.major}}_{{version.minor}}_{{version.patch}}.tar.gz
+           strip-components: 1
+
+        versions:
+          - 1.9.6 # FIXME: the versions are "Release_1_9_6" but no idea how I can parse this without regex
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            gnu.org/bison: ^3
+            cmake.org: ^3
+            github.com/westes/flex: 2
+            python.org: ^3
+          working-directory: build
+          script: |
+            cmake $ARGS -G "Unix Makefiles" ..
+            make --jobs {{ hw.concurrency }} 
+            make install
+          env:
+            ARGS:
+              - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+              - -DCMAKE_BUILD_TYPE=Release
+            
+
+        provides:
+          - bin/doxygen
+
+        test:
+          script: |
+            doxygen -g
+            doxygen Doxyfile
+
+
+
+    Here's an example ruby formula for the project nghttp2:
+
+
+        class Nghttp2 < Formula
+          homepage "https://nghttp2.org/"
+          url "https://github.com/nghttp2/nghttp2/releases/download/v1.52.0/nghttp2-1.52.0.tar.gz"
+          mirror "http://fresh-center.net/linux/www/nghttp2-1.52.0.tar.gz"
+          head do
+            url "https://github.com/nghttp2/nghttp2.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+          end
+          depends_on "pkg-config" => :build
+          depends_on "c-ares"
+          depends_on "jemalloc"
+          depends_on "libev"
+          depends_on "libnghttp2"
+          depends_on "openssl@1.1"
+          uses_from_macos "libxml2"
+          uses_from_macos "zlib"
+          # Fix: shrpx_api_downstream_connection.cc:57:3: error:
+          # array must be initialized with a brace-enclosed initializer
+          # https://github.com/nghttp2/nghttp2/pull/1269
+          patch do
+            on_linux do
+              url "https://github.com/nghttp2/nghttp2/commit/829258e7038fe7eff849677f1ccaeca3e704eb67.patch?full_index=1"
+            end
+          end
+          def install
+            # fix for clang not following C++14 behaviour
+            # https://github.com/macports/macports-ports/commit/54d83cca9fc0f2ed6d3f873282b6dd3198635891
+            inreplace "src/shrpx_client_handler.cc", "return dconn;", "return std::move(dconn);"
+            # Don't build nghttp2 library - use the previously built one.
+            inreplace "Makefile.in", /(SUBDIRS =) lib/, "\\1"
+            inreplace Dir["**/Makefile.in"] do |s|
+              # These don't exist in all files, hence audit_result being false.
+              s.gsub!(%r{^(LDADD = )\$[({]top_builddir[)}]/lib/libnghttp2\.la}, "\\1-lnghttp2", false)
+              s.gsub!(%r{\$[({]top_builddir[)}]/lib/libnghttp2\.la}, "", false)
+            end
+            args = %W[
+              --prefix=#{prefix}
+              --disable-silent-rules
+              --enable-app
+              --disable-examples
+              --disable-hpack-tools
+              --disable-python-bindings
+              --without-systemd
+            ]
+            system "autoreconf", "-ivf" if build.head?
+            system "./configure", *args
+            system "make"
+            system "make", "install"
+          end
+          test do
+            system bin/"nghttp", "-nv", "https://nghttp2.org"
+            refute_path_exists lib
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project nghttp2 in the yml format:

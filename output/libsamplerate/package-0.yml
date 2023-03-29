@@ -1,0 +1,50 @@
+distributable:
+  url: https://github.com/libsndfile/libsamplerate/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: libsndfile/libsamplerate
+  strip: /^v/
+
+provides:
+  - lib/libsamplerate.dylib
+  - lib/libsamplerate.a
+
+dependencies:
+  cmake.org: ^3.14
+  freedesktop.org/pkg-config: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    tea.xyz/gx/make: '*'
+    fftw.org: '^3.3'
+  script: |
+    cmake \
+      -S . \
+      -B build \
+      -DCMAKE_INSTALL_PREFIX="{{prefix}}" \
+      -DBUILD_STATIC_LIBS=ON \
+      -DBUILD_EXAMPLES=OFF \
+      -DBUILD_TESTS=OFF \
+      -DWITH_SNDFILE=OFF \
+      -DWITH_LIBTMMS=OFF \
+      -DWITH_PULSEAUDIO=OFF \
+      -DWITH_COREAUDIO=OFF \
+      -DWITH_ALSA=OFF \
+      -DWITH_ASIO=OFF \
+      -DWITH_PORTAUDIO=OFF \
+      -DWITH_QSA=OFF \
+      -DWITH_WIN32=OFF \
+      -DWITH_SUN=OFF \
+      -DWITH_IWMMXT=OFF \
+      -DWITH_NEON=OFF \
+      -DWITH_ALTIVEC=OFF \
+      -DWITH_SSE=OFF \
+      -DWITH_AVX=OFF \
+      -DWITH_AVX2=OFF
+    cmake --build build --config Debug
+    cmake --build build --config Debug --target install
+
+test: |
+  src_test "{{prefix}}/lib/libsamplerate.dylib"

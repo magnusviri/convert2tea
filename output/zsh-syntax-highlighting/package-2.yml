@@ -1,0 +1,23 @@
+distributable:
+  url: https://github.com/zsh-users/zsh-syntax-highlighting/archive/0.7.1.tar.gz
+  strip-components: 1
+
+versions:
+  github: zsh-users/zsh-syntax-highlighting
+  strip: /^v/
+
+provides:
+  - bin/zsh-syntax-highlighting.zsh
+
+dependencies:
+  zsh.org: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    make PREFIX={{prefix}}
+    make install PREFIX={{prefix}}
+
+test: |
+  zsh -c '. #{pkgshare}/zsh-syntax-highlighting.zsh && echo $ZSH_HIGHLIGHT_VERSION'

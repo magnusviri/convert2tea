@@ -1,0 +1,23 @@
+distributable:
+  url: https://github.com/postmodern/ruby-install/archive/v{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.9.0
+
+dependencies:
+  xz: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    make install PREFIX={{prefix}}
+    sed -i.bak "s#/usr/local#$HOMEBREW_PREFIX#g" $(find . -name '*.1' -o -name '*.sh')
+
+provides:
+  - bin/ruby-install
+
+test:
+  script: |
+    ruby-install --version | grep #{version.marketing}

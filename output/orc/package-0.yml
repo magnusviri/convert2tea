@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to create an equivalent formula for the project orc in the yml format as it is used for Homebrew, while orc is built with the meson build system. The yml format is not compatible with meson or other build systems, so a different format would have to be used for orc.

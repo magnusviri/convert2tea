@@ -1,0 +1,117 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project cpanminus:
+
+
+        class Cpanminus < Formula
+          homepage "https://github.com/miyagawa/cpanminus"
+          # Don't use git tags, their naming is misleading
+          url "https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-1.7046.tar.gz"
+          license any_of: ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
+          version_scheme 1
+          head "https://github.com/miyagawa/cpanminus.git", branch: "devel"
+          uses_from_macos "perl"
+          def install
+            cd "App-cpanminus" if build.head?
+            system "perl", "Makefile.PL", "INSTALL_BASE=#{prefix}",
+                                          "INSTALLSITEMAN1DIR=#{man1}",
+                                          "INSTALLSITEMAN3DIR=#{man3}"
+            system "make", "install"
+          end
+          def post_install
+            cpanm_lines = (bin/"cpanm").read.lines
+            return if cpanm_lines.first.match?(%r{^#!/usr/bin/env perl})
+            ohai "Adding `/usr/bin/env perl` shebang to `cpanm`..."
+            cpanm_lines.unshift "#!/usr/bin/env perl\n"
+            (bin/"cpanm").atomic_write cpanm_lines.join
+          end
+          test do
+            assert_match "cpan.metacpan.org", stable.url, "Don't use git tags, their naming is misleading"
+            system "#{bin}/cpanm", "--local-lib=#{testpath}/perl5", "Test::More"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project cpanminus:
+
+
+        distributable:
+          url: https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-{{version.raw}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: miyagawa/cpanminus/tags
+          ignore:
+            - /^1.9/   # invalid versions in the tags for some reason
+            - /^1.79/  # ^^
+            - /^1.71/  # ^^ like wtf?
+
+        dependencies:
+          perl.org: '*'
+
+        companions:
+          tea.xyz/gx/make: '*'
+
+        provides:
+          - bin/cpanm
+
+        build:
+          dependencies:
+            tea.xyz/gx/make: '*'
+          script: |
+            perl Makefile.PL INSTALL_BASE={{prefix}}
+            make install
+
+            fix-shebangs.ts {{prefix}}/bin/cpanm
+
+        test:
+          dependencies:
+            tea.xyz/gx/make: '*'
+          script:
+            cpanm --verbose --local-lib=./out Test::More
+
+
+
+    Here's an example ruby formula for the project speex:
+
+
+        class Speex < Formula
+          homepage "https://speex.org/"
+          url "https://downloads.xiph.org/releases/speex/speex-1.2.1.tar.gz", using: :homebrew_curl
+          mirror "https://ftp.osuosl.org/pub/xiph/releases/speex/speex-1.2.1.tar.gz"
+          livecheck do
+            url "https://ftp.osuosl.org/pub/xiph/releases/speex/?C=M&O=D"
+            regex(/href=.*?speex[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          depends_on "pkg-config" => :build
+          depends_on "libogg"
+          def install
+            ENV.deparallelize
+            system "./configure", *std_configure_args
+            system "make", "install"
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <speex/speex.h>
+              int main()
+              {
+                  SpeexBits bits;
+                  void *enc_state;
+                  speex_bits_init(&bits);
+                  enc_state = speex_encoder_init(&speex_nb_mode);
+                  speex_bits_destroy(&bits);
+                  speex_encoder_destroy(enc_state);
+                  return 0;
+              }
+            EOS
+            system ENV.cc, "test.c", "-L#{lib}", "-lspeex", "-o", "test"
+            system "./test"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project speex in the yml format:

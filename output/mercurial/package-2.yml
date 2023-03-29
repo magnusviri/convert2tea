@@ -1,0 +1,35 @@
+distributable:
+  url: https://www.mercurial-scm.org/release/mercurial-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 6.4.0
+
+dependencies:
+  python@3.11.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    export HGPYTHON3=1
+    export PYTHON=$(which python3.11)
+    make install-bin PREFIX={{prefix}}
+    make -C contrib/chg install PREFIX={{prefix}} HGPATH={{bin}}/hg HG={{bin}}/hg
+    echo -e "[pager]\npager = less -FRX" > hgrc
+    mkdir -p {{etc}}/mercurial
+    mv hgrc {{etc}}/mercurial/hgrc
+    mkdir -p {{man1}}
+    cp doc/hg.{{page_extension}} {{man1}}
+    mkdir -p {{man5}}
+    cp doc/hgignore.{{page_extension}} {{man5}}
+    cp doc/hgrc.{{page_extension}} {{man5}}
+    mkdir -p {{bash_completion}}
+    mv share/bash-completion/completions/hg {{bash_completion}}
+
+provides:
+  - bin/hg
+
+test:
+  script: |
+    {{bin}}/hg init

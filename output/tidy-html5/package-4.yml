@@ -1,0 +1,27 @@
+distributable:
+  url: https://github.com/htacg/tidy-html5/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: htacg/tidy-html5
+  regex: ^(\d+\.\d*?[02468](?:\.\d+)*)$
+
+dependencies:
+  cmake.org/cmake: ^3.20
+
+build:
+  script: |
+    mkdir build
+    cd build
+    cmake .. $ARGS
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX={{prefix}}
+
+provides:
+  - bin/tidy
+
+test:
+  tidy --version

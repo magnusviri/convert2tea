@@ -1,0 +1,67 @@
+distributable:
+  url: https://ftp.postgresql.org/pub/source/v{{version}}/postgresql-{{version}}.tar.bz2
+
+versions:
+  ftp: ftp.postgresql.org/pub/source/
+
+provides:
+  - bin/pg_config
+  - bin/pg_ctl
+  - bin/pg_dump
+  - bin/pg_restore
+  - bin/psql
+
+build:
+  dependencies:
+    krb5.dev: '*'
+    openssl@1.1.dev: '*'
+    zlib: '*'
+    readline: linux
+  script: |
+    ./configure --disable-debug \\
+                --prefix={{prefix}} \\
+                --with-gssapi \\
+                --with-openssl \\
+                --libdir=#{opt_lib} \\
+                --includedir=#{opt_include}
+    make
+    make -C src/bin install \\
+      libdir=#{lib} \\
+      includedir=#{include} \\
+      pkgincludedir=#{include}/postgresql \\
+      includedir_server=#{include}/postgresql/server \\
+      includedir_internal=#{include}/postgresql/internal
+    make -C src/include install \\
+      libdir=#{lib} \\
+      includedir=#{include} \\
+      pkgincludedir=#{include}/postgresql \\
+      includedir_server=#{include}/postgresql/server \\
+      includedir_internal=#{include}/postgresql/internal
+    make -C src/interfaces install \\
+      libdir=#{lib} \\
+      includedir=#{include} \\
+      pkgincludedir=#{include}/postgresql \\
+      includedir_server=#{include}/postgresql/server \\
+      includedir_internal=#{include}/postgresql/internal
+    make -C src/common install \\
+      libdir=#{lib} \\
+      includedir=#{include} \\
+      pkgincludedir=#{include}/postgresql \\
+      includedir_server=#{include}/postgresql/server \\
+      includedir_internal=#{include}/postgresql/internal
+    make -C src/port install \\
+      libdir=#{lib} \\
+      includedir=#{include} \\
+      pkgincludedir=#{include}/postgresql \\
+      includedir_server=#{include}/postgresql/server \\
+      includedir_internal=#{include}/postgresql/internal
+    make -C doc install \\
+      libdir=#{lib} \\
+      includedir=#{include} \\
+      pkgincludedir=#{include}/postgresql \\
+      includedir_server=#{include}/postgresql/server \\
+      includedir_internal=#{include}/postgresql/internal
+
+test:
+  test: |
+    (echo 'SELECT 1+1;' | {{bin}}/psql) | grep -q 2

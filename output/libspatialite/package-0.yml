@@ -1,0 +1,36 @@
+distributable:
+  url: https://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  fossil: fossil://https://www.gaia-gis.it/fossil/libspatialite
+
+dependencies:
+  freexl: '*'
+  geos: '*'
+  librttopo: '*'
+  libxml2: '*'
+  minizip: '*'
+  proj: '*'
+  sqlite: '*'
+
+build:
+  dependencies:
+    autoconf: fossil
+    automake: fossil
+    libtool: fossil
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./autogen.sh
+    ./configure --prefix={{prefix}} --with-sysroot={{HOMEBREW_PREFIX}} --enable-geocallbacks --enable-rttopo=yes
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    sqlite3 test.db <<-EOSQL
+      SELECT load_extension('#{opt_lib}/mod_spatialite');
+      PRAGMA compile_options;
+    EOSQL

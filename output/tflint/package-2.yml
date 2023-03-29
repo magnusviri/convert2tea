@@ -1,0 +1,24 @@
+distributable:
+  url: https://github.com/terraform-linters/tflint/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: terraform-linters/tflint
+  strip: /v/
+
+provides:
+  - bin/tflint
+
+build:
+  script: |
+    go build -v ./cmd/tflint
+    mkdir -p "{{ prefix }}"/bin
+    mv tflint "{{ prefix }}"/bin
+  dependencies:
+    go.dev: ^1.16
+
+test: |
+    tflint --version
+    (echo 'terraform { required_providers { aws = { source = "hashicorp/aws" version = "~> 4" } } }'; echo 'provider "aws" { region = "us-west-2" }') > test.tf
+    assert_match "", shell_output("#{bin}/tflint test.tf")
+    assert_equal 0, $CHILD_STATUS.exitstatus

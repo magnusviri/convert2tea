@@ -1,0 +1,73 @@
+distributable:
+  url: https://www.mercurial-scm.org/release/mercurial-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 6.4.0
+
+dependencies:
+  python@3.11.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+    tea.xyz/gx/findutils: '*'
+    tea.xyz/gx/gpatch: '*'
+  script: |
+    export HGPYTHON3=1
+    export PYTHON=$(which python3.11)
+    xmllint --noout --schema https://raw.githubusercontent.com/Homebrew/brew/master/docs/Formula/mercurial-6.4.0.xsd < "$BREW_FORMULA"
+    sed -i -e 's/master//g' contrib/chg/Makefile &&
+    make PREFIX={{prefix}} all install &&
+    make -C contrib/chg install PREFIX={{prefix}} HGPATH={{prefix}}/bin/hg HG={{prefix}}/bin/hg &&
+    printf "[%s]\n%s\n" pager "pager = less -FRX" >> ~/.hgrc &&
+    cp -a --backup=numbered doc/hg.1 doc/hgignore.5 doc/hgrc.5 {{man1dir}}
+  post_install: |-
+    if [ -x "$(command -v tput)" ]; then
+      if tput colors >/dev/null 2>&1; then
+        printf "export HGPLAIN='| COLOR_BOLD'"
+      fi
+    fi
+    if [ ! -d "$(brew --repository)/Formula/.git" ]; then
+      HGBREW="$(brew --repository)/.hg"
+      TAPBREW="$(brew --repository)/../Homebrew/homebrew-core/.hg"
+      if [[ -d "${TAPBREW}" && $(hg identify "${TAPBREW}" | wc -l) -eq 1 ]]; then
+        MAIN="$(hg identify "${TAPBREW}" | cut -d' ' -f1)"
+        hg clone -q --config "ui.username=nobody <nobody@nobody.com>" "${TAPBREW}" "$(brew --repository)/Formula"
+        (cd "$(brew --repository)/Formula" && hg up -C "${MAIN}")
+      elif [[ -d "${HGBREW}" && $(hg identify "${HGBREW}" | wc -l) -eq 1 ]]; then
+        MAIN="$(hg identify "${HGBREW}" | cut -d' ' -f1)"
+        pushd "${HGBREW}/Formula" >/dev/null || exit
+        hg up -C "${MAIN}"
+        popd >/dev/null || exit
+      else
+        git init "$(brew --repository)/Formula" >/dev/null
+        git -C "$(brew --repository)/Formula" checkout -q -b master >/dev/null
+      fi
+      git -C "$(brew --repository)/Formula" config user.name 'nobody'
+      git -C "$(brew --repository)/Formula" config user.email '<nobody@nobody.com>'
+      git -C "$(brew --repository)/Formula" add .
+      git -C "$(brew --repository)/Formula" add -u .
+      git -C "$(brew --repository)/Formula" commit -m 'brew test-bot: update formula' || true
+    fi
+
+provides:
+  - bin/hg
+
+test:
+  script: |
+    brew ls --versions xmllint | grep -q . && brew unlink xmllint
+    hg init test
+    pushd test >/dev/null || exit
+    touch test
+    hg add test
+    hg commit -m "Add test file"
+    popd >/dev/null || exit
+    hg clone test testclone
+    pushd testclone >/dev/null || exit
+    echo "Hello World" > test
+    hg commit -m "Edit test file"
+    popd >/dev/null || exit
+    [[ "$(hg log -r :. and branch(default))" == *"$'changeset:   1\nbranch:      default\n'"$'*\n'"$'summary:     Add test file\n'"$'*\n"* ]]
+    [[ "$(hg log -r :. and branch(default))" == *"$'changeset:   2\nbranch:      default\n'"$'*\n'"$'summary:     Edit test file\n'"$'*\n"* ]]
+    brew unlink mercurial

@@ -1,0 +1,31 @@
+distributable:
+  url: https://github.com/jfrog/jfrog-cli/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: jfrog/jfrog-cli/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    go.dev: '*'
+  script: |
+    go build -ldflags="-s -w" -o {{prefix}}/bin/jf
+    ln -sf {{prefix}}/bin/jf {{prefix}}/bin/jfrog
+    jf completion --output={{prefix}}/etc/bash_completion.d/jf
+    jf completion --output={{prefix}}/etc/fish/completions/jf.fish --shell=fish
+    jf completion --output={{prefix}}/etc/zsh/completions/_jf --shell=zsh
+  env:
+    GOPATH: "{{env.GOPATH}}"
+
+provides:
+  - bin/jf
+  - bin/jfrog
+
+test:
+  script: |
+    jf -v
+    jfrog -v
+    with_env(JFROG_CLI_REPORT_USAGE: "false", CI: "true") do
+      jf rt bp --dry-run --url=http://127.0.0.1 || true
+    end

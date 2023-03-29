@@ -1,0 +1,40 @@
+distributable:
+  url: https://downloads.xiph.org/releases/theora/libtheora-1.1.1.tar.bz2
+  mirror: https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-1.1.1.tar.bz2
+  patch:
+    url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-pre-0.4.2.418-big_sur.diff
+
+versions:
+  homepage: https://www.theora.org/
+  stable: v1.1.1
+  head: https://gitlab.xiph.org/xiph/theora.git
+
+provides:
+  - lib/libtheora.dylib
+  - include/theora/theora.h
+
+build:
+  dependencies:
+    libtool: '*'
+    pkg-config: '*'
+    libogg: '*'
+    libvorbis: '*'
+  patch_dependencies:
+    autoconf: head
+    automake: head
+  script: |
+    cp -R "$(brew --prefix libtool)/share/libtool/config" .
+    if [[ "${BUILD_TYPE}" == "HEAD" ]]; then ./autogen.sh; fi
+    ./configure \
+      --prefix="{{ prefix }}" \
+      --disable-dependency-tracking \
+      --disable-oggtest \
+      --disable-vorbistest \
+      --disable-examples \
+      {% if BUILD_TYPE == "HEAD" %}--disable-asm{% endif %}
+    make install
+
+test:
+  command: |
+    (echo "#include <theora/theora.h>"; echo "int main() { theora_info inf; theora_info_init(&inf); theora_info_clear(&inf); return 0; }") | {{ cc }} -xc - -L{{ lib }} -ltheora -o test
+    ./test

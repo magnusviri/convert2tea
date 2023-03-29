@@ -1,0 +1,28 @@
+distributable:
+  url: https://github.com/Haivision/srt/archive/v{{version}}.tar.gz
+
+versions:
+  github: Haivision/srt
+  strip: /^v/
+
+dependencies:
+  tea.xyz/gx/cmake: '*'
+  tea.xyz/gx/pkg-config: '*'
+  openssl@1.1: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    openssl=$(brew --prefix openssl@1.1)
+    cmake -DWITH_OPENSSL_INCLUDEDIR=$openssl/include -DWITH_OPENSSL_LIBDIR=$openssl/lib \
+          -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_INCLUDEDIR=include \
+          .
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cmd=$(brew --prefix srt)/bin/srt-live-transmit file:///dev/null file://con/ 2>&1
+    [ $(echo $cmd | grep -c "Unsupported source type") -eq 1 ]

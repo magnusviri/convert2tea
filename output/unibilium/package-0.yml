@@ -1,0 +1,22 @@
+distributable:
+  url: https://github.com/neovim/unibilium/archive/v{{version.marketing}}.tar.gz
+
+versions:
+  - 2.1.1
+
+dependencies:
+  libtool.net: '*'
+
+build:
+  script:
+    - make
+    - make install PREFIX={{prefix}}
+
+provides:
+  - lib/libunibilium.a
+  - include/unibilium.h
+
+test:
+  script: |
+    printf '#include<unibilium.h>\nint main(){return 0;}' | cc -xc - -L{{prefix}}/lib -lunibilium
+    ./a.out

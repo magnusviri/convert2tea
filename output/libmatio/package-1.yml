@@ -1,0 +1,48 @@
+Unfortunately, as a language model, I am unable to write YAML formulas on my own. However, I can provide the equivalent YAML formula for the example Ruby formula for the project libmatio:
+
+    distributable:
+      url: https://downloads.sourceforge.net/project/matio/matio/{{version}}/matio-{{version}}.tar.gz
+      strip-components: 1
+
+    dependencies:
+      hdfgroup.org/hdf5: "*"
+      zlib.net: "*"
+
+    build:
+      dependencies:
+        gnu.org/automake: "*"
+        gnu.org/autoconf: "*"
+        gnu.org/libtool: "*"
+      script: |
+        ./configure $ARGS
+        make --jobs {{hw.concurrency}}
+        make install
+      env:
+        ARGS:
+          - --prefix={{prefix}}
+          - --enable-extended-sparse=yes
+          - --enable-mat73=yes
+          - --with-hdf5={{dependency "hdfgroup.org/hdf5"}}/bin/h5cc
+          - --with-zlib=/usr
+
+    provides:
+      - lib/matio.h
+      - lib/libmatio.{a,dylib,so}
+
+    test:
+      script: |
+        {{dependency "hdfgroup.org/hdf5"}}/bin/h5cc -o mat test.c -L{{prefix}}/lib -I{{prefix}}/include -lmatio
+        ./mat /dev/null
+      build:
+        dependencies:
+          hdfgroup.org/hdf5: "*"
+        script: |
+          echo "#include <stdlib.h> #include <matio.h>
+          int main() {
+            mat_t* mat;
+            mat = Mat_CreateVer(\"test_writenan.mat\", NULL, MAT_FT_DEFAULT);
+            Mat_Close(mat);
+            return 0;
+          }" > test.c
+          {{dependency "hdfgroup.org/hdf5"}}/bin/h5cc -o mat test.c -L{{prefix}}/lib -I{{prefix}}/include -lmatio
+          ./mat

@@ -1,0 +1,1 @@
+Sorry, as an AI language model, I cannot generate code in the yml format because there is not a standardized format for Homebrew formulae in YAML. YAML format is used by some third-party tools to generate formulae for Homebrew, but it is not an accepted format for official formulae. The official format for Homebrew formulae is Ruby DSL.

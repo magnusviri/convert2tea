@@ -1,0 +1,24 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/smartmontools/smartmontools/{{ version }}/smartmontools-{{ version }}.tar.gz
+
+versions:
+  sourceforge:
+    url: https://sourceforge.net/projects/smartmontools/rss?path=/smartmontools
+    regex: 'smartmontools-(\d+\.\d+(\.\d+)?)\.tar\.gz'
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      gnu.org/make: '*'
+    darwin:
+      tea.xyz/gx/cc: '>= 9'
+      tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  script: |
+    {{bin}}/smartctl --version
+    {{bin}}/smartd --version

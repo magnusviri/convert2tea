@@ -1,0 +1,98 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project wumpus:
+
+
+        class Wumpus < Formula
+          homepage "http://www.catb.org/~esr/wumpus/"
+          url "http://www.catb.org/~esr/wumpus/wumpus-1.9.tar.gz"
+          livecheck do
+            url :homepage
+            regex(/href=.*?wumpus[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          def install
+            system "make"
+            system "make", "prefix=#{prefix}", "install"
+          end
+          test do
+            assert_match("HUNT THE WUMPUS",
+                         pipe_output(bin/"wumpus", "^C"))
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project wumpus:
+
+
+        distributable:
+          url: http://www.catb.org/~esr/wumpus/wumpus-1.7.tar.gz
+          strip-components: 1
+
+        # When https://gitlab.com/esr/wumpus/-/merge_requests/3 is merged, then switch to
+        #   https://gitlab.com/esr/wumpus/-/archive/{{ version.raw }}/wumpus-{{ version.raw }}.tar.gz
+
+        versions:
+          - 1.7
+
+        # TODO: Is there a gitlab version provider?
+
+        provides:
+          - bin/wumpus
+          - bin/superhack
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+
+          script: |
+            make
+            make prefix={{prefix}} install
+
+        test:
+          script: echo no way to test this
+
+
+
+    Here's an example ruby formula for the project librttopo:
+
+
+        class Librttopo < Formula
+          homepage "https://git.osgeo.org/gitea/rttopo/librttopo"
+          url "https://git.osgeo.org/gitea/rttopo/librttopo/archive/librttopo-1.1.0.tar.gz"
+          head "https://git.osgeo.org/gitea/rttopo/librttopo.git", branch: "master"
+          livecheck do
+            url :head
+            regex(/^(?:librttopo[._-])?v?(\d+(?:\.\d+)+)$/i)
+          end
+          depends_on "autoconf" => :build
+          depends_on "automake" => :build
+          depends_on "libtool" => :build
+          depends_on "geos"
+          def install
+            system "./autogen.sh"
+            system "./configure", "--disable-debug",
+                                  "--disable-dependency-tracking",
+                                  "--disable-silent-rules",
+                                  "--prefix=#{prefix}"
+            system "make", "install"
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <librttopo.h>
+              int main(int argc, char *argv[]) {
+                printf("%s", rtgeom_version());
+                return 0;
+              }
+            EOS
+            system ENV.cc, "test.c", "-I#{include}", "-L#{lib}", "-lrttopo", "-o", "test"
+            assert_equal stable.version.to_s, shell_output("./test")
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project librttopo in the yml format:

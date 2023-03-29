@@ -1,0 +1,38 @@
+distributable:
+  url: https://github.com/containers/podman/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: containers/podman
+  strip: /^v/
+
+dependencies:
+  golang.org: ^1
+  gnu.org/make: ^4
+  qemu: latest if os.mac?
+  libseccomp.org: ^2
+  systemd/systemd: latest if os.linux?
+  john-millikin.com/protobuf-c: ^1
+  yelp.io/xsltproc: any
+
+build:
+  dependencies:
+    gnu.org/autotools: any
+    gnu.org/automake: any
+    gnu.org/autoconf: any
+    gnu.org/libtool: any
+    freedesktop.org/pkg-config: latest
+    containers/common: '*'
+  script: |
+    ./autogen.sh
+    mkdir -p build
+    cd build
+    ../configure --prefix=#{prefix}
+    make
+    make install
+
+provides:
+  - bin/podman
+
+test:
+  podman -v

@@ -1,0 +1,30 @@
+distributable:
+  url: https://github.com/LuaJIT/LuaJIT/archive/505e2c03de35e2718eef0d2d3660712e06dadf1f.tar.gz
+
+# Update version number with 'brew livecheck luajit'.
+versions:
+  - 2.1.0-beta3-20230221.4
+
+provides:
+  - bin/luajit
+  - lib/libluajit.dylib
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+
+  script: |
+    # Override the hardcoded gcc and remove the "-march=i686"
+    sed -i 's/CC?.*/CC?= $ENV{CC}/g' src/Makefile
+    sed -i 's/-march=i686//g' src/Makefile
+    export MACOSX_DEPLOYMENT_TARGET=$macos_version
+    export PREFIX=$HOMEBREW_PREFIX
+    make amalg && make install PREFIX=$PREFIX
+    # Install symlinks
+    VERSION=$(head -n1 $HOMEBREW_CACHE/LuaJIT--git/src/luajit-VERSION)
+    ln -s $PREFIX/bin/luajit-$VERSION $PREFIX/bin/luajit
+    ln -s $PREFIX/lib/libluajit-$VERSION.dylib $PREFIX/lib/libluajit.dylib
+
+test:
+  script: echo "There is no test for Luajit"

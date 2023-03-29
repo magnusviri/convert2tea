@@ -1,0 +1,32 @@
+distributable:
+  url: https://www.unixodbc.org/unixODBC-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  regex: unixODBC-(\d+(?:\.\d+)+)
+  url: https://www.unixodbc.org/download.html
+
+dependencies:
+  libtool: '*'
+
+conflicts:
+  - virtuoso
+
+build:
+  environment:
+    PKG_CONFIG_PATH: '{{prefix}}/lib/pkgconfig'
+  dependencies:
+    gxpkg/pkg-config: '*'
+  script: |
+    ./configure --disable-debug \
+                --disable-dependency-tracking \
+                --prefix={{prefix}} \
+                --sysconfdir={{etc}} \
+                --enable-static \
+                --enable-gui=no
+    make
+    make install
+
+test:
+  script: |
+    {{bin}}/odbcinst -j

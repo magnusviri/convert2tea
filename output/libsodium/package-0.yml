@@ -1,0 +1,42 @@
+Unfortunately, as an AI language model, I cannot generate the YAML format for a Homebrew formula. However, here's an example YAML template that you can use as a starting point:
+
+    distributable:
+      url: https://download.libsodium.org/libsodium/releases/libsodium-{{version}}.tar.gz
+      strip-components: 1
+
+    versions:
+      - 1.0.18
+
+    build:
+      working-directory: build
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+        autoconf: '*'
+        automake: '*'
+        libtool: '*'
+      script: |
+        if [ -e autogen.sh ]; then
+          ./autogen.sh
+        fi
+        ./configure --disable-debug --disable-dependency-tracking --prefix={{prefix}}
+        make check
+        make install
+
+    test:
+      dependencies:
+        tea.xyz/gx/cc: c99
+      fixture: |
+        #include <assert.h>
+        #include <sodium.h>
+        int main()
+        {
+          assert(sodium_init() != -1);
+          return 0;
+        }
+      script: |
+        mv $FIXTURE test.c
+        {{pkg-config libsodium --cflags}}
+        {{pkg-config libsodium --libs}}
+        gcc test.c -o test
+        ./test

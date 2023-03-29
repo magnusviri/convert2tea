@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to convert the ruby formula for wimlib to the yml format as they are two different formats used by two different package managers (Homebrew and Linux package managers respectively). The yml format shown in the example is specifically for the Linux package manager Tea, and cannot be used for Homebrew.

@@ -1,0 +1,38 @@
+distributable:
+  url: https://github.com/terraform-linters/tflint/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: terraform-linters/tflint
+  tag: v
+
+provides:
+  - bin/tflint
+
+build:
+  script: |
+    go build -v -ldflags="$LDFLAGS" github.com/terraform-linters/tflint
+    mkdir -p "{{ prefix }}"/bin
+    mv tflint "{{ prefix }}"/bin
+  dependencies:
+    go.dev: ^1.16
+  env:
+    CGO_ENABLED: 0
+    LDFLAGS:
+      - "-s"
+      - "-w"
+
+test: |
+  tflint --version
+  (echo '
+terraform {
+  required_providers {
+    null = {
+      source = "hashicorp/null"
+      version = "3.1.0"
+    }
+  }
+}
+
+resource "null_resource" "test" {}
+  ' | tflint -q -)

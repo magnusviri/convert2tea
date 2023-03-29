@@ -1,0 +1,37 @@
+distributable:
+  url: https://github.com/strukturag/libheif/releases/download/v{{version}}/libheif-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: https://www.libde265.org/
+  github: strukturag/libheif
+  strip: /^libheif-/
+
+dependencies:
+  shared-mime-info: '*'
+  libde265: '*'
+  jpeg-turbo: '*'
+  libpng: '*'
+  x265: '*'
+  pkg-config: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure $ARGS --disable-silent-rules
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --prefix={{prefix}}
+  post-install:
+    - update-mime-database {{prefix}}/share/mime
+
+test:
+  script: |
+    heif-convert {{pkgshare}}/example.heic {{testpath}}/exampleheic.jpg
+    heif-convert {{pkgshare}}/example.avif {{testpath}}/exampleavif.jpg
+
+provides:
+  - bin/heif-convert

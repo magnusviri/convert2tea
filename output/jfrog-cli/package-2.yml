@@ -1,0 +1,28 @@
+distributable:
+  url: https://github.com/jfrog/jfrog-cli/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: jfrog/jfrog-cli/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    go.dev: '*'
+  script: |
+    go build -ldflags="$LDFLAGS" -o {{prefix}}/bin/jf
+    ln -s {{prefix}}/bin/jf {{prefix}}/bin/jfrog
+  env:
+    LDFLAGS:
+      - -s
+      - -w
+
+provides:
+  - bin/jf
+  - bin/jfrog
+
+test:
+  script: |
+    jf -v
+    jfrog -v
+    JFROG_CLI_REPORT_USAGE=false CI=true jf rt bp --dry-run --url=http://127.0.0.1

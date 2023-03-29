@@ -1,0 +1,65 @@
+distributable:
+  url: https://github.com/macvim-dev/macvim/archive/refs/tags/release-{{ version.raw }}.tar.gz
+
+provides:
+  - bin/mvim
+  - bin/mvimex
+  - bin/mvimdiff
+  - bin/mview
+  - bin/gvim
+  - bin/gvimex
+  - bin/gvimdiff
+  - bin/gview
+  - bin/vi
+  - bin/vim
+  - bin/vimex
+  - bin/vimdiff
+  interprets:
+  extensions:
+    - vim
+
+versions:
+  github: macvim-dev/macvim
+  strip: /^release-/
+
+dependencies:
+  gettext.org: '*'
+  libsodium.org: '*'
+  lua.org: '*'
+  python.org: '3.11.*'
+  ruby.org: '*'
+  invisible-island.net/ncurses: '*'
+
+runtime:
+  env:
+    MACOSX_DEPLOYMENT_TARGET: {{ macos.version }}
+    PATH: ${{prefix}}/bin:$PATH
+    HOME: $HOME
+    TERMINFO: ${{prefix}}/share/terminfo
+
+build:
+  dependencies:
+    xcode.org: '*'
+    tea.xyz/gx/cc: clang
+    tea.xyz/gx/make: '*'
+  script: |
+    export SDKROOT=''
+    export PYTHONPATH=''
+    export MACOSX_DEPLOYMENT_TARGET={{ macos.version }}
+    export CFLAGS='-mmacosx-version-min={{ macos.version }} -isysroot {{ dev.icu.sdk_path }}'
+    export LDFLAGS='-mmacosx-version-min={{ macos.version }} -isysroot {{ dev.icu.sdk_path }}'
+    export OBJCFLAGS="${CFLAGS}"
+    export OBJCXXFLAGS="${CFLAGS}"
+    export CC="clang"
+    export CXX="clang++"
+    make CFLAGS="$CFLAGS" CC="$CC" FIRST_TIME=NO MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET DEVELOPER_DIR=$DEVELOPER_DIR -j{{hw.concurrency}} macvim
+    make install
+  env:
+    PATH: ${{compiler.cc}}/bin:$PATH
+    MACOSX_DEPLOYMENT_TARGET: {{ macos.version }}
+    DEVELOPER_DIR: {{ xcode.prefix_path }}/Contents/Developer
+
+test:
+  script: |
+    echo "vim.api.nvim_command('echo \"hello\"')" | mvim --headless -
+  timeout_seconds: 30

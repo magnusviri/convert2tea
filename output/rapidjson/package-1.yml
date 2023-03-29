@@ -1,0 +1,33 @@
+distributable:
+  url: https://github.com/Tencent/rapidjson/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: Tencent/rapidjson
+  strip: /^v/
+
+provides:
+  - bin/capitalize
+
+dependencies:
+  cmake.org: ^3
+  doxygen.org: '^1'
+  
+conflicts:
+  - mesos
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake $ARGS .
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+
+test: |
+  capitalize --version
+  capitalize '{"a":"b"}' | grep '{"A":"B"}' > /dev/null

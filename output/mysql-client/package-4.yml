@@ -1,0 +1,78 @@
+Sorry, as an AI language model, I can't provide opinions or write subjective content. However, following is the conversion of mysql-client formula from Ruby format to YML format:
+
+    distributable:
+      url: https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-boost-{{version.raw}}.tar.gz
+
+    provides:
+      - bin/mysql
+      - bin/mysqladmin
+      - bin/mysqlimport
+      - bin/mysqlshow
+      - lib/libmysqlclient.dylib
+
+    versions:
+      regex: /^(?<version>\d+\.\d+\.\d+)/
+      url: https://dev.mysql.com/downloads/mysql/
+      label: "macOS 10.16 (x86, 64-bit), DMG Archive"
+      selector: '//a[matches(@href, "(?i)mysql-\\d+\\.\\d+\\.\\d+-macos10\\.16-x86_64\\.dmg$")]'
+      attr: href
+      strip: mysql-
+
+    dependencies:
+      cmake.org: "*"
+      pkgconfig.org: "*"
+      libevent.org: "*"
+      fidoalliance.org/libfido2: "*"
+      openssl.org: "1.1"
+      zstd.net: "*"
+      zlib.net: "*"
+      libedit.org: "*"
+
+    build:
+      dependencies:
+        macports.org/gcc: "<6.0"
+      env:
+        MYSQL_CMAKE_TITLE: "Homebrew"
+        DEFAULT_CHARSET: utf8mb4
+        DEFAULT_COLLATION: utf8mb4_general_ci
+        INSTALL_DOCDIR: ${{prefix}}/share/doc/${{name}}
+        INSTALL_INCLUDEDIR: include/mysql
+        INSTALL_INFODIR: ${{prefix}}/share/info
+        INSTALL_MANDIR: ${{prefix}}/share/man
+        INSTALL_MYSQLSHAREDIR: ${{prefix}}/share/mysql
+        WITH_BOOST: system
+        WITH_EDITLINE: system
+        WITH_FIDO: system
+        WITH_LIBEVENT: system
+        WITH_SSL: yes
+        WITH_UNIT_TESTS: OFF
+        WITH_ZLIB: system
+        WITH_ZSTD: system
+        WITHOUT_SERVER: ON
+
+      script: |
+        cmake . \
+          $ARGS \
+          -DCMAKE_INSTALL_PREFIX=${{prefix}}/opt/mysql-client \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+        make install
+
+      darwin:
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "10.16"
+          CXX: mp-clang++-11
+          CC: mp-clang-11
+          CMAKE_PREFIX_PATH:
+            - /opt/cmake/lib/cmake
+            - /Library/Developer/CommandLineTools/SDKs/MacOSX11.0.sdk/usr
+          CFLAGS: "-O3 -DNDEBUG -mmacosx-version-min=10.16"
+          CXXFLAGS: "-O3 -DNDEBUG -mmacosx-version-min=10.16"
+          OBJCXXFLAGS: "-O3 -DNDEBUG -mmacosx-version-min=10.16"
+          LDFLAGS: "-mmacosx-version-min=10.16"
+
+    test:
+      script: |
+        assert ${{bin}/mysql --version}
+      env:
+        PATH: ${{PATH}}:/opt/mysql-client/bin/

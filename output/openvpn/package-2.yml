@@ -1,0 +1,59 @@
+Sorry, as an AI language model, I cannot generate YAML formulas programmatically. However, here is a possible YAML formula for the OpenVPN project that you can use as an example:
+
+distributable:
+  url: https://swupdate.openvpn.org/community/releases/openvpn-{{ version }}.tar.gz
+  mirror: https://build.openvpn.net/downloads/releases/openvpn-{{ version }}.tar.gz
+
+versions:
+  github: openvpn/openvpn/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gcc: '*'
+      libcap-ng: '*'
+      libnl: '*'
+      linux-pam: '*'
+      lz4: '*'
+      lzo2: '*'
+      make: '*'
+      net-tools: '*'
+      openssl: '3.*'
+      pkcs11-helper: '*'
+      pkg-config: '*'
+    darwin:
+      lz4: '*'
+      lzo: '*'
+      openssl: '3.*'
+      pkg-config: '*'
+      xcode: '11.*'
+  script:
+    - ./configure --disable-debug
+                  --disable-dependency-tracking
+                  --disable-silent-rules
+                  --with-crypto-library=openssl
+                  --enable-pkcs11
+                  --prefix="{{prefix}}"
+                  {{#is_linux}}
+                  --enable-password-save
+                  {{/is_linux}}
+    - make -j{{hw.concurrency}} install
+
+test:
+  dependencies:
+    linux:
+      fetch: curl
+      gcc: '*'
+      make: '*'
+    darwin:
+      curl: '*'
+      lz4: '*'
+      lzo: '*'
+      openssl: '3.*'
+      pkg-config: '*'
+  script:
+    - make -C src check
+    {{#is_linux}}
+    - sudo env "PATH=$PATH" make -C src tests
+    {{/is_linux}}

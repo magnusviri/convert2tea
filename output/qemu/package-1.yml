@@ -1,0 +1,82 @@
+distributable:
+  url: https://download.qemu.org/qemu-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  - 7.2.0
+
+build:
+  dependencies:
+    gnu.org: ^10
+    mesonbuild.com: ^0.59
+    ninja-build.org: 1.10
+    pkgconfig.freedesktop.org: ^0.29
+    capstoneengine.com: ^4.0.2
+    freetype.org: ^2.10
+    opus-codec.org: ^1.3
+    glib.org: ^2.68
+    gnutls.org: ^3.7
+    jpeg.org: ^2.1
+    libpng.org: ^1.6
+    gitlab.com/libslirp/libslirp: ^4.6
+    libssh.org: ^0.9
+    libusb.info: ^1.0.24
+    lzo.algorithms.org: ^2.10
+    invisible-island.net/ncurses: ^6.2
+    gnutls.org: ^3.7
+    pixman.org: ^0.40.0
+    google.github.io/snappy: ^1.1.2
+    vde.sourceforge.net: ^2.3
+    zstd.net: ^1.5
+  working-directory:
+    build
+  script: |
+    meson .. --prefix={{prefix}} --libdir={{prefix}}/lib --buildtype=release --default-library=both
+    meson configure --buildtype=release --backend=ninja
+    ninja
+    ninja install
+  env:
+    CC: gcc-10
+
+test:
+  script: |
+    assert_match "QEMU Project", shell_output("#{bin}/qemu-system-aarch64 --version", 1)
+    resource("homebrew-test-image").stage testpath
+    assert_match "file format: raw", shell_output("#{bin}/qemu-img info FLOPPY.img")
+
+provides:
+  - bin/qemu-img
+  - bin/qemu-system-aarch64
+  - bin/qemu-system-alpha
+  - bin/qemu-system-arm
+  - bin/qemu-system-cris
+  - bin/qemu-system-hppa
+  - bin/qemu-system-i386
+  - bin/qemu-system-m68k
+  - bin/qemu-system-microblaze
+  - bin/qemu-system-microblazeel
+  - bin/qemu-system-mips
+  - bin/qemu-system-mips64
+  - bin/qemu-system-mips64el
+  - bin/qemu-system-mipsel
+  - bin/qemu-system-nios2
+  - bin/qemu-system-or1k
+  - bin/qemu-system-ppc
+  - bin/qemu-system-ppc64
+  - bin/qemu-system-riscv32
+  - bin/qemu-system-riscv64
+  - bin/qemu-system-rx
+  - bin/qemu-system-s390x
+  - bin/qemu-system-sh4
+  - bin/qemu-system-sh4eb
+  - bin/qemu-system-sparc
+  - bin/qemu-system-sparc64
+  - bin/qemu-system-tricore
+  - bin/qemu-system-x86_64
+  - bin/qemu-system-xtensa
+  - bin/qemu-system-xtensaeb
+
+resources:
+  homebrew-test-image:
+    url: https://wiki.qemu.org/images/0/04/FreeDOS-1.2-memdisk-820K.img.gz
+    sha256: bbe97686bcaaa7dd2a37a9140d9e1b0c407b92d3bb8f1d89fef009f37854e7be

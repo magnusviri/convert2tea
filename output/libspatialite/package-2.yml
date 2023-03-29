@@ -1,0 +1,51 @@
+distributable:
+  url: https://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  fossil: https://www.gaia-gis.it/fossil/libspatialite
+  strip: /^tip$/
+
+dependencies:
+  librttopo: '*'
+  freexl: '*'
+  geos: '*'
+  minizip: '*'
+  pkg-config: '*'
+  proj: '*'
+  sqlite: '*'
+  libxml2: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*' # for head version only
+    tea.xyz/gx/automake: '*' # for head version only
+    tea.xyz/gx/libtool: '*' # for head version only
+    tea.xyz/gx/cc: c99
+  script: |
+    # use autotools for head version
+    if [ "{{ version }}" = "HEAD" ]; then
+      autoreconf -fi
+    fi
+
+    # Ensure Homebrew's libsqlite is found before the system version.
+    sqlite_prefix=$(brew --prefix sqlite)
+    export LDFLAGS="-L${sqlite_prefix}/lib ${LDFLAGS}"
+    export CFLAGS="-I${sqlite_prefix}/include ${CFLAGS}"
+
+    ./configure --disable-dependency-tracking \
+                --prefix={{ prefix }} \
+                --with-sysroot=${HOMEBREW_PREFIX} \
+                --enable-geocallbacks \
+                --enable-rttopo=yes
+
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    # Verify mod_spatialite extension can be loaded using Homebrew's SQLite
+    sqlite3 ${TEST_TMPDIR}/test.db <<EOF
+      SELECT load_extension('#{prefix}/lib/mod_spatialite');
+EOF

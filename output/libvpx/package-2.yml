@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/webmproject/libvpx/archive/v1.13.0.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.13.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    yasm.org: ^1
+  working-directory: macbuild
+  script: |
+    ../configure --prefix={{prefix}} --disable-dependency-tracking --disable-examples --disable-unit-tests --enable-pic --enable-shared --enable-vp9-highbitdepth
+    make install
+  on-cpu: intel
+  env:
+    CFLAGS:
+      - -march=native
+      - -mtune=native
+      - -O3
+
+provides:
+  - lib/libvpx.a
+
+test:
+  script: |
+    ar -x {{lib}}/libvpx.a

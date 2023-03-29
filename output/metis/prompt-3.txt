@@ -1,0 +1,173 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project cmake:
+
+
+        class Cmake < Formula
+          homepage "https://www.cmake.org/"
+          url "https://github.com/Kitware/CMake/releases/download/v3.26.1/cmake-3.26.1.tar.gz"
+          mirror "http://fresh-center.net/linux/misc/cmake-3.26.1.tar.gz"
+          mirror "http://fresh-center.net/linux/misc/legacy/cmake-3.26.1.tar.gz"
+          head "https://gitlab.kitware.com/cmake/cmake.git", branch: "master"
+          # The "latest" release on GitHub has been an unstable version before, so we
+          # check the Git tags instead.
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          uses_from_macos "ncurses"
+          on_linux do
+            depends_on "openssl@3"
+          end
+          # The completions were removed because of problems with system bash
+          # The `with-qt` GUI option was removed due to circular dependencies if
+          # CMake is built with Qt support and Qt is built with MySQL support as MySQL uses CMake.
+          # For the GUI application please instead use `brew install --cask cmake`.
+          def install
+            args = %W[
+              --prefix=#{prefix}
+              --no-system-libs
+              --parallel=#{ENV.make_jobs}
+              --datadir=/share/cmake
+              --docdir=/share/doc/cmake
+              --mandir=/share/man
+            ]
+            if OS.mac?
+              args += %w[
+                --system-zlib
+                --system-bzip2
+                --system-curl
+              ]
+            end
+            system "./bootstrap", *args, "--", *std_cmake_args,
+                                               "-DCMake_INSTALL_BASH_COMP_DIR=#{bash_completion}",
+                                               "-DCMake_INSTALL_EMACS_DIR=#{elisp}",
+                                               "-DCMake_BUILD_LTO=ON"
+            system "make"
+            system "make", "install"
+          end
+          def caveats
+            <<~EOS
+              To install the CMake documentation, run:
+                brew install cmake-docs
+            EOS
+          end
+          test do
+            (testpath/"CMakeLists.txt").write("find_package(Ruby)")
+            system bin/"cmake", "."
+            # These should be supplied in a separate cmake-docs formula.
+            refute_path_exists doc/"html"
+            refute_path_exists man
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project cmake:
+
+
+        distributable:
+          url: https://github.com/Kitware/CMake/releases/download/v{{ version }}/cmake-{{ version }}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: Kitware/CMake/releases/tags
+          ignore: /-rc\d/
+
+        detect:
+          cmd: cmake --version
+          regex: cmake version \v
+
+        dependencies:
+          curl.se: '>=5'
+          zlib.net: 1
+          sourceware.org/bzip2: 1
+
+        provides:
+          - bin/cmake
+          - bin/ccmake
+          - bin/cpack
+          - bin/ctest
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+          script: |-
+            ./bootstrap $ARGS
+            make --jobs {{ hw.concurrency }} install
+            rm -rf {{prefix}}/share/doc  # docs are online
+          env:
+            V: 1
+            ARGS:
+              - --prefix={{ prefix }}
+              - --parallel={{ hw.concurrency }}
+              - --datadir=/var
+              - --docdir=/share/doc
+              - --mandir=/share/man
+              - --system-zlib
+              - --system-bzip2
+              - --system-curl
+              - --
+              - -DCMake_BUILD_LTO=ON
+              - -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+            darwin:
+              ARGS:
+              - -DZLIB_LIBRARY={{deps.zlib.net.prefix}}/lib/libz.dylib
+              - -DZLIB_INCLUDE_DIR={{deps.zlib.net.prefix}}/include
+              - -DCURL_LIBRARY={{deps.curl.se.prefix}}/lib/libcurl.dylib
+              - -DCURL_INCLUDE_DIR={{deps.curl.se.prefix}}/include
+              - -DBZIP2_LIBRARIES={{deps.sourceware.org/bzip2.prefix}}/lib/libbz2.a
+              - -DBZIP2_INCLUDE_DIR={{deps.sourceware.org/bzip2.prefix}}/include
+            linux:
+              ARGS:
+              - -DZLIB_LIBRARY={{deps.zlib.net.prefix}}/lib/libz.so
+              - -DZLIB_INCLUDE_DIR={{deps.zlib.net.prefix}}/include
+              - -DCURL_LIBRARY={{deps.curl.se.prefix}}/lib/libcurl.so
+              - -DCURL_INCLUDE_DIR={{deps.curl.se.prefix}}/include
+              - -DBZIP2_LIBRARIES={{deps.sourceware.org/bzip2.prefix}}/lib/libbz2.so
+              - -DBZIP2_INCLUDE_DIR={{deps.sourceware.org/bzip2.prefix}}/include
+
+          error-log:
+            Bootstrap.cmk/cmake_bootstrap.log
+
+        test:
+          script:
+            cmake --version
+
+
+
+    Here's an example ruby formula for the project metis:
+
+
+        class Metis < Formula
+          homepage "http://glaros.dtc.umn.edu/gkhome/views/metis"
+          url "http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/metis-5.1.0.tar.gz"
+          livecheck do
+            url "http://glaros.dtc.umn.edu/gkhome/metis/metis/download"
+            regex(%r{href=.*?/metis[._-]v?(\d+(?:\.\d+)+)\.t}i)
+          end
+          depends_on "cmake" => :build
+          def install
+            system "make", "config", "prefix=#{prefix}", "shared=1"
+            system "make", "install"
+            pkgshare.install "graphs"
+          end
+          test do
+            ["4elt", "copter2", "mdual"].each do |g|
+              cp pkgshare/"graphs/#{g}.graph", testpath
+              system "#{bin}/graphchk", "#{g}.graph"
+              system "#{bin}/gpmetis", "#{g}.graph", "2"
+              system "#{bin}/ndmetis", "#{g}.graph"
+            end
+            cp [pkgshare/"graphs/test.mgraph", pkgshare/"graphs/metis.mesh"], testpath
+            system "#{bin}/gpmetis", "test.mgraph", "2"
+            system "#{bin}/mpmetis", "metis.mesh", "2"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project metis in the yml format:

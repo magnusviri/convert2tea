@@ -1,0 +1,113 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project circleci:
+
+
+        class Circleci < Formula
+          homepage "https://circleci.com/docs/2.0/local-cli/"
+          # Updates should be pushed no more frequently than once per week.
+          url "https://github.com/CircleCI-Public/circleci-cli.git",
+              tag:      "v0.1.25519",
+              revision: "8b2a4d0a5ffbfb298d785ca8d39d5807cddf37da"
+          head "https://github.com/CircleCI-Public/circleci-cli.git", branch: "master"
+          depends_on "go" => :build
+          def install
+            ldflags = %W[
+              -s -w
+              -X github.com/CircleCI-Public/circleci-cli/version.packageManager=homebrew
+              -X github.com/CircleCI-Public/circleci-cli/version.Version=#{version}
+              -X github.com/CircleCI-Public/circleci-cli/version.Commit=#{Utils.git_short_head}
+            ]
+            system "go", "build", *std_go_args(ldflags: ldflags)
+            generate_completions_from_executable(bin/"circleci", "--skip-update-check", "completion",
+                                                shells: [:bash, :zsh])
+          end
+          test do
+            # assert basic script execution
+            assert_match(/#{version}\+.{7}/, shell_output("#{bin}/circleci version").strip)
+            (testpath/".circleci.yml").write("{version: 2.1}")
+            output = shell_output("#{bin}/circleci config pack #{testpath}/.circleci.yml")
+            assert_match "version: 2.1", output
+            # assert update is not included in output of help meaning it was not included in the build
+            assert_match(/update.+This command is unavailable on your platform/, shell_output("#{bin}/circleci help 2>&1"))
+            assert_match "`update` is not available because this tool was installed using `homebrew`.",
+              shell_output("#{bin}/circleci update")
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project circleci:
+
+
+        distributable:
+          url: https://github.com/CircleCI-Public/circleci-cli/archive/refs/tags/v{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: CircleCI-Public/circleci-cli/tags 
+          strip: /^v/
+
+        build:
+          dependencies:
+            tea.xyz/gx/make: '*'
+            go.dev: '*'
+          script: |
+            go build -ldflags="$LDFLAGS" -o {{prefix}}/bin/circleci
+          env:
+            LDFLAGS:
+              - -s
+              - -w
+              - -X github.com/CircleCI-Public/circleci-cli/version.packageManager=tea
+              - -X github.com/CircleCI-Public/circleci-cli/version.Version={{version}}
+
+        provides:
+          - bin/circleci
+
+        test:
+          script: |
+            circleci version
+            echo "{version: 2.1}" > .circleci.yml 
+            circleci config pack .circleci.yml
+
+
+
+    Here's an example ruby formula for the project flyctl:
+
+
+        class Flyctl < Formula
+          homepage "https://fly.io"
+          url "https://github.com/superfly/flyctl.git",
+              tag:      "v0.0.500",
+              revision: "f71fe0efcbdc3adc8f066c3d9a0d55f5225f1ffe"
+          head "https://github.com/superfly/flyctl.git", branch: "master"
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          depends_on "go" => :build
+          def install
+            ENV["CGO_ENABLED"] = "0"
+            ldflags = %W[
+              -s -w
+              -X github.com/superfly/flyctl/internal/buildinfo.environment=production
+              -X github.com/superfly/flyctl/internal/buildinfo.buildDate=#{time.iso8601}
+              -X github.com/superfly/flyctl/internal/buildinfo.version=#{version}
+              -X github.com/superfly/flyctl/internal/buildinfo.commit=#{Utils.git_short_head}
+            ]
+            system "go", "build", *std_go_args(ldflags: ldflags)
+            bin.install_symlink "flyctl" => "fly"
+            generate_completions_from_executable(bin/"flyctl", "completion")
+          end
+          test do
+            assert_match "flyctl v#{version}", shell_output("#{bin}/flyctl version")
+            flyctl_status = shell_output("#{bin}/flyctl status 2>&1", 1)
+            assert_match "Error No access token available. Please login with 'flyctl auth login'", flyctl_status
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project flyctl in the yml format:

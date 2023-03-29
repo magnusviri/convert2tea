@@ -1,0 +1,56 @@
+distributable:
+  url: https://www.libraw.org/data/LibRaw-{{version}}.tar.gz
+  sha256: e6538c251080078f08b2ffca2afd976d8358aab480b24c1e94f517c703306e84
+  strip-components: 1
+
+versions:
+  - 0.21.1
+
+build:
+  working-directory: LibRaw-{{version}}
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+    freedesktop.org/pkg-config: '*'
+    jasper: '*'
+    jpeg-turbo: '*'
+    little-cms2: '*'
+  after-script: |
+    autoreconf --force --install --verbose
+    ./configure --prefix={{prefix}} --disable-dependency-tracking
+    make
+    make install
+    cp -r doc {{prefix}}
+    cp -r samples {{prefix}}
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  before-script: |
+    mkdir test
+    cd test
+    curl -LO https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/libraw.rb
+  fixture: |
+    #include <stdio.h>
+    #include <libraw/libraw.h>
+    int main() {
+      printf("Versions: %s, %d\\n", libraw_version(), libraw_versionNumber());
+      return 0;
+    }
+  script: |
+    {{working-directory}}/tests/test_all.sh
+    mv libraw.sh libraw-test.sh
+    rm test_all.sh
+    mv libraw-test.sh test_all.sh
+    {{testing.py}} {{TEST_DIR}}/test_all.sh
+    g++ $FIXTURE {{pkg-config --cflags --libs libraw}} -o test
+    ./test > output.txt
+    if ! grep -q "Versions: {{version}}, {{version}}00" output.txt; then
+      echo "FAIL"
+      false
+    else
+      echo "PASS"
+    fi

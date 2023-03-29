@@ -1,0 +1,99 @@
+distributable:
+  url: https://github.com/openjdk/jdk19u/archive/refs/tags/jdk-19.0.2-ga.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/java
+  - bin/javac
+  - bin/javadoc
+  - bin/javap
+  - bin/jcmd
+  - bin/jconsole
+  - bin/jdb
+  - bin/jhat
+  - bin/jinfo
+  - bin/jmap
+  - bin/jps
+  - bin/jrunscript
+  - bin/jsadebugd
+  - bin/jstack
+  - bin/jstat
+  - bin/jstatd
+  - bin/jvisualvm
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/java.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/javac.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/javap.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/javadoc.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jcmd.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jconsole.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jdb.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jsadebugd.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jhat.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jinfo.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jmap.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jps.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jrunscript.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jstack.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jstat.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jstatd.1
+  - ${ERL_ROOTDIR}/lib/erlang/man/man1/jvisualvm.1
+
+versions:
+  github: openjdk/jdk19u
+  regex: /^jdk[._-]v(\d+(?:\.\d+)+)-ga$/
+
+dependencies:
+  giflib: '*'
+  harfbuzz: '*'
+  jpeg-turbo: '*'
+  libpng: '*'
+  little-cms2: '*'
+  macOS: catalina
+  on_linux:
+    alsa-lib: '*'
+    fontconfig: '*'
+    freetype: '*'
+    libx11: '*'
+    libxext: '*'
+    libxrandr: '*'
+    libxrender: '*'
+    libxt: '*'
+    libxtst: '*'
+
+runtime:
+  env:
+    ERL_ROOTDIR: ${{prefix}}/share/java
+    JAVA_HOME: ${{env.ERL_ROOTDIR}}/openjdk
+    PATH: ${{env.JAVA_HOME}}/bin:$PATH
+
+build:
+  dependencies:
+    autoconf: '*'
+    pkg-config: '*'
+    Xcode: '*'
+  script: |
+    ${export} JVM_VARIANT=server
+    ${export} LIBRARY_PATH="`brew --prefix openssl@1.1`/lib:`brew --prefix libffi`/lib:${LIBRARY_PATH}"
+    ${export} CPATH="`brew --prefix openssl@1.1`/include:`brew --prefix libffi`/include:${CPATH}"
+    ${export} CFLAGS="${CFLAGS} -I`xcrun --show-sdk-path`/usr/include"
+    ${export} LDFLAGS="${LDFLAGS} -L`xcrun --show-sdk-path`/usr/lib -isysroot `xcrun --show-sdk-path`"
+    bash configure
+    make images
+    make install
+  env:
+    export: |
+      export CC=`which clang`
+      export CXX=`which clang++`
+      export LD=`which ld`
+      export MACOSX_DEPLOYMENT_TARGET=$(expr `sw_vers -productVersion | cut -f 2 -d .` - 1)
+      export CONF_NAME=java
+      export LANG=C
+      export _JAVA_OPTIONS="${_JAVA_OPTIONS} -XX:+IgnoreUnrecognizedVMOptions -Xms64M -XX:ErrorFile=/usr/local/var/log/java/hs_err_pid%p.log -Dfile.encoding=UTF-8"
+    MACOSX_DEPLOYMENT_TARGET: |
+      10.14
+    CPPFLAGS: |
+      -I`xcrun --show-sdk-path`/usr/include
+    CFLAGS: |
+      -I`xcrun --show-sdk-path`/usr/include
+    LDFLAGS: |
+      -L`xcrun --show-sdk-path`

@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/lima-vm/lima/archive/v{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: lima-vm/lima/tags
+  ignore:
+    - /^v0\.15/
+    - /^v0\.1[0-4]\./
+
+dependencies:
+  homebrew:
+    - go
+    - qemu
+
+provides:
+  - bin/limactl
+
+build:
+  script: |
+    make VERSION={{version.raw}} clean binaries
+    cp -R _output/bin {{prefix}}/
+    cp -R _output/share {{prefix}}/
+    generate-completions.ts --executable={{prefix}}/bin/limactl --output=completion --base-name=limactl
+
+test:
+  script:
+    limactl info | grep '\"vmTypes\":\[\(\"qemu\"\|\"vz\"\)\]' >/dev/null
+    limactl info | grep '\"templates\":\[{\(\"name\":\"default\"\|\"name\":\"macos-catalina\"\)}\]' >/dev/null

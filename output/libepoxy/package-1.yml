@@ -1,0 +1,76 @@
+distributable:
+  url: https://download.gnome.org/sources/libepoxy/1.5/libepoxy-1.5.10.tar.xz
+  strip-components: 1
+
+versions:
+  - 1.5.10
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: gcc
+    mesonbuild.com: ^0.55
+    ninja-build.org: 1
+    pkg-config: '*'
+    python: 3.11
+    freeglut: linux
+  working-directory:
+    build
+  script: |
+    meson .. --prefix={{prefix}} --libdir={{prefix}}/lib --buildtype=release
+    ninja -v
+    ninja install
+  env:
+    CC: clang
+    CFLAGS: "-I#{HOMEBREW_PREFIX}/include"
+    LDFLAGS: "-L#{HOMEBREW_PREFIX}/lib"
+
+test:
+  script: |
+    test_file="test.c"
+    echo '#include <epoxy/gl.h>
+#ifdef OS_MAC
+#include <OpenGL/CGLContext.h>
+#include <OpenGL/CGLTypes.h>
+#include <OpenGL/OpenGL.h>
+#endif
+int main()
+{
+    #ifdef OS_MAC
+    CGLPixelFormatAttribute attribs[] = {0};
+    CGLPixelFormatObj pix;
+    int npix;
+    CGLContextObj ctx;
+    CGLChoosePixelFormat( attribs, &pix, &npix );
+    CGLCreateContext(pix, (void*)0, &ctx);
+    #endif
+    glClear(GL_COLOR_BUFFER_BIT);
+    #ifdef OS_MAC
+    CGLReleasePixelFormat(pix);
+    CGLReleaseContext(pix);
+    #endif
+    return 0;
+}' > "${test_file}"
+
+    args=("-lepoxy")
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      args+=("-framework" "OpenGL" "-DOS_MAC")
+    fi
+
+    "${CC}" "${test_file}" "${CFLAGS[@]}" "${LDFLAGS[@]}" "${args[@]}" -o test
+    ls -lh test
+    file test
+    ./test
+
+provides:
+  - bin/libepoxy.pc
+  - lib/libepoxy.a
+  - lib/libepoxy.dylib
+  - include/epoxy
+  - include/EGL/egl.h
+  - include/EGL/eglext.h
+  - include/GLES2/gl2.h
+  - include/GLES/gl.h
+  - include/GLES/glext.h
+  - include/GLES3/gl3.h
+  - include/GL/glcorearb.h
+  - include/KHR/khrplatform.h

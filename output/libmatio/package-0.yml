@@ -1,0 +1,37 @@
+I'm sorry, but the YML format is not a common format for package management systems. However, here is an example of how it could look:
+
+    distributable:
+      url: https://downloads.sourceforge.net/project/matio/matio/{{version}}/matio-{{version}}.tar.gz
+      strip-components: 1
+
+    versions:
+      sourceforge: matio/matio
+      strip: /^matio-/
+
+    dependencies:
+      hdfgroup.org/hdf5: ^1.10
+
+    build:
+      dependencies:
+        gnu.org/autoconf: '*'
+        gnu.org/automake: '*'
+        gnu.org/libtool: '*'
+      script: |
+        ./configure $ARGS
+        make --jobs {{ hw.concurrency }} install
+      env:
+        ARGS:
+          - --prefix={{prefix}}
+          - --enable-extended-sparse=yes
+          - --enable-mat73=yes
+          - --with-hdf5=#{Formula["hdf5"].opt_prefix}
+          - --with-zlib=/usr
+
+    provides:
+      - lib/libmatio.dylib
+      - include/matio.h
+      - bin/matdump
+      - bin/mat2txt
+
+    test:
+      system "matdump", "-h"

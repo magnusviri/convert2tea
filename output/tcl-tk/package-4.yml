@@ -1,0 +1,119 @@
+distributable:
+          url: https://downloads.sourceforge.net/project/tcl/Tcl/{{version}}/tcl{{version}}-src.tar.gz
+          strip-components: 1
+
+        versions:
+          github: TclTk/tcl
+          strip: /^tcl/
+
+        provides:
+          - bin/tclsh
+          - bin/wish
+
+        dependencies:
+          zlib.net: ^1
+          openssl.org: ^1
+          libexpat.github.io: '*'
+          sqlite.org: ^3
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            gnupg.org/libgcrypt: ^1
+            gnupg.org/libgpg-error: ^1
+            freedesktop.org/pkg-config: '*'
+            freetype.org: ^2
+            x.org/libX11: '*'
+            x.org/libXext: '*'
+          script: |
+            args = %W[
+              --prefix=#{prefix}
+              --includedir=#{include}/tcl-tk
+              --mandir=#{man}
+              --enable-threads
+              --enable-64bit
+            ]
+            ENV["TCL_PACKAGE_PATH"] = "#{HOMEBREW_PREFIX}/lib"
+            system "./configure", *args
+            system "make", "--jobs={{hw.concurrency}}"
+            system "make", "install"
+            system "make", "install-private-headers"
+            ln_s bin/"tclsh{{version.to_f}}", bin/"tclsh"
+            ENV.prepend_path "PATH", bin
+            resource("Tk").stage do
+              args << "--enable-aqua=yes" if OS.mac?
+              system "./configure", *args, "--without-x", "--with-tcl=#{lib}"
+              system "make"
+              system "make", "install"
+              system "make", "install-private-headers"
+              ln_s bin/"wish{{version.to_f}}", bin/"wish"
+            end
+            resource("critcl").stage do
+              system bin/"tclsh", "build.tcl", "install"
+            end
+            resource("tcllib").stage do
+              system "./configure", "--prefix=#{prefix}", "--mandir=#{man}"
+              system "make", "install"
+              system "make", "critcl"
+              cp_r "modules/tcllibc", "#{lib}/"
+              ln_s "#{lib}/tcllibc/macosx-x86_64-clang", "#{lib}/tcllibc/macosx-x86_64" if OS.mac?
+            end
+            resource("tcltls").stage do
+              system "./configure", "--with-ssl=openssl",
+                                    "--with-openssl-dir=#{Formula["openssl@1.1"].opt_prefix}",
+                                    "--prefix=#{prefix}",
+                                    "--mandir=#{man}"
+              system "make", "install"
+            end
+            resource("itk4").stage do
+              itcl_dir = Pathname.glob(lib/"itcl*").last
+              args = %W[
+                --prefix=#{prefix}
+                --exec-prefix=#{prefix}
+                --with-tcl=#{lib}
+                --with-tk=#{lib}
+                --with-itcl=#{itcl_dir}
+              ]
+              system "./configure", *args
+              system "make"
+              system "make", "install"
+            end
+          env:
+            MACOSX_DEPLOYMENT_TARGET: "10.14"
+            PKG_CONFIG_PATH: "{{prefix}}/lib/pkgconfig"
+          
+        test: |
+          tclsh -version
+          wish -version
+          tclsh -c "puts $auto_path"
+          tclsh -c "puts honk"
+          # Fails with: no display name and no $DISPLAY environment variable
+          return if OS.linux? && ENV["HOMEBREW_GITHUB_ACTIONS"]
+          test_itk = <<~EOS
+            # Check that Itcl and Itk load, and that we can define, instantiate,
+            # and query the properties of a widget.
+            # If anything errors, just exit
+            catch {
+                package require Itcl
+                package require Itk
+                # Define class
+                itcl::class TestClass {
+                    inherit itk::Toplevel
+                    constructor {args} {
+                        itk_component add bye {
+                            button $itk_interior.bye -text "Bye"
+                        }
+                        eval itk_initialize $args
+                    }
+                }
+                # Create an instance
+                set testobj [TestClass .#auto]
+                # Check the widget has a bye component with text property "Bye"
+                if {[[$testobj component bye] cget -text]=="Bye"} {
+                    puts "OK"
+                }
+            }
+            exit
+          EOS
+          assert_equal "OK\n", pipe_output("#{bin}/wish", test_itk), "Itk test failed"

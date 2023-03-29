@@ -1,0 +1,28 @@
+distributable:
+  url: https://download.gnome.org/sources/atk/2.38/atk-2.38.0.tar.xz
+  strip-components: 1
+
+versions:
+  - 2.38.0
+
+dependencies:
+  gnome.org/glib: 2
+  gnome.org/gobject-introspection: 1.38
+  gnu.org/gettext: ^0.21
+
+build:
+  dependencies:
+    freedesktop.org/pkg-config: ^0.29
+    mesonbuild.com: ^0.63
+    ninja-build.org: 1
+  working-directory: build
+  script: |
+    meson .. --prefix={{prefix}} --buildtype=release
+    ninja
+    ninja install
+
+test: |
+  (pkg-config --cflags --libs atk) > /dev/null
+
+provides:
+  - bin/atk_get_version

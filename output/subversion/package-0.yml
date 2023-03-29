@@ -1,0 +1,12 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=subversion/subversion-{{ version.raw }}.tar.bz2
+  strip-components: 1
+
+provides:
+  - bin/svn
+  - bin/svnadmin
+  - bin/svndumpfilter
+  - bin/svnlook
+  - bin/svnrdump
+  - bin/svnserve
+  - bin/svnsync

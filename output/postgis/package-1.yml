@@ -1,0 +1,44 @@
+distributable:
+  url: https://download.osgeo.org/postgis/source/postgis-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: postgis/postgis
+  strip: /^postgis-/
+
+provides:
+  - bin/shp2pgsql
+  - bin/pgsql2shp
+  - bin/raster2pgsql
+
+dependencies:
+  - zlib.net: '*'
+  - json-c.net: '*'
+  - gdal.net: ^2.1
+  - geos.net: ^3.6
+  - proj4.net: '*'
+  - libtiff.github.io: '*'
+  - libxml2.github.io: '*'
+  - libiconv.github.io: '*'
+  - libpcre.github.io: '*'
+
+build:
+  script: |
+    ./configure --prefix="{{prefix}}" --disable-nls
+    make
+    make install
+  dependencies:
+    - gnupg.org/libgcrypt: '*'
+    - postgresql.org: ^14
+    - freedesktop.org/pkg-config: '*'
+    - gcc.gnu.org: '*'
+    - libtool.org: '*'
+    - gnu.org:autoconf: '*'
+    - gnu.org:automake: '*'
+    - net.sourceforge.mingw-w64: i686
+    - net.sourceforge.mingw-w64: x86_64
+
+test: |
+  shp2pgsql -h
+  pgsql2shp -h
+  raster2pgsql -h

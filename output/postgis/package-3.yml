@@ -1,0 +1,50 @@
+distributable:
+  url: https://download.osgeo.org/postgis/source/postgis-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: postgis/postgis
+  strip: /^postgis-/
+
+provides:
+  - bin/shp2pgsql
+  - bin/postgis_restore.pl
+
+dependencies:
+  proj.network: '*'
+  json-c.github.io: '*'
+  sfcgal.github.io: '*'
+  pcre.org: '*'
+  gdal.org: '*'
+  geoserver.github.io/geos: '*'
+  protobuf-c.github.io: '*'
+  postgresql.org: '>= 14'
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/gpp: '*'
+    tea.xyz/gx/libtool: '*'
+    gnupg.org/libgcrypt: '*'
+    gnupg.org/libgpg-error: '*'
+    freedesktop.org/pkg-config: '*'
+  script: |
+    export PG_CONFIG="{{dependencies.postgresql.org}}/bin/pg_config"
+    export PROJDIR="{{dependencies.proj.network}}"
+    export JSONDIR="{{dependencies.json-c.github.io}}"
+    export CFLAGS="$CFLAGS -I$PROJDIR/include -I$JSONDIR/include/json-c"
+    export LDFLAGS="$LDFLAGS -L$PROJDIR/lib -L$JSONDIR/lib"
+    set -x
+    ./configure --prefix="{{prefix}}" \
+                --disable-nls \
+                --with-pgconfig \
+                --with-protobufdir="{{dependencies.protobuf-c.github.io}}/bin" \
+                --with-geosconfig="{{dependencies.geoserver.github.io/geos}}/bin/geos-config" \
+                --with-gdalconfig="{{dependencies.gdal.org}}/bin/gdal-config"
+    make
+    make install
+
+test: |
+  shp2pgsql -h
+  postgis_restore.pl -V

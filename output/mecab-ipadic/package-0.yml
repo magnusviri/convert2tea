@@ -1,0 +1,33 @@
+distributable:
+  url: https://deb.debian.org/debian/pool/main/m/mecab-ipadic/mecab-ipadic_{{version}}+main.orig.tar.gz
+  strip-components: 1
+
+versions:
+  debian: mecab-ipadic
+
+dependencies:
+  mecab: '*'
+
+provides:
+  - bin/mecab
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --disable-debug                      \
+                --disable-dependency-tracking         \
+                --prefix={{prefix}}                   \
+                --with-charset=utf8                   \
+                --with-dicdir={{lib}}/mecab/dic/ipadic
+    make install
+
+  postinstall-script: |
+    echo 'dicdir = {{prefix}}/lib/mecab/dic/ipadic' >> {{etc}}/mecabrc
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script:
+    echo 'dicdir = {{prefix}}/lib/mecab/dic/ipadic' >> {{etc}}/mecabrc
+    echo 'すもももももももものうち' | mecab --rcfile={{etc}}/mecabrc

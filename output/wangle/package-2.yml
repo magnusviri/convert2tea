@@ -1,0 +1,51 @@
+distributable:
+  url: https://github.com/facebook/wangle/archive/v{{version}}.tar.gz
+
+versions:
+  - v2023.03.27.00
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    tea.xyz/gx/cc: c99
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+    bzip2: '*'
+    zlib: '*'
+  working-directory:
+    wangle-{{version}}
+  script: |
+    cmake . -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=ON \
+      -DCMAKE_INSTALL_PREFIX={{prefix}} \
+      -DCMAKE_CXX_FLAGS='-std=c++17' \
+      -DLIBWANGLE_BUILD_SHARED=ON \
+      -DLIBWANGLE_BUILD_STATIC=ON
+    cmake --build . --target install
+    cmake --build . --target clean
+    cmake . -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF \
+      -DCMAKE_INSTALL_PREFIX={{prefix}} \
+      -DCMAKE_CXX_FLAGS='-std=c++17' \
+      -DLIBWANGLE_BUILD_SHARED=OFF \
+      -DLIBWANGLE_BUILD_STATIC=ON
+    cmake --build .
+    install -m 0644 lib/libwangle.a {{prefix}}/lib/
+    install -d {{prefix}}/share/wangle/
+    install -m 0644 example/echo/*.cpp {{prefix}}/share/wangle/
+  env:
+    linux:
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+
+test: |
+  EchoServer -port {{free_port}} &
+  sleep 10
+  EchoClient -port {{free_port}} <<< "Hello from Homebrew!
+                                      Another test line." > output
+  grep -q "Hello from Homebrew!" output
+  grep -q "Another test line." output
+
+provides:
+  - bin/EchoServer
+  - bin/EchoClient
+  - lib/libwangle.a

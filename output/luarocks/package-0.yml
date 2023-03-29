@@ -1,0 +1,100 @@
+distributable:
+  url: https://luarocks.org/releases/luarocks-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: luarocks/luarocks
+  strip: /^v/
+
+dependencies:
+  lua.org: ^5.3
+  luajit.org: '^2'
+  clangd: '*'
+  unzip: '*'
+
+build:
+  type: make
+  configure: |
+    ./configure --prefix={{prefix}} --sysconfdir=#{etc} --rocks-tree=#{HOMEBREW_PREFIX}
+  env:
+    CFLAGS:
+      - -I/usr/local/opt/llvm/include -L/usr/local/opt/llvm/lib
+    LDFLAGS:
+      - -L/usr/local/opt/llvm/lib
+      - -Wl,-rpath,/usr/local/opt/llvm/lib
+    ASAN_OPTIONS:
+      - detect_leaks=1
+      - abort_on_error=1
+
+provides:
+  - bin/luarocks
+  - bin/luarocks-admin
+
+test:
+  script: |
+    luas=(
+      lua
+      lua@5.3
+    )
+
+    for lua in ${luas[@]}; do
+      luaversion=$(luajit -e "print(table.concat({${lua##*@}}))")
+      testpath_lua=$(echo ${lua} | tr '@' '-')
+
+      ENV["LUA_PATH"]="${testpath}/share/lua/${luaversion}/?.lua"
+      ENV["LUA_CPATH"]="${testpath}/lib/lua/${luaversion}/?.so"
+
+      luajit -e "package.path = '${testpath}/share/lua/${luaversion}/?.lua;' .. package.path; require('lfs')"
+
+      case ${luaversion} in
+        5.1)
+          echo "Testing LuaFileSystem with Lua 5.1"
+
+          (cat <<- EOF
+            require('lfs')
+            lfs.mkdir('blank space')
+          EOF
+          ) > blank_space.lua
+
+          luajit blank_space.lua
+          if [ ! -d 'blank space' ]; then
+            echo "Failed to create directory 'blank space'"
+            exit 1
+          fi
+          rm -rf 'blank space'
+
+          echo "Testing LuaFileSystem with LuaJIT"
+
+          $(brew --prefix luajit)/bin/luajit blank_space.lua
+          if [ ! -d 'blank space' ]; then
+            echo "Failed to create directory 'blank space'"
+            exit 1
+          fi
+          rm -rf 'blank space'
+          ;;
+        *)
+          echo "Testing LuaFileSystem with Lua ${luaversion}"
+
+          lfs_test_file='lfs.lua'
+          if [ "${luaversion}" = "5.4" ]; then
+            lfs_test_file='lfs_54.lua'
+          fi
+
+          (cat <<- EOF
+            require("lfs")
+            current_dir = lfs.currentdir()
+          EOF
+          ) > ${lfs_test_file}
+
+          luajit ${lfs_test_file} | grep ${testpath_lua}
+          case ${luaversion} in
+            5.4)
+              [[ "${current_dir}" = "${testpath_lua}" ]]
+              ;;
+            *)
+              [[ "${current_dir}" =~ "${testpath_lua}$" ]]
+              ;;
+          esac
+          ;;
+      esac
+    done

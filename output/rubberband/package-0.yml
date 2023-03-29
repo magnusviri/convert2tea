@@ -1,0 +1,31 @@
+distributable:
+  url: https://breakfastquay.com/files/releases/rubberband-{{version}}.tar.bz2
+
+versions:
+  - 3.2.0
+
+build:
+  dependencies:
+    mesonbuild.com: ^0.47
+    ninja-build.org: 1
+    pkg-config: 1
+    libsamplerate: 0.1
+    libsndfile: 1.0
+    fftw.org: 3 if linux
+    ladspa.org: if linux
+    vamp-plugins.org: if linux
+  working-directory:
+    build
+  script: |
+    meson .. --prefix={{prefix}} --libdir={{prefix}}/lib --buildtype=release -Dresampler=libsamplerate
+    ninja -v
+    ninja install
+  env:
+    CC: clang
+
+test:
+  script: |
+    rubberband -t2 test.wav out.wav
+
+provides:
+  - bin/rubberband

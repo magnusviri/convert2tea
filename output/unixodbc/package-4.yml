@@ -1,0 +1,39 @@
+distributable:
+  url: https://www.unixodbc.org/unixODBC-{{version}}.tar.gz
+  mirror: https://fossies.org/linux/privat/unixODBC-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  regex:
+    pattern: /(\d+(?:\.\d+)+)/
+    url: https://www.unixodbc.org/download.html
+  conflicts:
+    - virtuoso
+  link_overwrite:
+    - include/odbcinst.h
+    - include/sql.h
+    - include/sqlext.h
+    - include/sqltypes.h
+    - include/sqlucode.h
+    - lib/libodbc.a
+    - lib/libodbc.so
+
+dependencies:
+  libtool: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --disable-debug \
+                --disable-dependency-tracking \
+                --prefix={{prefix}} \
+                --sysconfdir={{etc}} \
+                --enable-static \
+                --enable-gui=no
+    make install
+
+test:
+  script: |
+    odbcinst -j

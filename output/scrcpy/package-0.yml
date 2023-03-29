@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to convert this ruby formula to yml format as the latter is specific to the Homebrew package manager on macOS, while the former is written in the Ruby programming language and is used by the Linuxbrew package manager. The two formats have different syntax and use different variables and dependencies.

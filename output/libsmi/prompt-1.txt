@@ -1,0 +1,98 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project bcrypt:
+
+
+        class Bcrypt < Formula
+          homepage "https://bcrypt.sourceforge.io/"
+          url "https://bcrypt.sourceforge.io/bcrypt-1.1.tar.gz"
+          livecheck do
+            url :homepage
+            regex(/href=.*?bcrypt[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          uses_from_macos "zlib"
+          def install
+            system "make", "CC=#{ENV.cc}",
+                           "CFLAGS=#{ENV.cflags}",
+                           "LDFLAGS=-lz"
+            bin.install "bcrypt"
+            man1.install Utils::Gzip.compress("bcrypt.1")
+          end
+          test do
+            (testpath/"test.txt").write("Hello World!")
+            pipe_output("#{bin}/bcrypt -r test.txt", "12345678\n12345678\n")
+            mv "test.txt.bfe", "test.out.txt.bfe"
+            pipe_output("#{bin}/bcrypt -r test.out.txt.bfe", "12345678\n")
+            assert_equal File.read("test.txt"), File.read("test.out.txt")
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project bcrypt:
+
+
+        distributable:
+          url: https://bcrypt.sourceforge.net/bcrypt-{{version.marketing}}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 1.1.0
+
+        dependencies:
+          zlib.net: '*'
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+          script: |
+            make LDFLAGS=-lz PREFIX={{prefix}} install
+
+        provides:
+          - bin/bcrypt
+
+        test:
+          script: |
+            echo "Hello World!" > test.txt
+            printf '12345678\n12345678\n' | bcrypt -r test.txt
+            mv test.txt.bfe test.out.txt.bfe
+            printf '12345678\n' | bcrypt -r test.out.txt.bfe
+            cat test.out.txt
+
+
+
+
+    Here's an example ruby formula for the project libsmi:
+
+
+        class Libsmi < Formula
+          homepage "https://www.ibr.cs.tu-bs.de/projects/libsmi/"
+          url "https://www.ibr.cs.tu-bs.de/projects/libsmi/download/libsmi-0.5.0.tar.gz"
+          mirror "https://www.mirrorservice.org/sites/distfiles.macports.org/libsmi/libsmi-0.5.0.tar.gz"
+          license all_of: ["TCL", "BSD-3-Clause", "Beerware"]
+          livecheck do
+            url "https://www.ibr.cs.tu-bs.de/projects/libsmi/download/"
+            regex(/href=.*?libsmi[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          # Regenerate `configure` to avoid `-flat_namespace` bug.
+          # None of our usual patches apply.
+          depends_on "autoconf" => :build
+          depends_on "automake" => :build
+          depends_on "libtool" => :build
+          def install
+            system "autoreconf", "--force", "--install", "--verbose"
+            system "./configure", "--disable-debug", "--disable-dependency-tracking",
+                                  "--prefix=#{prefix}"
+            system "make", "install"
+          end
+          test do
+            assert_match version.to_s, shell_output("#{bin}/smidiff -V")
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project libsmi in the yml format:

@@ -1,0 +1,43 @@
+Sorry, as an AI language model, I am not able to generate formatted code such as YAML format. However, I can provide you with the equivalent YAML format based on the example Ruby formula for the project wimlib:
+
+```
+distributable:
+  url: https://wimlib.net/downloads/wimlib-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  regex: (\d+(?:\.\d+)+)
+  sourceforge:
+    - wimlib
+
+dependencies:
+  openssl.org: ^3.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --disable-debug
+    - --disable-dependency-tracking
+    - --disable-silent-rules
+    - --prefix={{prefix}}
+    - --without-fuse
+    - --without-ntfs-3g
+    - --with-openssl={{Formula["openssl@3"].opt_prefix}}
+    - --with-libxml2
+  test:
+    script: |
+      mkdir -p foo
+      dd if=/dev/random of=foo/bar bs=1M count=1
+      env WIMLIB_IMAGEX_USE_UTF8=1 wimcapture foo bar.wim
+      wiminfo bar.wim
+
+provides:
+  - bin/wimcapture
+  - bin/wiminfo
+```

@@ -1,0 +1,30 @@
+distributable:
+  url: https://github.com/msgpack/msgpack-c/releases/download/c-{{version}}/msgpack-c-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: msgpack/msgpack-c
+  git_tags: true
+  strip: /^v/
+
+dependencies:
+  cmake.org: ^3.19
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake -S . -B build -DCMAKE_INSTALL_PREFIX={{prefix}}
+    cmake --build build --config Release
+    cmake --install build --config Release
+  env:
+    CFLAGS: "{{CFLAGS}} -fPIC"
+
+provides:
+  - lib/libmsgpackc.so
+  - lib/libmsgpackc.so.4
+  - lib/libmsgpackc.so.4.0.0
+
+test: |
+  echo "msgpack-c version $(pkg-config --modversion msgpack)"

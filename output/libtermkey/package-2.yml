@@ -1,0 +1,78 @@
+distributable:
+  url: https://www.leonerd.org.uk/code/libtermkey/libtermkey-{{version}}.tar.gz
+
+versions:
+  - 0.22
+
+build:
+  working-directory: libtermkey-{{version}}
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    libtool.org: '*'
+    freedesktop.org/pkg-config: '*'
+    nilrt/unibilium: '*'
+    apple.com/Xcode: '*'
+  script: |
+    ./configure --prefix={{prefix}} --disable-dependency-tracking
+    make install
+  env:
+    MACOSX_DEPLOYMENT_TARGET: {{osx_deployment_target}}
+  on_linux:
+    dependencies:
+      gnu.org/coreutils: '*'
+      gnome.org/glib: '*'
+    script: |
+      ./configure --prefix={{prefix}} --disable-dependency-tracking
+      make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: '^0.29'
+  env:
+    cflags: $(pkg-config --cflags unibilium) $(pkg-config --cflags termkey)
+    ldflags: $(pkg-config --libs unibilium) $(pkg-config --libs termkey)
+  fixture: |
+    #include <termkey.h>
+    #include <stdio.h>
+    #include <string.h>
+
+    int main() {
+      TermKey *tk;
+      size_t len;
+      char bytes[3];
+
+      tk = termkey_new(0, TERMKEY_FLAG_SPACESYMBOL);
+
+      if(tk == NULL) {
+        puts("Unable to allocate termkey");
+        return 1;
+      }
+
+      memset(bytes, 0, 3 * sizeof(char));
+      len = termkey_strfkey(tk, bytes, 3, TERMKEY_SYM_ENTER);
+      if(len == 0) {
+        puts("Unable to produce string for enter key");
+        return 1;
+      }
+
+      if(memcmp(bytes, "\r\n", 3) != 0) {
+        printf("Bad bytes produced: %s\n", bytes);
+        return 1;
+      }
+
+      termkey_destroy(tk);
+      return 0;
+    }
+
+  script: |
+    mv $FIXTURE test.c
+    gcc test.c ${cflags} ${ldflags} -o test
+    ./test > output.txt
+    out=$(./test)
+    if [ "$out" == "" ] ; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

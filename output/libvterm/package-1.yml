@@ -1,0 +1,24 @@
+distributable:
+  url: http://www.leonerd.org.uk/code/libvterm/libvterm-0.3.1.tar.gz
+
+versions:
+  - 0.3.1
+
+provides:
+  - lib/libvterm.dylib
+  - include/vterm.h
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    libtool: '*'
+
+  script: |
+    make PREFIX={{prefix}} install
+
+test:
+  script: |
+    echo "void main(){}" > test.c
+    {{cc}} -I{{include}} test.c -o test {{ldflags}} {{lib}}/libvterm.dylib
+    ./test

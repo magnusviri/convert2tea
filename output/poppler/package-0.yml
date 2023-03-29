@@ -1,0 +1,41 @@
+distributable:
+  url: https://poppler.freedesktop.org/poppler-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  - 23.03.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: cxx17
+    tea.xyz/gx/cmake: 3.20.5
+    freedesktop.org/gobject-introspection: '*'
+    freedesktop.org/pkgconfig: '*'
+    freedesktop.org/glib: '*'
+    freedesktop.org/cairo: '*'
+    freetype.org/freetype2: '*'
+    libpng.org: '*'
+    libtiff.org: '*'
+    openjpeg.org: '*'
+    mozilla.org/nspr: '*'
+    mozilla.org/nss: '*'
+  working-directory: build
+  script: |
+    cmake $ARGS -G "Unix Makefiles" ..
+    make --jobs {{ hw.concurrency }}
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DBUILD_REGEXPS=OFF
+      - -DFONT_CONFIGURATION=generic
+      - -DTESTDATADIR=testfiles
+      - -DENABLE_LIBOPENJPEG=openjpeg2
+      - -DENABLE_FONT_CONFIGURATION=ON
+      - -DENABLE_UNSTABLE_API_ABI_HEADERS=ON
+
+provides:
+  - bin/pdfinfo
+
+test:
+  command: pdfinfo {{ test.path }}/test.pdf

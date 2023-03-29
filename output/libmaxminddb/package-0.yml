@@ -1,0 +1,32 @@
+Sorry, as an AI language model, I am not able to generate YAML file given the examples provided. However, here's an example YAML file for the project libmaxminddb that you can use:
+
+```
+distributable:
+  url: https://github.com/maxmind/libmaxminddb/releases/download/{{version}}/libmaxminddb-{{version}}.tar.gz
+
+versions:
+  github: maxmind/libmaxminddb
+  strip: ''
+
+dependencies:
+  gnu.org/autoconf: '*'
+  gnu.org/automake: '*'
+  gnu.org/libtool: '*'
+
+build:
+  dependencies:
+    gnu.org/gcc: '*'
+  script: |
+    ./bootstrap
+    ./configure --prefix={{prefix}}
+    make -j{{ hw.concurrency }}
+    make check
+    make install
+
+provides:
+  - bin/mmdblookup
+  - lib/libmaxminddb.*
+
+test:
+  mmdblookup --version
+```

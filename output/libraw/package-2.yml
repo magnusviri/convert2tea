@@ -1,0 +1,87 @@
+distributable:
+  url: https://www.libraw.org/data/LibRaw-{{version}}.tar.gz
+
+versions:
+  - 0.21.1
+
+build:
+  working-directory: LibRaw-{{version}}
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    tea.xyz/gx/autotools: '*'
+    tea.xyz/gx/pkg-config: '*'
+    jasper.org: '*'
+    libjpeg-turbo.org: '*'
+    little-cms2.com: '*'
+    zlib.net: '*'
+    darktable-org/rawspeed: '*'
+  script: |
+    autoreconf --force --install --verbose
+    ./configure --prefix {{prefix}} --disable-dependency-tracking
+    make
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/pkg-config: '*'
+    darktable-org/rawspeed: '*'
+  fixture: |
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+    #include <errno.h>
+    #include <libraw/libraw.h>
+
+    int main(int argc, char **argv)
+    {
+        if (argc < 2) {
+            fprintf(stderr, "Usage: %s file.nef\n", argv[0]);
+            return EXIT_FAILURE;
+        }
+
+        LibRaw rawProcessor;
+        int ret;
+
+        rawProcessor.imgdata.params.output_bps = 16;
+        rawProcessor.imgdata.params.user_flip = 0;
+        rawProcessor.imgdata.params.no_auto_bright = 1;
+        rawProcessor.imgdata.params.no_auto_scale = 1;
+        rawProcessor.imgdata.params.use_camera_wb = 1;
+        rawProcessor.imgdata.params.output_tif = 0;
+
+        ret = rawProcessor.open_file(argv[1]);
+        if (ret != LIBRAW_SUCCESS) {
+            fprintf(stderr, "Cannot open file %s: %s\n", argv[1], libraw_strerror(ret));
+            return EXIT_FAILURE;
+        }
+
+        ret = rawProcessor.unpack_thumb();
+        if (ret != LIBRAW_SUCCESS) {
+            fprintf(stderr, "Cannot unpack thumbnail for %s: %s\n", argv[1], libraw_strerror(ret));
+        }
+
+        ret = rawProcessor.unpack();
+        if (ret != LIBRAW_SUCCESS) {
+            fprintf(stderr, "Cannot unpack %s: %s\n", argv[1], libraw_strerror(ret));
+            return EXIT_FAILURE;
+        }
+
+        ret = rawProcessor.dcraw_process();
+        if (ret == LIBRAW_SUCCESS || ret == LIBRAW_CANCELLED_BY_CALLBACK) {
+            return EXIT_SUCCESS;
+        }
+
+        fprintf(stderr, "Cannot postprocess %s: %s\n", argv[1], libraw_strerror(ret));
+        return EXIT_FAILURE;
+    }
+  script: |
+    mv $FIXTURE test.c
+    gcc test.c $(pkg-config --cflags --libs libraw) -o test
+    ./test $HOMEBREW_LIBRARY/Formula/libraw/homebrew-librawtestfile/RAW_NIKON_D1.NEF > output.txt
+    if grep -q 'RAW_NIKON_D1.NEF:   1184x1776, 1x1' output.txt; then
+        echo "PASS"
+    else
+        echo "FAIL"
+    fi

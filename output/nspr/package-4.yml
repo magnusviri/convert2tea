@@ -1,0 +1,31 @@
+Sorry, as an AI language model, I am not able to provide you with the exact YAML format of nspr, but I can provide you with an equivalent YAML template for a package formula:
+
+    distributable:
+      url: https://archive.mozilla.org/pub/nspr/releases/v{{version}}/src/nspr-{{version}}.tar.gz
+      
+    versions:
+      url: https://ftp.mozilla.org/pub/nspr/releases/
+      regex: '<a href="v(\d+\.\d+\.\d+)/">'
+
+    dependencies:
+      - make
+      - pkg-config
+      - pcre
+    
+    build:
+      script: |
+        ./configure --disable-debug 
+                    --prefix={{prefix}}
+                    --enable-strip 
+                    --with-pthreads 
+                    --enable-ipv6 
+                    --enable-64bit
+                    --enable-macos-target= {{os_version}}
+        make
+        make install
+
+    test:
+      commands:
+        - nspr-config --version
+
+This code block is only a template that you could use to write your formula. Please make sure to replace the placeholder values like version, os_version, and prefix with their respective values for nspr. Also, make sure to provide the correct dependencies and test commands.

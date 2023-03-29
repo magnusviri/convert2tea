@@ -1,0 +1,104 @@
+distributable:
+  url: https://github.com/openjdk/jdk19u/archive/refs/tags/jdk-19.0.2-ga.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/java
+  - bin/javac
+  - bin/javadoc
+  - bin/javap
+  - include/jni.h
+  - lib/jspawnhelper
+  - lib/server/libjvm.dylib
+
+interprets:
+  extensions: java
+  args: java
+
+versions:
+  github: openjdk/jdk19u
+  strip: /^jdk-/
+
+dependencies:
+  openssl.org: '*'
+  giflib.com: '*'
+  harfbuzz.com: '*'
+  jpeg-turbo.jpegsr: '>=2'
+  libpng.org: '*'
+  little-cms2.sourceforge: '*'
+  cups.org: '*'
+  unzip.net: '*'
+  zip.net: '*'
+  zlib.net: '*'
+
+runtime:
+  env:
+    JAVA_HOME: ${{prefix}}
+
+build:
+  dependencies:
+    gcc.gnu: '>=6'
+    perl.org: '>=5'
+    xcode: '>=12'
+  script: |
+    export LANG="C"
+    export JAVA_HOME=$(pwd)/build/macosx-x86_64-server-release/images/jdk/
+    export JDK_IMAGES_HOME=$(pwd)/build/macosx-x86_64-server-release/images/jdk/
+    export MAKEFILES_ACTION="$@"
+    bash configure --with-debug-level=release \
+      --with-jvm-variants=server \
+      --with-native-debug-symbols=none \
+      --with-vendor-name="Homebrew" \
+      --with-vendor-url="https://brew.sh/" \
+      --with-vendor-version-string=$TAG \
+      --with-vendor-vm-bug-url="https://github.com/Homebrew/brew" \
+      --without-version-debug \
+      --without-version-opt \
+      --without-version-pre \
+      --disable-warnings-as-errors \
+      --enable-dtrace=no
+    make images
+    export LANG="en_US.UTF-8"
+    export MAKEFILES_ACTION="test"
+    make run-test TEST="jdk_lang jdk_util jdk_security jdk_io jdk_nio jdk_net jdk_math jdk_math_crypto jdk_jdi jdk_jfr" 2>&1 | tee run-test.log
+    echo "All tests passed for $(./build/*/product/bin/java -version 2>&1 >/dev/null| head -n1)"
+  env:
+    LANG: C
+    JDK_UPDATE_VERSION: u$(echo $VERSION | awk -F'[_.]' '{print $2}')
+    TAG: jdk-$VERSION-$JDK_UPDATE_VERSION
+    CONFIG_SITE: configure_macosx_arm64-port.h
+    DISABLE_LTO: true
+    JAVA_HOME: /System/Library/Frameworks/JavaVM.framework/Versions/Current
+    MACOS_UNIVERSAL_BUILD: true
+    MAKEFLAGS: '-j$(sysctl -n hw.logicalcpu)'
+    TARGET_CPU: 'arm64'
+  on_linux:
+    env:
+      GLIBC_REQUIRES_VERBATIM_CFLAGS: 'yes'
+      JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64/
+
+test:
+  script: ./test/run.sh --javaHome=$JAVA_HOME
+  env:
+    JAVA_HOME: ${{prefix}}
+    TEST_VM_ARGS: '-XX:TieredStopAtLevel=1'
+  requires:
+    - pro
+  labels:
+    - security
+  commands:
+    - brew tap homebrew/cask-versions
+    - brew install --cask "homebrew/cask-versions/java${JAVA_FEATURE}"
+    - brew link --force "homebrew/cask-versions/java${JAVA_FEATURE}"
+    - JAVA_HOME=$(brew --prefix)/opt/java${JAVA_FEATURE}/bin
+    - export JAVA_HOME
+    - make run-test-only TEST="\\$(printf %s {jdk_lang,jdk_util,jdk_security,jdk_io,jdk_nio,jdk_net,jdk_math,jdk_math_crypto,jdk_jdi,jdk_jfr}/test | xargs printf '%s ')"
+  after_success:
+    - curl -fsSL https://github.com/mattnotmitt/auto-publish/releases/download/v1.3/publish.tar.gz | tar xz -C ${HOME}/bin --strip-components=1
+
+meta:
+  java:
+    - "11+"
+  license: GPL-2.0-only with Classpath-exception-2.0
+  homepage: "https://openjdk.java.net/"
+  description: "Open-source implementation of the Java Platform, Standard Edition (Java SE)."

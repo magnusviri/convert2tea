@@ -1,0 +1,49 @@
+distributable:
+  url: https://code.videolan.org/videolan/x264/-/archive/{{ version }}/x264-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  git: https://code.videolan.org/videolan/x264.git
+  github: videolan/x264/tags
+  regex: ^\d+\.\d+\.\d+$
+  ignore: /(update_version\.sh|pre-reconfigure|jitasm)/
+
+detect:
+  cmd: x264 --version
+  regex: ^x264\sframe
+
+dependencies:
+  nasm: '*'
+  on_linux:
+    - gcc
+
+provides:
+  darwin:
+    - bin/x264
+    - bin/x264-noffmpeg
+  linux:
+    - bin/x264
+    - bin/x264-noffmpeg
+
+build:
+  dependencies:
+    tea.xyz/gx/cc:
+      - high_sierra: gcc@7
+      - sierra:      gcc@6
+      - '^el_capitan': gcc@5
+    tea.xyz/gx/make: '>= 4'
+  script: |
+    ./configure --prefix={{prefix}} --disable-lsmash --disable-swscale --disable-ffms --enable-shared --enable-static --enable-strip
+    make --jobs={{hw.concurrency}}
+    make install
+  env:
+    echo: '-e'
+    CFLAGS: "-I{{deps.nasm.prefix}}/include"
+    LDFLAGS: "-L{{deps.nasm.prefix}}/lib"
+  error-log:
+    config.log
+
+test:
+  script: |-
+    echo | x264 --stdinhelp | grep -q frames
+    echo | x264-noffmpeg --stdinhelp | grep -q frames

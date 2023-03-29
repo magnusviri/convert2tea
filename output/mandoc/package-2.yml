@@ -1,0 +1,19 @@
+distributable:
+  url: https://mandoc.bsd.lv/snapshots/mandoc-{{ version }}.tar.gz
+
+versions:
+  github: kristapsdz/mandoc
+  strip: /^mandoc-/
+
+dependencies:
+  brew: zlib
+
+build:
+  script: |
+    ./configure
+    make install DESTDIR={{ prefix }}
+
+test:
+  script: |
+    mandoc -Thtml -Ostyle={{ prefix }}/share/examples/example.style.css {{ prefix }}/man/man1/mandoc.1.html > test.html
+    cat test.html | grep "The mandoc program reads Unix manpages" >/dev/null

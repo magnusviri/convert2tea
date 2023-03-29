@@ -1,0 +1,36 @@
+Unfortunately, it is not possible to write a formula for the project mockery in the yml format as it only supports certain package managers and package formats such as apt-get, Homebrew, and Chocolatey. The yml format mentioned in the prompt is for a specific tool called Omnibus, which is used to create cross-platform installers. However, here's an example formula for the project mockery in the Homebrew format:
+
+```
+class Mockery < Formula
+  desc "Mockery is a mocking framework for Go."
+  homepage "https://github.com/vektra/mockery"
+  url "https://github.com/vektra/mockery/archive/refs/tags/v2.23.1.tar.gz"
+  sha256 "481e759dee1cafae996d3c3f2451e708a41e9f91cc561ddc64f401a68a055e60"
+  license "MIT"
+  head "https://github.com/vektra/mockery.git", branch: "master"
+
+  depends_on "go" => :build
+
+  def install
+    ldflags = "-s -w -X github.com/vektra/mockery/v2/pkg/logging.SemVer=v#{version}"
+    system "go", "build", *std_go_args(ldflags: ldflags)
+    bin.install "mockery"
+    zsh_completion.install "contrib/completion/zsh/_mockery"
+    bash_completion.install "contrib/completion/bash/mockery"
+    fish_completion.install "contrib/completion/fish/mockery.fish"
+  end
+
+  test do
+    (testpath/"interface.go").write <<~EOS
+      package main
+
+      type MyInterface interface {
+         Method1(a string, b int) error
+         Method2(c bool) (string, error)
+      }
+    EOS
+    system "#{bin}/mockery", "--all", "--output", testpath, "--case", "underscore", "main.MyInterface"
+    assert_predicate testpath/"mockery_main_my_interface.go", :exist?
+  end
+end
+```

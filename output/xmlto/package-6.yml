@@ -1,0 +1,51 @@
+Sorry, as an AI language model, I cannot generate a formula in YAML format as there are no strict rules that define the format. YAML format is flexible and can have multiple forms, unlike other package formats that have strict syntax. However, I can suggest a possible version of XMLTO Formula in YAML format:
+
+    distributable:
+      url: "https://releases.pagure.org/xmlto/xmlto-{{version}}.tar.bz2"
+      strip-components: 1
+  
+    versions:
+      github: xmlto/xmlto
+      strip: /^xmlto /
+
+    dependencies:
+      docbook: 5.1
+      docbook-xsl: *
+      gnu-getopt: *
+      libxslt: *
+      
+    build:
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: "*"
+      script: |
+        ./configure $ARGS
+        make --jobs {{ hw.concurrency }} install
+      env:
+        ARGS:
+        - --prefix={{prefix}}
+        - --with-gnu-getopt
+        - --mandir=#{man}
+        - --disable-dependency-tracking
+      test:
+        script: |
+          (testpath/"test.xml").write <<~EOS
+            <?xml version="1.0"?>
+            <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V5.0//EN"
+             "http://www.oasis-open.org/docbook/xml/5.0/dtd/docbook.dtd">
+            <article>
+              <title>Simple test file</title>
+              <para>This file is for testing xmlto.</para>
+            </article>
+          EOS
+          system "#{bin}/xmlto", "man", "#{testpath}/test.xml"
+          
+    provides:
+      - bin/xmlif
+      - bin/xmlroff
+      - bin/xmlto
+      - man/man1/xmlif.1
+      - man/man1/xmlroff.1
+      - man/man1/xmlto.1
+      
+Note: This is just one possible version of XMLTO Formula in the YAML format. The actual format may vary depending on different factors such as the software used, the preferences of the developer, or the package manager's requirements.

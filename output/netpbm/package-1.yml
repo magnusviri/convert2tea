@@ -1,0 +1,88 @@
+distributable:
+  url: https://svn.code.sf.net/p/netpbm/code/stable
+  revision: 4534
+
+versions:
+  - 10.86.38
+
+provides:
+  - bin/pngtopam
+  - bin/pamdice
+  - bin/xpmtoppm
+
+build:
+  dependencies:
+    tea.xyz/gx/jasper: '*'
+    tea.xyz/gx/jpeg-turbo: '*'
+    tea.xyz/gx/libpng: '*'
+    tea.xyz/gx/libtiff: '*'
+    tea.xyz/gx/flex: '*'
+    tea.xyz/gx/libxml2: '*'
+    tea.xyz/gx/zlib: '*'
+
+  script: |
+    cp config.mk.in config.mk
+    sed -i 's/CC/#CC/g' config.mk
+    sed -i 's/-ltiff/\$(THEO_LIBS)/g' config.mk
+    sed -i 's/-ljpeg/\$(JPEG_LIBS)/g' config.mk
+    sed -i 's/-lpng/\$(PNG_LIBS)/g' config.mk
+    sed -i 's/-lz/\$(ZLIB_LIBS)/g' config.mk
+    sed -i 's/-ljasper/\$(JASPER_LIBS)/g' config.mk
+    sed -i 's?$(PREFIX)/rgb.txt?/misc/rgb.txt?g' config.mk
+
+    if [ "$(uname)" = "Darwin" ]; then
+      sed -i '/CFLAGS_SHLIB/s/-fPIC/-fno-common/g' config.mk
+      sed -i '/NETPBMLIBTYPE/s/staticlib/dylib/g' config.mk
+      sed -i '/NETPBMLIBSUFFIX/s/.a/.dylib/g' config.mk
+      sed -i 's/--static//' config.mk
+    else
+      sed -i '/CFLAGS_SHLIB/s/-fno-common/-fPIC/g' config.mk
+    fi
+
+    make
+    make package pkgdir=${OUTPUT_DIR}/stage
+    cd stage
+
+    sed -i '/@VERSION@/s/Netpbm [^ ]\+/10.86.38/g' pkgconfig_template
+    sed -i "/@LINKDIR@/s?/usr/local?${PREFIX}?g" pkgconfig_template
+    sed -i "/@INCLUDEDIR@/s?/usr/local?${PREFIX}?g" pkgconfig_template
+
+    mkdir -p ${PREFIX}/lib/pkgconfig
+    mv pkgconfig_template ${PREFIX}/lib/pkgconfig/netpbm.pc
+    cp -R bin include lib misc ${PREFIX}/
+
+test:
+  script: |
+    fwrite=$(#{bin}/pngtopam #{test_fixtures("test.png")} -alphapam)
+    echo $fwrite > $HOME/test.pam
+    #{bin}/pamdice $HOME/test.pam -outstem $HOME/testing
+    test -f $HOME/testing_0_0.pam
+
+    cat <<'EOF' > $HOME/test.xpm
+      /* XPM */
+      static char * favicon_xpm[] = {
+      "16 16 4 1",
+      "  c white",
+      ". c blue",
+      "X c black",
+      "o c red",
+      "                ",
+      "                ",
+      "                ",
+      "                ",
+      "  ....    ....  ",
+      " .    .  .    . ",
+      ".  ..  ..  ..  .",
+      "  .  . .. .  .  ",
+      " .   XXXXXX   . ",
+      " .   XXXXXX   . ",
+      "oooooooooooooooo",
+      "oooooooooooooooo",
+      "oooooooooooooooo",
+      "oooooooooooooooo",
+      "XXXXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXXXX"};
+    EOF
+
+    ppmout=$(#{bin}/xpmtoppm $HOME/test.xpm)
+    test -n "$ppmout"

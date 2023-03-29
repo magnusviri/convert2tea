@@ -1,0 +1,413 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project erlang:
+
+
+        class Erlang < Formula
+          homepage "https://www.erlang.org/"
+          # Download tarball from GitHub; it is served faster than the official tarball.
+          # Don't forget to update the documentation resource along with the url!
+          url "https://github.com/erlang/otp/releases/download/OTP-25.3/otp_src_25.3.tar.gz"
+          livecheck do
+            url :stable
+            regex(/^OTP[._-]v?(\d+(?:\.\d+)+)$/i)
+          end
+          head do
+            url "https://github.com/erlang/otp.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+          end
+          depends_on "openssl@1.1"
+          depends_on "unixodbc"
+          depends_on "wxwidgets" # for GUI apps like observer
+          uses_from_macos "libxslt" => :build
+          def install
+            # Unset these so that building wx, kernel, compiler and
+            # other modules doesn't fail with an unintelligible error.
+            %w[LIBS FLAGS AFLAGS ZFLAGS].each { |k| ENV.delete("ERL_#{k}") }
+            # Do this if building from a checkout to generate configure
+            system "./otp_build", "autoconf" unless File.exist? "configure"
+            args = %W[
+              --enable-dynamic-ssl-lib
+              --enable-hipe
+              --enable-shared-zlib
+              --enable-smp-support
+              --enable-threads
+              --enable-wx
+              --with-odbc=#{Formula["unixodbc"].opt_prefix}
+              --with-ssl=#{Formula["openssl@1.1"].opt_prefix}
+              --without-javac
+            ]
+            if OS.mac?
+              args << "--enable-darwin-64bit"
+              args << "--enable-kernel-poll" if MacOS.version > :el_capitan
+              args << "--with-dynamic-trace=dtrace" if MacOS::CLT.installed?
+            end
+            system "./configure", *std_configure_args, *args
+            system "make"
+            system "make", "install"
+            # Build the doc chunks (manpages are also built by default)
+            ENV.deparallelize { system "make", "docs", "DOC_TARGETS=chunks" }
+            ENV.deparallelize { system "make", "install-docs" }
+            doc.install resource("html")
+          end
+          def caveats
+            <<~EOS
+              Man pages can be found in:
+                #{opt_lib}/erlang/man
+              Access them with `erl -man`, or add this directory to MANPATH.
+            EOS
+          end
+          test do
+            assert_equal version, resource("html").version, "`html` resource needs updating!"
+            system "#{bin}/erl", "-noshell", "-eval", "crypto:start().", "-s", "init", "stop"
+            (testpath/"factorial").write <<~EOS
+              #!#{bin}/escript
+              %% -*- erlang -*-
+              %%! -smp enable -sname factorial -mnesia debug verbose
+              main([String]) ->
+                  try
+                      N = list_to_integer(String),
+                      F = fac(N),
+                      io:format("factorial ~w = ~w\n", [N,F])
+                  catch
+                      _:_ ->
+                          usage()
+                  end;
+              main(_) ->
+                  usage().
+              usage() ->
+                  io:format("usage: factorial integer\n").
+              fac(0) -> 1;
+              fac(N) -> N * fac(N-1).
+            EOS
+            chmod 0755, "factorial"
+            assert_match "usage: factorial integer", shell_output("./factorial")
+            assert_match "factorial 42 = 1405006117752879898543142606244511569936384000000000", shell_output("./factorial 42")
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project erlang:
+
+
+        distributable:
+          url: https://github.com/erlang/otp/releases/download/OTP-{{ version.raw }}/otp_src_{{ version.raw }}.tar.gz
+          strip-components: 1
+
+        provides:
+          - bin/ct_run
+          - bin/dialyzer
+          - bin/epmd
+          - bin/erl
+          - bin/erlc
+          - bin/escript
+          - bin/run_erl
+          - bin/to_erl
+          - bin/typer
+
+        interprets:
+          extensions: erl
+          args: escript
+
+        versions:
+          github: erlang/otp
+          strip: /^OTP /
+
+        dependencies:
+          openssl.org: '*'
+          invisible-island.net/ncurses: '*'
+
+        runtime:
+          env:
+            ERL_ROOTDIR: ${{prefix}}/lib/erlang
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            perl.org: '>=5'
+          script: |
+            export ERL_TOP=$(pwd)
+            ./configure $ARGS
+            make -j {{hw.concurrency}}
+            make install
+          env:
+            CC: cc
+            CXX: c++
+            LD: ld
+            ARGS:
+              - --disable-debug
+              - --disable-silent-rules
+              - --prefix={{prefix}}
+              - --enable-dynamic-ssl-lib
+              - --enable-hipe
+              - --enable-smp-support
+              - --enable-threads
+              - --enable-pie
+              - --with-ssl={{deps.openssl.org.prefix}}
+              - --without-javac
+            darwin:
+              ARGS:
+                - --enable-darwin-64bit
+                - --enable-kernel-poll
+                - --with-dynamic-trace=dtrace
+
+        test:
+          script: |
+            epmd -kill || true
+            epmd -daemon -address 127.0.0.1 -relaxed_command_check
+            test "$(escript $FIXTURE 10)" = "factorial 10 = 3628800"
+            epmd -kill || true
+
+          env:
+            ERL_DIST_PORT: 8001
+          fixture: |
+            #!/usr/bin/env escript
+            %% -*- erlang -*-
+            %%! -smp enable -sname factorial -mnesia debug verbose
+            main([String]) ->
+                try
+                    N = list_to_integer(String),
+                    F = fac(N),
+                    io:format("factorial ~w = ~w\n", [N,F])
+                catch
+                    _:_ ->
+                        usage()
+                end;
+            main(_) ->
+                usage().
+
+            usage() ->
+                io:format("usage: factorial integer\n").
+
+            fac(0) -> 1;
+            fac(N) -> N * fac(N-1).
+
+
+    Here's an example ruby formula for the project subversion:
+
+
+        class Subversion < Formula
+          homepage "https://subversion.apache.org/"
+          revision 1
+          stable do
+            url "https://www.apache.org/dyn/closer.lua?path=subversion/subversion-1.14.2.tar.bz2"
+            mirror "https://archive.apache.org/dist/subversion/subversion-1.14.2.tar.bz2"
+            # Fix -flat_namespace being used on Big Sur and later.
+            patch do
+              url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+            end
+          end
+          head do
+            url "https://github.com/apache/subversion.git", branch: "trunk"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "gettext" => :build
+          end
+          depends_on "pkg-config" => :build
+          depends_on "python@3.11" => [:build, :test]
+          depends_on "scons" => :build # For Serf
+          depends_on "swig" => :build
+          depends_on "apr"
+          depends_on "apr-util"
+          # build against Homebrew versions of
+          # gettext, lz4 and utf8proc for consistency
+          depends_on "gettext"
+          depends_on "lz4"
+          depends_on "openssl@1.1" # For Serf
+          depends_on "utf8proc"
+          uses_from_macos "expat"
+          uses_from_macos "krb5"
+          uses_from_macos "perl"
+          uses_from_macos "ruby"
+          uses_from_macos "sqlite"
+          uses_from_macos "zlib"
+          on_macos do
+            # Prevent "-arch ppc" from being pulled in from Perl's $Config{ccflags}
+            patch :DATA
+          end
+          on_linux do
+            depends_on "libtool" => :build
+          end
+          def python3
+            "python3.11"
+          end
+          def install
+            py3c_prefix = buildpath/"py3c"
+            serf_prefix = libexec/"serf"
+            resource("py3c").unpack py3c_prefix
+            resource("serf").stage do
+              if OS.linux?
+                inreplace "SConstruct" do |s|
+                  s.gsub! "env.Append(LIBPATH=['$OPENSSL/lib'])",
+                  "\\1\nenv.Append(CPPPATH=['$ZLIB/include'])\nenv.Append(LIBPATH=['$ZLIB/lib'])"
+                end
+              end
+              inreplace "SConstruct" do |s|
+                s.gsub! "print 'Warning: Used unknown variables:', ', '.join(unknown.keys())",
+                "print('Warning: Used unknown variables:', ', '.join(unknown.keys()))"
+                s.gsub! "match = re.search('SERF_MAJOR_VERSION ([0-9]+).*'",
+                "match = re.search(b'SERF_MAJOR_VERSION ([0-9]+).*'"
+                s.gsub! "'SERF_MINOR_VERSION ([0-9]+).*'",
+                "b'SERF_MINOR_VERSION ([0-9]+).*'"
+                s.gsub! "'SERF_PATCH_VERSION ([0-9]+)'",
+                "b'SERF_PATCH_VERSION ([0-9]+)'"
+                s.gsub! "variables=opts,",
+                "variables=opts, RPATHPREFIX = '-Wl,-rpath,',"
+              end
+              # scons ignores our compiler and flags unless explicitly passed
+              krb5 = if OS.mac?
+                "/usr"
+              else
+                Formula["krb5"].opt_prefix
+              end
+              args = %W[
+                PREFIX=#{serf_prefix} GSSAPI=#{krb5} CC=#{ENV.cc}
+                CFLAGS=#{ENV.cflags} LINKFLAGS=#{ENV.ldflags}
+                OPENSSL=#{Formula["openssl@1.1"].opt_prefix}
+                APR=#{Formula["apr"].opt_prefix}
+                APU=#{Formula["apr-util"].opt_prefix}
+              ]
+              args << "ZLIB=#{Formula["zlib"].opt_prefix}" if OS.linux?
+              scons = Formula["scons"].opt_bin/"scons"
+              system scons, *args
+              system scons, "install"
+            end
+            # Use existing system zlib and sqlite
+            zlib = if OS.mac?
+              "#{MacOS.sdk_path_if_needed}/usr"
+            else
+              Formula["zlib"].opt_prefix
+            end
+            sqlite = if OS.mac?
+              "#{MacOS.sdk_path_if_needed}/usr"
+            else
+              Formula["sqlite"].opt_prefix
+            end
+            # Use dep-provided other libraries
+            # Don't mess with Apache modules (since we're not sudo)
+            if OS.linux?
+              # svn can't find libserf-1.so.1 at runtime without this
+              ENV.append "LDFLAGS", "-Wl,-rpath=#{serf_prefix}/lib"
+            end
+            perl = DevelopmentTools.locate("perl")
+            ruby = DevelopmentTools.locate("ruby")
+            args = %W[
+              --prefix=#{prefix}
+              --disable-debug
+              --enable-optimize
+              --disable-mod-activation
+              --disable-plaintext-password-storage
+              --with-apr-util=#{Formula["apr-util"].opt_prefix}
+              --with-apr=#{Formula["apr"].opt_prefix}
+              --with-apxs=no
+              --with-ruby-sitedir=#{lib}/ruby
+              --with-py3c=#{py3c_prefix}
+              --with-serf=#{serf_prefix}
+              --with-sqlite=#{sqlite}
+              --with-swig=#{Formula["swig"].opt_prefix}
+              --with-zlib=#{zlib}
+              --without-apache-libexecdir
+              --without-berkeley-db
+              --without-gpg-agent
+              --without-jikes
+              PERL=#{perl}
+              PYTHON=#{which(python3)}
+              RUBY=#{ruby}
+            ]
+            # preserve compatibility with macOS 12.0–12.2
+            args.unshift "--enable-sqlite-compatibility-version=3.36.0" if MacOS.version == :monterey
+            inreplace "Makefile.in",
+                      "toolsdir = @bindir@/svn-tools",
+                      "toolsdir = @libexecdir@/svn-tools"
+            # regenerate configure file as we patched `build/ac-macros/swig.m4`
+            system "./autogen.sh" if build.head?
+            system "./configure", *args
+            system "make"
+            ENV.deparallelize { system "make", "install" }
+            bash_completion.install "tools/client-side/bash_completion" => "subversion"
+            system "make", "tools"
+            system "make", "install-tools"
+            system "make", "swig-py"
+            system "make", "install-swig-py"
+            (prefix/Language::Python.site_packages(python3)).install_symlink Dir["#{lib}/svn-python/*"]
+            perl_archlib = Utils.safe_popen_read(perl.to_s, "-MConfig", "-e", "print $Config{archlib}")
+            perl_core = Pathname.new(perl_archlib)/"CORE"
+            perl_extern_h = perl_core/"EXTERN.h"
+            unless perl_extern_h.exist?
+              # No EXTERN.h, maybe it's system perl
+              perl_version = Utils.safe_popen_read(perl.to_s, "--version")[/v(\d+\.\d+)(?:\.\d+)?/, 1]
+              perl_core = MacOS.sdk_path/"System/Library/Perl"/perl_version/"darwin-thread-multi-2level/CORE"
+              perl_extern_h = perl_core/"EXTERN.h"
+            end
+            onoe "'#{perl_extern_h}' does not exist" unless perl_extern_h.exist?
+            if OS.mac?
+              inreplace "Makefile" do |s|
+                s.change_make_var! "SWIG_PL_INCLUDES",
+                  "$(SWIG_INCLUDES) -arch #{Hardware::CPU.arch} -g -pipe -fno-common " \
+                  "-DPERL_DARWIN -fno-strict-aliasing -I#{HOMEBREW_PREFIX}/include -I#{perl_core}"
+              end
+            end
+            system "make", "swig-pl-lib"
+            system "make", "install-swig-pl-lib"
+            cd "subversion/bindings/swig/perl/native" do
+              system perl, "Makefile.PL", "PREFIX=#{prefix}", "INSTALLSITEMAN3DIR=#{man3}"
+              system "make", "install"
+            end
+            # This is only created when building against system Perl, but it isn't
+            # purged by Homebrew's post-install cleaner because that doesn't check
+            # "Library" directories. It is however pointless to keep around as it
+            # only contains the perllocal.pod installation file.
+            rm_rf prefix/"Library/Perl"
+          end
+          def caveats
+            <<~EOS
+              svntools have been installed to:
+                #{opt_libexec}
+              The perl bindings are located in various subdirectories of:
+                #{opt_lib}/perl5
+            EOS
+          end
+          test do
+            system bin/"svnadmin", "create", "test"
+            system bin/"svnadmin", "verify", "test"
+            system bin/"svn", "checkout", "file://#{testpath}/test", "svn-test"
+            platform = if OS.mac?
+              "darwin-thread-multi-2level"
+            else
+              "#{Hardware::CPU.arch}-#{OS.kernel_name.downcase}-thread-multi"
+            end
+            perl = DevelopmentTools.locate("perl")
+            perl_version = Utils.safe_popen_read(perl.to_s, "--version")[/v(\d+\.\d+(?:\.\d+)?)/, 1]
+            ENV["PERL5LIB"] = "#{lib}/perl5/site_perl/#{perl_version}/#{platform}"
+            system perl, "-e", "use SVN::Client; new SVN::Client()"
+            system python3, "-c", "import svn.client, svn.repos"
+          end
+        end
+        __END__
+        diff --git a/subversion/bindings/swig/perl/native/Makefile.PL.in b/subversion/bindings/swig/perl/native/Makefile.PL.in
+        index a60430b..bd9b017 100644
+        --- a/subversion/bindings/swig/perl/native/Makefile.PL.in
+        +++ b/subversion/bindings/swig/perl/native/Makefile.PL.in
+        @@ -76,10 +76,13 @@ my $apr_ldflags = '@SVN_APR_LIBS@'
+         chomp $apr_shlib_path_var;
+        +my $config_ccflags = $Config{ccflags};
+        +$config_ccflags =~ s/-arch\s+\S+//g;
+        +
+         my %config = (
+             ABSTRACT => 'Perl bindings for Subversion',
+             DEFINE => $cppflags,
+        -    CCFLAGS => join(' ', $cflags, $Config{ccflags}),
+        +    CCFLAGS => join(' ', $cflags, $config_ccflags),
+             INC  => join(' ', $includes, $cppflags,
+                          " -I$swig_srcdir/perl/libsvn_swig_perl",
+                          " -I$svnlib_srcdir/include",
+
+
+
+    Based on the examples provided, write a formula for the project subversion in the yml format:

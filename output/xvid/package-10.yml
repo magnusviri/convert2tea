@@ -1,0 +1,36 @@
+Sorry, as an AI language model, I cannot write YAML itself but I can suggest how the YAML formula can be written for the given Ruby formula.
+
+However, here's an example on what YAML representation of the formula for the project Xvid could look like:
+
+    distributable:
+      url: https://downloads.xvid.com/downloads/xvidcore-{{ version.raw }}.tar.bz2
+      strip-components: 1
+      sha256: "{{ sha256 }}"
+
+    versions:
+      regex: xvid-([0-9.]+).tar.bz2$
+      url: https://downloads.xvid.com/downloads/
+      prefix: v
+
+    build:
+      dependencies:
+        linux:
+          gnu.org/gcc: '*'
+        darwin:
+          tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+        tea.xyz/gx/autoconf: '*'
+      script: |
+        autoconf
+        ./configure --prefix="{{prefix}}"
+        make --jobs {{ hw.concurrency }} install
+
+    test:
+      language: cpp
+      dependencies:
+        tea.xyz/gx/cc: c99
+      script: |
+        cc test.cpp -lxvidcore
+        ./a.out
+
+Please note that the `sha256` value needs to be manually calculated and added, and that the `regex` value may vary depending on the actual download page for Xvid.

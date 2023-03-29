@@ -1,0 +1,63 @@
+Sorry, as an AI language model, I cannot create YAML format from Ruby. However, here's an example formula for wxwidgets based on the provided Ruby formula:
+
+    distributable:
+      url: https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.2.1/wxWidgets-3.2.2.1.tar.bz2
+      strip-components: 1
+
+    versions:
+      - 3.2.2.1
+
+    dependencies:
+      pkg-config: '*'
+      jpeg-turbo: '*'
+      libpng: '*'
+      libtiff: '*'
+      pcre2: '*'
+      expat.net: '*'
+      zlib.net: '*'
+
+    build:
+      dependencies:
+        gx.xyz/tea/cc: c99
+        gx.xyz/tea/make: '*'
+      script: |
+        %w[catch pcre].each { |l| (buildpath/"3rdparty"/l).rmtree }
+        %w[expat jpeg png tiff zlib].each { |l| (buildpath/"src"/l).rmtree }
+        args = [
+          "--prefix={{prefix}}",
+          "--enable-clipboard",
+          "--enable-controls",
+          "--enable-dataviewctrl",
+          "--enable-display",
+          "--enable-dnd",
+          "--enable-graphics_ctx",
+          "--enable-std_string",
+          "--enable-svg",
+          "--enable-unicode",
+          "--enable-webviewwebkit",
+          "--with-expat",
+          "--with-libjpeg",
+          "--with-libpng",
+          "--with-libtiff",
+          "--with-opengl",
+          "--with-zlib",
+          "--disable-dependency-tracking",
+          "--disable-tests",
+          "--disable-precomp-headers",
+          "--disable-monolithic",
+        ]
+        system "./configure", *args
+        system "make", "install"
+        inreplace bin/"wx-config", prefix, "{{prefix}}"
+        bin.install_symlink bin/"wx-config" => "wx-config-3.2"
+
+    provides:
+      - bin/wx-config
+      - lib/libwx_baseu-3.2.dylib
+      - lib/libwx_osx_cocoau_adv-3.2.dylib
+      - lib/libwx_osx_cocoau_core-3.2.dylib
+      - include/wx-3.2/wx/wx.h
+
+    test:
+      script: |
+        {{bin}}/wx-config --libs

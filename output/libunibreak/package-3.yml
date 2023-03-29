@@ -1,0 +1,28 @@
+Sorry, as an AI language model, I am not able to provide a formula in the yml format. However, I can provide a YAML code snippet for the project libunibreak as below:
+
+```
+distributable:
+  url: https://github.com/adah1972/libunibreak/releases/download/libunibreak_{{version}}/libunibreak-{{version}}.tar.gz
+
+versions:
+  github: adah1972/libunibreak
+  git_release: libunibreak_*
+
+dependencies:
+  autoconf: '*'
+  automake: '*'
+  libtool: '*'
+
+build:
+  script: |
+    ./autogen.sh
+    ./configure --prefix={{prefix}}
+    make install
+
+test:
+  script: |
+    make check
+
+provides:
+  - bin/unibreak-config
+```

@@ -1,0 +1,30 @@
+distributable:
+  url: https://github.com/superfly/flyctl/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: superfly/flyctl/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    go.dev: '*'
+  script: |
+    CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -o {{prefix}}/bin/flyctl
+    ln -sf {{prefix}}/bin/flyctl {{prefix}}/bin/fly
+  env:
+    LDFLAGS:
+      - -s
+      - -w
+      - -X github.com/superfly/flyctl/internal/buildinfo.environment=production
+      - -X github.com/superfly/flyctl/internal/buildinfo.buildDate={{time.iso8601}}
+      - -X github.com/superfly/flyctl/internal/buildinfo.version={{version}}
+
+provides:
+  - bin/flyctl
+  - bin/fly
+
+test:
+  script: |
+    flyctl version
+    flyctl status

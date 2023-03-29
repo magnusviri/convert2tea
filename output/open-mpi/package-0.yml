@@ -1,0 +1,47 @@
+distributable:
+  url: https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.5.tar.bz2
+  strip-components: 1
+
+versions:
+  - 4.1.5
+
+provides:
+  - bin/mpicc
+  - bin/mpicxx
+  - bin/mpifort
+  - bin/mpirun
+  - bin/mpiexec
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: gcc
+    tea.xyz/gx/cxx: g++
+    tea.xyz/gx/f77: gfortran
+    tea.xyz/gx/f90: gfortran
+    hwloc: '*'
+    libevent: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+
+  script: |
+    export MACOSX_DEPLOYMENT_TARGET=$RELEASE_VERSION
+    ./configure --prefix={{prefix}} --disable-silent-rules \
+      --enable-ipv6 --enable-mca-no-build=reachable-netlink --sysconfdir=#{etc} \
+      --with-libevent={{prefix}} --with-hwloc={{prefix}}
+    make -j$(nproc)
+    make check
+    make install
+
+test:
+  script: |
+    echo 'Testing Open MPI...'
+    echo '#include <mpi.h>' > test.c
+    echo '#include <stdio.h>' >> test.c
+    echo 'int main(int argc, char** argv) {' >> test.c
+    echo '  MPI_Init(&argc, &argv);' >> test.c
+    echo '  printf("Hello world from process %d of %d\\n", rank, size);' >> test.c
+    echo '  MPI_Finalize();' >> test.c
+    echo '}' >> test.c
+    mpicc test.c -o test
+    mpirun -np 2 ./test

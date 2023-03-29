@@ -1,0 +1,50 @@
+distributable:
+  url: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/metis-{{ version }}.tar.gz
+
+versions:
+  github: ''
+  regex: v(.+)
+
+detect:
+  cmd: metis-5.0.2/gpmetis --version
+  regex: metis (.+)
+
+dependencies:
+  cmake.org/cmake: 1
+  openmp: '*'
+
+provides:
+  - bin/gpmetis
+  - bin/gkmetis
+  - bin/mpmetis
+  - bin/ndmetis
+
+build:
+  dependencies:
+    - tea.xyz/gx/gcc: c
+    - tea.xyz/gx/make: '*'
+    - openmp
+  script: |-
+    cd Graphs
+    cmake -DCMAKE_INSTALL_PREFIX={{prefix}} \
+          -DCMAKE_C_COMPILER={{deps.tea.xyz/gx/gcc.prefix}}/bin/gcc \
+          -DCMAKE_CXX_COMPILER={{deps.tea.xyz/gx/gcc.prefix}}/bin/g++ \
+          -DCMAKE_CXX_FLAGS=-fPIC \
+          -DOPENMP_FOUND=true \
+          -DSHARED=true \
+          .
+    make -j {{hw.concurrency}} install
+  env:
+    PKG_CONFIG_PATH:
+      - '{{prefix}}/lib/pkgconfig'
+      - '/usr/local/opt/openmpi/lib/pkgconfig'
+    CPATH: "{{prefix}}/include"
+    LDFLAGS: '-L{{prefix}}/lib'
+
+test:
+  script: |-
+    cd Graphs
+    ./gpmetis ./4elt.graph 2
+    ./ndmetis ./copter2.graph
+    ./gpmetis ./mdual.graph 3
+    ./mpmetis ./metis.mesh 2

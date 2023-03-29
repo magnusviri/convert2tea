@@ -1,0 +1,28 @@
+I'm sorry, as an AI language model, I cannot visually display the formatted YAML code directly. However, here's the YAML code for the formula of the Psutils project in YAML format:
+
+```
+distributable:
+  url: ftp://ftp.knackered.org/pub/psutils/psutils-p{{version}}.tar.gz
+
+versions:
+  homepage: http://knackered.org/angus/psutils/
+  regex: "href=.*?psutils[._-](p\\d+)"
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    glibc: '*'
+  script: |
+    make "PERL=/usr/bin/perl" "BINDIR={{prefix}}/bin" "INCLUDEDIR={{prefix}}/share/psutils" "MANDIR={{man1}}" "GROFF_FONT_PATH=/usr/share/groff/current/font" "install"
+
+test:
+  script: |
+    showchar Palatino B > test.ps
+    psmerge -omulti.ps test.ps test.ps test.ps test.ps
+    psnup -n 2 multi.ps nup.ps
+    psselect -p1 multi.ps test2.ps
+```

@@ -1,0 +1,62 @@
+distributable:
+  url: https://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-2.6.4.tgz
+  mirrors:
+    - http://fresh-center.net/linux/misc/openldap-2.6.4.tgz
+    - http://fresh-center.net/linux/misc/legacy/openldap-2.6.4.tgz
+  strip-components: 1
+
+livecheck:
+  url: https://www.openldap.org/software/download/OpenLDAP/openldap-release/
+  regex: href=.*?openldap[._-]v?(\d+(?:\.\d+)+)\.t
+
+versions:
+  - 2.6.4
+
+provides:
+  - bin/slappasswd
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: gcc
+    tea.xyz/gx/make: '*'
+    openssl@1.1: '*'
+  script: |
+    args=(
+      --disable-dependency-tracking
+      --prefix={{prefix}}
+      --sysconfdir={{etc}}
+      --localstatedir={{var}}
+      --enable-accesslog
+      --enable-auditlog
+      --enable-bdb=no
+      --enable-constraint
+      --enable-dds
+      --enable-deref
+      --enable-dyngroup
+      --enable-dynlist
+      --enable-hdb=no
+      --enable-memberof
+      --enable-ppolicy
+      --enable-proxycache
+      --enable-refint
+      --enable-retcode
+      --enable-seqmod
+      --enable-translucent
+      --enable-unique
+      --enable-valsort
+    )
+    if [ "{{ target_os }}" == "linux" ] || [ "{{ macos_version }}" >= "ventura" ]
+    then
+      # Disable manpage generation, because it requires groff which has a huge
+      # dependency tree on Linux and isn't included on macOS since Ventura.
+      awk 'BEGIN{RS=""}/SUBDIRS = /{sub(/doc /,"")}1' Makefile.in > Makefile.in.new
+      mv Makefile.in.new Makefile.in
+    fi
+    ./configure "${args[@]}"
+    make install
+    mkdir -p {{var}}/run
+    chmod 0755 {{etc}}/openldap {{etc}}/openldap/schema
+
+test:
+  script: |
+    {{bin}}/slappasswd -s test

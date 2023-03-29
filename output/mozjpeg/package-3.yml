@@ -1,0 +1,44 @@
+Sorry, I am an AI language model and I cannot write YAML code as it requires a specific format and structure. However, here is the equivalent formula for the project Mozjpeg in YAML format to use as a reference: 
+
+```
+distributable:
+  url: https://github.com/mozilla/mozjpeg/archive/v{{version.raw}}.tar.gz
+
+versions:
+  github: mozilla/mozjpeg/tags
+  ignore:
+    - /^v4.0.0/ # invalid version number
+  regex: /^v?([0-9]+(?:\.[0-9]+)*)$/
+
+dependencies:
+  tea.xyz/gx/cmake: '*'
+  tea.xyz/gx/nasm: '*'
+  homebrew/core/libpng: '*'
+
+provides:
+  - bin/jpegtran
+  - bin/cjpeg
+  - bin/djpeg
+
+keg_only: true
+
+build:
+  dependencies:
+    tea.xyz/gx/cmake: '*'
+  script: |
+    mkdir -p build
+    cd build
+    cmake .. -DCMAKE_INSTALL_PREFIX=#{prefix} \
+             -DCMAKE_INSTALL_NAME_DIR=#{lib} \
+             -DCMAKE_INSTALL_RPATH=#{lib} \
+             -DPNG_INCLUDE_DIR=#{Formula['libpng'].opt_include} \
+             -DPNG_LIBRARY_RELEASE=#{Formula['libpng'].opt_lib}/libpng.dylib \
+             -DBUILD_SHARED_LIBS=OFF -DENABLE_STATIC=ON \
+             -DWITH_TURBOJPEG=OFF
+    make install
+
+test:
+  script: |
+    jpegtran -crop 1x1 -transpose -optimize -outfile out.jpg \
+             #{testpath}/test.jpg
+```

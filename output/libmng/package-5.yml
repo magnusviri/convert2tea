@@ -1,0 +1,50 @@
+# Here's an example formula in the yml format for the project libmng:
+
+distributable:
+  url: https://downloads.sourceforge.net/project/libmng/libmng-devel/2.0.3/libmng-2.0.3.tar.gz
+
+build:
+  dependencies:
+    gcc: '*'
+    make: '*'
+    m4: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+    pkg-config: '*'
+    openssl: '*'
+    zlib: '*'
+    jpeg-turbo: '*'
+    little-cms2: '*'
+  working-directory: libmng-2.0.3
+  configure: |
+    ./autogen.sh
+    ./configure --prefix="{{prefix}}"
+  build: make
+  install: make install
+  env:
+    CFLAGS: -I{{pkg "jpeg-turbo"}}/include -I{{pkg "little-cms2"}}/include
+    CPPFLAGS: -I{{pkg "jpeg-turbo"}}/include -I{{pkg "little-cms2"}}/include
+    LDFLAGS: -L{{pkg "jpeg-turbo"}}/lib -L{{pkg "little-cms2"}}/lib
+
+provides:
+  - bin/mnginfo
+  - bin/mngplay
+  - include/mng.h
+  - lib/libmng.a
+  - lib/libmng.dylib
+  - lib/libmng.la
+  - lib/pkgconfig/libmng.pc
+
+test:
+  script: |
+    wget https://raw.githubusercontent.com/libgd/libgd/master/tests/gdimagestringft/gdimagestringft.png
+    mnginfo gdimagestringft.png
+  # The above script should output something like:
+  # gdimagestringft.png: MNG animation (draft)  |  1 frame, 640 x 480 @ 25.00Hz
+  # gdimagestringft.png: written successfully  |  Size = 0.448 KiB
+
+versions:
+  url: https://downloads.sourceforge.net/project/libmng/libmng-devel/
+  regex: libmng-(\d+\.\d+\.\d+).tar.gz
+  filter: "{{major}}.{{minor}}.{{patch}}"

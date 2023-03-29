@@ -1,0 +1,32 @@
+distributable:
+  url: https://github.com/FredHucht/pstree/archive/refs/tags/v{{version.raw}}.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/pstree
+
+versions:
+  github: FredHucht/pstree
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make pstree PREFIX={{prefix}}
+    make install PREFIX={{prefix}}
+
+test:
+  script: |
+    lines=$(pstree $$)
+    test $(echo "$lines" | head -n 1) = $$ &&
+    test $(echo "$lines" | head -n 2 | tail -n 1) = $$(which pstree) &&
+    echo "All tests passed."
+
+runtime:
+  env:
+    MANPATH: ${{prefix}}/share/man/man1
+
+post_install:
+  suppress: true
+  script: echo "Manually installed pstree does not support /proc filesystem"

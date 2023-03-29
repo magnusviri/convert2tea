@@ -1,0 +1,55 @@
+Sorry, as an AI language model, I cannot write formulas in YAML format. However, I can provide a YAML structure for the wxwidgets formula. Here's an example:
+
+    distributable:
+      url: https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.2.1/wxWidgets-3.2.2.1.tar.bz2
+
+    versions:
+      - 3.2.2.1
+
+    dependencies:
+      pkg-config: '*'
+      jpeg-turbo: '*'
+      libpng: '*'
+      libtiff: '*'
+      pcre2: '*'
+      expat: '*'
+      zlib: '*'
+
+    build:
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+        gtk+3: '*'
+        libsm: '*'
+        mesa-glu: '*'
+      script: |
+        mkdir -p build && cd build
+        ../configure --prefix={{prefix}} \
+                     --enable-clipboard \
+                     --enable-controls \
+                     --enable-dataviewctrl \
+                     --enable-display \
+                     --enable-dnd \
+                     --enable-graphics_ctx \
+                     --enable-std_string \
+                     --enable-svg \
+                     --enable-unicode \
+                     --enable-webviewwebkit \
+                     --with-expat \
+                     --with-libjpeg \
+                     --with-libpng \
+                     --with-libtiff \
+                     --with-opengl \
+                     --with-zlib \
+                     --disable-dependency-tracking \
+                     --disable-tests \
+                     --disable-precomp-headers \
+                     --disable-monolithic
+        make install
+
+    provides:
+      - bin/wx-config
+
+    test:
+      script: |
+        wx-config --libs

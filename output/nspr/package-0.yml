@@ -1,0 +1,30 @@
+distributable:
+  url: https://archive.mozilla.org/pub/nspr/releases/v{{version.raw}}/src/nspr-{{version.raw}}.tar.gz
+
+versions:
+  url: https://ftp.mozilla.org/pub/nspr/releases/
+  regex: '<a href="v(\d+\.\d+\.\d+)/">'
+
+companions:
+  - tea.xyz/gx/make: '*'
+
+provides:
+  - bin/nspr-config
+
+build:
+  dependencies:
+    - tea.xyz/gx/autoconf: '*'
+    - tea.xyz/gx/automake: '*'
+    - tea.xyz/gx/libtool: '*'
+    - tea.xyz/gx/make: '*'
+    - homebrew/dupes/m4: '*'
+  script: |
+    aclocal
+    autoconf
+    ./configure --disable-debug --prefix={{prefix}} --enable-strip --with-pthreads --enable-ipv6 --enable-64bit
+    make
+    make install
+
+test:
+  script: |
+    {{bin}}/nspr-config --version

@@ -1,0 +1,42 @@
+distributable:
+  url: https://github.com/nghttp2/nghttp2/archive/refs/tags/v1.52.0.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.52.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    tools/libtool: '*'
+    brew/pkg-config: '*'
+    host/openssl: 1.1.x
+    tools/automake: '*'
+    tools/autoconf: '*'
+    brew/c-ares: 1.x
+    brew/jemalloc: 5.x
+    brew/libev: 4.x
+    brew/libnghttp2: '*'
+    system/zlib: '*'
+  working-directory: build
+  script: |
+    ./configure --disable-silent-rules \
+                ---enable-app \
+                --disable-examples \
+                --disable-hpack-tools \
+                --disable-python-bindings \
+                --without-systemd \
+                --prefix="{{prefix}}"
+    make -j{{hw.concurrency}}
+    make install
+  env:
+    PATH: "{{pkgPathFor "tools/autoconf"}}/bin:{{pkgPathFor "tools/automake"}}/bin:{{pkgPathFor "tools/libtool"}}/bin:{{pkgPathFor "brew/pkg-config"}}/bin:{{PATH}}"
+
+provides:
+  - bin/nghttp
+
+test:
+  script: |
+    nghttp -nv https://nghttp2.org/
+    test ! -d "{{pkgPathFor "lib"}}"

@@ -1,0 +1,52 @@
+distributable:
+  url: https://download.gnome.org/sources/pygobject/3.44/pygobject-3.44.1.tar.xz
+  strip-components: 1
+
+versions:
+  - 3.44.1
+
+dependencies:
+  gnome.org/gobject-introspection: ^1
+  cairographics.org/py3cairo: ^1
+
+build:
+  dependencies:
+    mesonbuild.com: ^0.58
+    ninja-build.org: 1
+    freedesktop.org/pkg-config: ^0.29
+    python.org: ^3.10 || ^3.11
+  script: |
+    pythons=`brew list --formula | grep ^python@\d\.\d+$`
+    for python in $pythons
+    do
+      xy=`$python --version | awk '{print $2}' | awk -F. '{print $1"."$2}'`
+      builddir="buildpy${xy//./}"
+      meson setup $builddir \
+            -Dpycairo=enabled \
+            -Dpython=$python \
+            -Dpython.platlibdir=`$python -c "import site; print(site.getsitepackages()[0])"` \
+            -Dpython.purelibdir=`$python -c "import site; print(site.getsitepackages()[0])"` \
+            $ARGS
+      meson compile -C $builddir --verbose
+      meson install -C $builddir
+    done
+
+test:
+  dependencies:
+    python.org: ^3.10 || ^3.11
+  script: |
+    cat <<EOF > test.py
+      import gi
+      gi.require_version("GLib", "2.0")
+      assert("__init__" in gi.__file__)
+      from gi.repository import GLib
+      assert(31 == GLib.Date.get_days_in_month(GLib.DateMonth.JANUARY, 2000))
+    EOF
+    pythons=`brew list --formula | grep ^python@\d\.\d+$`
+    for python in $pythons
+    do
+      $python test.py
+    done
+
+prefix: /usr/local/opt/pygobject3
+homepage: https://wiki.gnome.org/Projects/PyGObject

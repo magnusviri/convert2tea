@@ -1,0 +1,166 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project curl:
+
+
+        class Curl < Formula
+          homepage "https://curl.se"
+          url "https://curl.se/download/curl-8.0.1.tar.bz2"
+          mirror "https://github.com/curl/curl/releases/download/curl-8_0_0/curl-8.0.1.tar.bz2"
+          mirror "http://fresh-center.net/linux/www/curl-8.0.1.tar.bz2"
+          mirror "http://fresh-center.net/linux/www/legacy/curl-8.0.1.tar.bz2"
+          livecheck do
+            url "https://curl.se/download/"
+            regex(/href=.*?curl[._-]v?(.*?)\.t/i)
+          end
+          head do
+            url "https://github.com/curl/curl.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+          end
+          keg_only :provided_by_macos
+          depends_on "pkg-config" => :build
+          depends_on "brotli"
+          depends_on "libidn2"
+          depends_on "libnghttp2"
+          depends_on "libssh2"
+          depends_on "openldap"
+          depends_on "openssl@1.1"
+          depends_on "rtmpdump"
+          depends_on "zstd"
+          uses_from_macos "krb5"
+          uses_from_macos "zlib"
+          def install
+            system "./buildconf" if build.head?
+            args = %W[
+              --disable-debug
+              --disable-dependency-tracking
+              --disable-silent-rules
+              --prefix=#{prefix}
+              --with-ssl=#{Formula["openssl@1.1"].opt_prefix}
+              --without-ca-bundle
+              --without-ca-path
+              --with-ca-fallback
+              --with-secure-transport
+              --with-default-ssl-backend=openssl
+              --with-libidn2
+              --with-librtmp
+              --with-libssh2
+              --without-libpsl
+            ]
+            args << if OS.mac?
+              "--with-gssapi"
+            else
+              "--with-gssapi=#{Formula["krb5"].opt_prefix}"
+            end
+            system "./configure", *args
+            system "make", "install"
+            system "make", "install", "-C", "scripts"
+            libexec.install "scripts/mk-ca-bundle.pl"
+          end
+          test do
+            # Fetch the curl tarball and see that the checksum matches.
+            # This requires a network connection, but so does Homebrew in general.
+            filename = (testpath/"test.tar.gz")
+            system "#{bin}/curl", "-L", stable.url, "-o", filename
+            filename.verify_checksum stable.checksum
+            system libexec/"mk-ca-bundle.pl", "test.pem"
+            assert_predicate testpath/"test.pem", :exist?
+            assert_predicate testpath/"certdata.txt", :exist?
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project curl:
+
+
+        distributable:
+          url: https://curl.se/download/curl-{{version}}.tar.bz2
+          strip-components: 1
+
+        versions:
+          github: curl/curl
+          strip: /^curl /
+
+        dependencies:
+          openssl.org: ^1.1
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+          script: |
+            ./configure $ARGS
+            make --jobs {{ hw.concurrency }} install
+          env:
+            ARGS:
+            - --prefix={{prefix}}
+            - --with-openssl
+            - --with-ca-fallback  # uses openssl’s certs (which we control)
+          test:
+            make test
+
+        test:
+          script: |
+            curl -i tea.xyz
+            curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org
+
+        # TODO need to fix the .la file
+
+        provides:
+          - bin/curl
+          - bin/curl-config
+
+
+
+    Here's an example ruby formula for the project wimlib:
+
+
+        class Wimlib < Formula
+          homepage "https://wimlib.net/"
+          url "https://wimlib.net/downloads/wimlib-1.13.6.tar.gz"
+          livecheck do
+            url "https://wimlib.net/downloads/"
+            regex(/href=.*?wimlib[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          depends_on "pkg-config" => :build
+          depends_on "openssl@3"
+          uses_from_macos "libxml2"
+          def install
+            # fuse requires librt, unavailable on OSX
+            args = %W[
+              --disable-debug
+              --disable-dependency-tracking
+              --disable-silent-rules
+              --prefix=#{prefix}
+              --without-fuse
+              --without-ntfs-3g
+            ]
+            system "./configure", *args
+            system "make", "install"
+          end
+          test do
+            # make a directory containing a dummy 1M file
+            mkdir("foo")
+            size = if OS.mac?
+              "1m"
+            else
+              "1M"
+            end
+            system "dd", "if=/dev/random", "of=foo/bar", "bs=#{size}", "count=1"
+            # capture an image
+            ENV.append "WIMLIB_IMAGEX_USE_UTF8", "1"
+            system "#{bin}/wimcapture", "foo", "bar.wim"
+            assert_predicate testpath/"bar.wim", :exist?
+            # get info on the image
+            system "#{bin}/wiminfo", "bar.wim"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project wimlib in the yml format:

@@ -1,0 +1,29 @@
+distributable:
+  url: https://code.videolan.org/rist/librist/-/archive/v{{version.raw}}/librist-v{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.2.7
+
+dependencies:
+  tea.xyz/mbedtls: 2
+  freedesktop.org/pkg-config: 0.29
+  gnu.org/cjson: 1
+  mesonbuild.com: ^0.47
+  ninja-build.org: 1
+
+build:
+  dependencies:
+    tea.xyz/mbedtls: 2
+    freedesktop.org/pkg-config: 0.29
+    gnu.org/cjson: 1
+  script: |
+    meson --prefix={{prefix}} --default-library=both --libdir=lib setup . build
+    ninja -C build
+    ninja -C build install
+
+test: |
+  test -f {{prefix}}/bin/ristsender
+
+provides:
+  - bin/ristsender

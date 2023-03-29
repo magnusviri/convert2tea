@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/OSGeo/libgeotiff/releases/download/v{{version}}/libgeotiff-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: OSGeo/libgeotiff/tags
+
+provides:
+  - bin/listgeo
+
+build:
+  dependencies:
+    jpeg-turbo.dev: '*'
+    libtiff: '*'
+    proj: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |
+    ./autogen.sh
+    ./configure #{std_configure_args} --with-jpeg
+    make
+    make install
+
+test:
+  script: |
+    (cat test.c | #{ENV.cc} -I#{include} -L#{lib} -lgeotiff -L#{Formula["libtiff"].opt_lib} -ltiff -o test)
+    output=$(#{bin}/listgeo test.tif)
+    test "$(echo $output | grep -oGe 'GeogInvFlatteningGeoKey.*([0-9]*\.[0-9]*$)' | cut -d' ' -f2)" = "123.456"

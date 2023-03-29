@@ -1,0 +1,35 @@
+Unfortunately, as a language model, I cannot generate YAML format. However, here is an example YAML based on the provided Ruby formula:
+
+```
+distributable:
+  url: https://code.videolan.org/videolan/x264.git
+  strip-components: 1
+
+versions:
+  git:
+    url: https://code.videolan.org/videolan/x264.git/tags
+    regex: x264-(\d+(\.\d+)*(_\d+)*)$
+    mapping: |
+      return match.group(1).replace('_', '')
+
+detect:
+  cmd: x264 --version
+  regex: x264 core \d+
+
+dependencies:
+  nasm: '*'
+  gcc: {except:['macos'], min_version:'5'}
+  zlib: 1
+
+build:
+  dependencies:
+    gx/make: '*'
+  script: |
+    ./configure --prefix={{prefix}} --disable-lsmash --disable-swscale --disable-ffms --enable-shared --enable-static --enable-strip
+    make -j{{hw.concurrency}} install
+
+test:
+  script: x264 --version
+```
+
+Note that this is just an example, it may not work properly without further testing, modification and customization.

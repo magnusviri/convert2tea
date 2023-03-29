@@ -1,0 +1,55 @@
+distributable:
+  url: https://github.com/libvips/libvips/releases/download/v{{version.raw}}/vips-{{version.raw}}.tar.xz
+  strip-components: 1
+
+versions:
+  - 8.14.2
+
+dependencies:
+  mozjpeg.org/mozjpeg: ^4.0
+  gnu.org/gettext: ^0.21
+  gnome.org/glib: 2
+  gnome.org/pango: 1.36
+  xmlsoft.org/libxml2: 2
+  freetype.org/freetype: 2.6
+  littlecms.com/lcms2: 2
+  openexr.com/openexr: 2.1
+  imagemagick.org/magickcore: ^7.0.8
+  libspng.org/spng: ^0.5.0
+
+build:
+  dependencies:
+    freedesktop.org/pkg-config: ^0.29
+    mesonbuild.com: ^0.49.0
+    ninja-build.org: 1.7.2
+    openslide.org/openslide: ^3.4.0
+  working-directory: build
+  script: |
+    meson .. --prefix={{prefix}} --buildtype=release \
+      -Dmozjpeg=enabled \
+      -Docr=enabled \
+      -Dcfitsio=enabled \
+      -Dcf=enabled \
+      -Dfftw3=enabled \
+      -Dfontconfig=enabled \
+      -Dgettext=enabled \
+      -Dglib=enabled \
+      -Dgsf=enabled \
+      -Dheif=enabled \
+      -Dimagequant=enabled \
+      -Dmatio=enabled \
+      -Drsvg=enabled \
+      -Dspng=enabled \
+      -Dtiff=enabled \
+      -Dvips-loader=disabled \
+      -DvipsCC=gcc
+    ninja
+    ninja install
+    {{prefix}}/bin/vips -update-codes
+    {{prefix}}/bin/vips -update-models
+    {{prefix}}/bin/vips -update-vips
+
+#TODO write tests
+
+provides:
+  - bin/vips

@@ -1,0 +1,42 @@
+distributable:
+  url: https://github.com/carlobaldassi/liblqr/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: carlobaldassi/liblqr/releases/tags
+  ignore: /-rc\d/
+
+detect:
+  cmd: lqr-carver --version
+  regex: \s+(\d+\.\d+\.\d+)\s+
+
+dependencies:
+  pkgconfig: '*'
+  io.gnu.libtool: '*'
+  gnu.gettext: 0
+
+provides:
+  - lib/liblqr-1.dylib
+  - bin/lqr-carver
+  - include/lqr-1/lqr.h
+
+build:
+  script: |-
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    V: 1
+    ARGS:
+      - --prefix={{ prefix }}
+      - --enable-install-man
+    darwin:
+      ARGS:
+        # Fix -flat_namespace being used on Big Sur and later.
+        - lt_cv_apple_cc_single_mod=no
+      LDFLAGS: -L{{deps.gnu.gettext.prefix}}/lib -lintl
+    linux:
+      LDFLAGS: -L{{deps.gnu.gettext.prefix}}/lib -lintl
+
+test:
+  script:
+    lqr-carver --version

@@ -1,0 +1,29 @@
+Sorry, as an AI language model, I cannot write in YAML format. However, here's an equivalent YAML formula for Rubberband:
+
+```
+distributable:
+  url: https://breakfastquay.com/files/releases/rubberband-{{version}}.tar.bz2
+
+versions:
+  - 3.2.0
+
+build:
+  dependencies:
+    mesonbuild.com: ^0.58.0
+    ninja-build.org: 1.10.2
+    pkg-config: 0.29.2
+  working-directory: build
+  script: |
+    meson .. --prefix={{prefix}} --libdir={{lib}} --buildtype=release
+    ninja
+    ninja install
+  env:
+    PATH: "/usr/local/bin:{{env.PATH}}"
+
+test:
+  script: |
+    rubberband -t2 {{prefix}}/share/sounds/alsa/Front_Center.wav out.wav
+
+provides:
+  - bin/rubberband
+```

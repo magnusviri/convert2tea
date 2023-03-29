@@ -1,0 +1,132 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project libslirp:
+
+
+        class Libslirp < Formula
+          homepage "https://gitlab.freedesktop.org/slirp/libslirp"
+          url "https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v4.7.0/libslirp-v4.7.0.tar.gz"
+          depends_on "meson" => :build
+          depends_on "ninja" => :build
+          depends_on "pkg-config" => :build
+          depends_on "glib"
+          def install
+            system "meson", "build", "-Ddefault_library=both", *std_meson_args
+            system "ninja", "-C", "build", "install", "all"
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <stdio.h>
+              #include <string.h>
+              #include <stddef.h>
+              #include <slirp/libslirp.h>
+              int main() {
+                SlirpConfig cfg;
+                memset(&cfg, 0, sizeof(cfg));
+                cfg.version = 1;
+                cfg.in_enabled = true;
+                cfg.vhostname = "testServer";
+                Slirp* ctx = slirp_new(&cfg, NULL, NULL);
+                return 0;
+              }
+            EOS
+            system ENV.cc, "test.c", "-L#{lib}", "-lslirp", "-o", "test"
+            system "./test"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project libslirp:
+
+
+        distributable:
+          url: https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v{{ version }}/libslirp-v{{ version }}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 4.7.0
+
+        dependencies:
+          gnome.org/glib: ^2
+
+        build:
+          dependencies:
+            mesonbuild.com: ^0.63
+            ninja-build.org: 1
+            freedesktop.org/pkg-config: ^0.29
+            tea.xyz/gx/cc: c99
+          script: |
+            meson build $ARGS
+            ninja -C build install all
+            cd "{{ prefix }}/lib"
+            mv pkgconfig/* .
+            rmdir pkgconfig
+            ln -s . slirp
+          env:
+            ARGS:
+              - -Ddefault_library=both 
+              - --prefix={{ prefix }}
+              - --libdir={{ prefix }}/lib
+              - --buildtype=release
+              - --wrap-mode=nofallback
+
+        test:
+          dependencies:
+            tea.xyz/gx/cc: c99
+          script: |
+            mv $FIXTURE test.c
+            gcc test.c -lslirp -o test
+            ./test
+          fixture: |
+            #include <stdio.h>
+            #include <string.h>
+            #include <stddef.h>
+            #include <slirp/libslirp.h>
+            int main() {
+              SlirpConfig cfg;
+              memset(&cfg, 0, sizeof(cfg));
+              cfg.version = 1;
+              cfg.in_enabled = true;
+              cfg.vhostname = "testServer";
+              Slirp* ctx = slirp_new(&cfg, NULL, NULL);
+              return 0;
+            }
+
+
+
+    Here's an example ruby formula for the project cgif:
+
+
+        class Cgif < Formula
+          homepage "https://github.com/dloebl/cgif"
+          url "https://github.com/dloebl/cgif/archive/refs/tags/V0.3.0.tar.gz"
+          depends_on "meson" => :build
+          depends_on "ninja" => :build
+          def install
+            mkdir "build" do
+              system "meson", *std_meson_args, "..", "-Dtests=false"
+              system "ninja", "-v"
+              system "ninja", "install", "-v"
+            end
+          end
+          test do
+            (testpath/"try.c").write <<~EOS
+              #include <cgif.h>
+              int main() {
+                CGIF_Config config = {0};
+                CGIF *cgif;
+                cgif = cgif_newgif(&config);
+                return 0;
+              }
+            EOS
+            system ENV.cc, "try.c", "-L#{lib}", "-lcgif", "-o", "try"
+            system "./try"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project cgif in the yml format:

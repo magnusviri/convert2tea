@@ -1,0 +1,97 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project librist:
+
+
+        class Librist < Formula
+          homepage "https://code.videolan.org/rist/"
+          url "https://code.videolan.org/rist/librist/-/archive/v0.2.7/librist-v0.2.7.tar.gz"
+          revision 3
+          head "https://code.videolan.org/rist/librist.git", branch: "master"
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          depends_on "meson" => :build
+          depends_on "ninja" => :build
+          depends_on "cjson"
+          depends_on "mbedtls"
+          def install
+            ENV.append "LDFLAGS", "-Wl,-rpath,#{rpath}"
+            system "meson", "setup", "--default-library", "both", "-Dfallback_builtin=false", *std_meson_args, "build", "."
+            system "meson", "compile", "-C", "build"
+            system "meson", "install", "-C", "build"
+          end
+          test do
+            assert_match "Starting ristsender", shell_output("#{bin}/ristsender 2>&1", 1)
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project librist:
+
+
+        distributable:
+          url: https://code.videolan.org/rist/librist/-/archive/v{{version}}/librist-v{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 0.2.7
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            mesonbuild.com: ^0.47
+            ninja-build.org: 1
+          working-directory:
+            build
+          script: |
+            meson .. --prefix={{prefix}} --libdir={{prefix}}/lib --buildtype=release
+            ninja -v
+            ninja install
+          env:
+            CC: clang
+
+        test:
+          script: |
+            ristsrppasswd test test
+
+        provides:
+          - bin/rist2rist
+          - bin/ristreceiver
+          - bin/ristsender
+          - bin/ristsrppasswd
+
+
+
+    Here's an example ruby formula for the project orc:
+
+
+        class Orc < Formula
+          homepage "https://gstreamer.freedesktop.org/projects/orc.html"
+          url "https://gstreamer.freedesktop.org/src/orc/orc-0.4.33.tar.xz"
+          license all_of: ["BSD-2-Clause", "BSD-3-Clause"]
+          livecheck do
+            url "https://gstreamer.freedesktop.org/src/orc/"
+            regex(/href=.*?orc[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          depends_on "meson" => :build
+          depends_on "ninja" => :build
+          def install
+            mkdir "build" do
+              system "meson", *std_meson_args, "-Dgtk_doc=disabled", ".."
+              system "ninja", "-v"
+              system "ninja", "install", "-v"
+            end
+          end
+          test do
+            system "#{bin}/orcc", "--version"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project orc in the yml format:

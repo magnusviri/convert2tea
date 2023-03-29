@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/adah1972/libunibreak/releases/download/libunibreak_5_1/libunibreak-5.1.tar.gz
+  strip-components: 1
+
+versions:
+  github: adah1972/libunibreak
+  strip: /^libunibreak /
+
+dependencies:
+  - tea.xyz/gx/cc: c99
+  - tea.xyz/gx/make: '*'
+  - musl: '*'
+
+build:
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --prefix={{prefix}}
+    - --disable-silent-rules
+
+test:
+  script: |
+    make test
+
+provides:
+  - bin/unibreak-config
+  - lib/libunibreak.*.dylib

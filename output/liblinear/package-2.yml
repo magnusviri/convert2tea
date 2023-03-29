@@ -1,0 +1,56 @@
+Sorry, as an AI language model, I am not able to write any code or file. However, here's an example formula in the yml format for the project liblinear:
+
+    distributable:
+      url: https://www.csie.ntu.edu.tw/~cjlin/liblinear/oldfiles/liblinear-{{version}}.tar.gz
+      strip-components: 1
+
+    versions:
+      url: https://www.csie.ntu.edu.tw/~cjlin/liblinear/oldfiles/
+      regex: liblinear[._-]v?(\d+(?:\.\d+)+)\.t
+
+    build:
+      dependencies:
+        tea.xyz/gx/cc: '*'
+        tea.xyz/gx/make: '*'
+      working-directory: .
+      script: |
+        make all
+        mkdir -p "{{prefix}}"/bin
+        mv predict train "{{prefix}}"/bin
+        soversion="$(grep '^SHVER = ' Makefile | awk '{ print $3 }')"
+        libname="$(grep '^LIBNAME = ' Makefile | awk '{ print $3 }')"
+        ln -s "lib${libname}.so.${soversion}" "{{prefix}}"/lib/lib${libname}.so
+        ln -s "lib${libname}.so.${soversion}" "{{prefix}}"/lib/lib${libname}.so.${soversion}
+        mkdir -p "{{prefix}}"/include
+        cp -f linear.h "{{prefix}}"/include
+      env:
+        PREFIX: "{{prefix}}"
+
+    provides:
+      - bin/predict
+      - bin/train
+      - lib/liblinear.so
+      - lib/liblinear.so.*
+
+    test:
+      fixture: |
+        +1 201:1.2 3148:1.8 3983:1 4882:1
+        -1 874:0.3 3652:1.1 3963:1 6179:1
+        +1 1168:1.2 3318:1.2 3938:1.8 4481:1
+        +1 350:1 3082:1.5 3965:1 6122:0.2
+        -1 99:1 3057:1 3957:1 5838:0.3
+      script: |
+        train_classification() {
+          $PREFIX/bin/train train_classification.txt &> /dev/null
+        }
+
+        assertEqual() {
+          if [ "$1" != "$2" ]; then
+            echo "Expected: $2, but got: $1" >&2
+            exit 1
+          fi
+        }
+
+        train_classification
+        assertEqual "$(file $PREFIX/bin/predict | awk '{ print $2 }')" "ELF"
+        assertEqual "$(file $PREFIX/bin/train | awk '{ print $2 }')" "ELF"

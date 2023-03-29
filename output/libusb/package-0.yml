@@ -1,0 +1,27 @@
+distributable:
+  url: https://github.com/libusb/libusb/releases/download/v{{version.marketing}}/libusb-{{version.marketing}}.tar.bz2
+  strip-components: 1
+
+versions:
+  - 1.0.26
+
+dependencies:
+  - tea.xyz/gx/systemd: linux
+
+build:
+  dependencies:
+    - tea.xyz/gx/autoconf: '*'
+    - tea.xyz/gx/automake: '*'
+    - tea.xyz/gx/libtool: '*'
+  script: |
+    args=("--disable-dependency-tracking" "--prefix={{prefix}}")
+    ./autogen.sh && ./configure "${args[@]}" && make && make install && cp -r examples "$(pwd)"
+
+provides:
+  - bin/test
+
+test:
+  script: |
+    cd examples
+    ${CC} listdevs.c -L${LIB}/ -I${INCLUDE}/libusb-1.0 -lusb-1.0 -o test
+    ./test

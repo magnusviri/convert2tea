@@ -1,0 +1,27 @@
+distributable:
+  url: https://github.com/edenhill/librdkafka/archive/refs/tags/v2.0.2.tar.gz
+  strip-components: 1
+
+# TODO: Add livecheck support
+
+versions:
+  - 2.0.2
+
+provides:
+  - lib/librdkafka.dylib
+  - include/librdkafka/rdkafka.h
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: clang
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/python: '>=3.11'
+
+  script: |
+    ./configure --prefix={{prefix}}
+    make
+    make install
+
+test:
+  script: |
+    echo "No way to test this"

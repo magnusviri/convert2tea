@@ -1,0 +1,34 @@
+distributable:
+  url: https://github.com/rclone/rclone/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: rclone/rclone
+
+provides:
+  - bin/rclone
+
+build:
+  script: |
+    go mod download
+    args=(
+      "-v"
+      "-ldflags=-s -w -X=github.com/rclone/rclone/fs.Version=v{{version}}"
+    )
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      args+=("-tags" "brew")
+    fi
+    go build "${args[@]}"
+    mkdir -p "{{ prefix }}"/bin
+    mv rclone "{{ prefix }}"/bin
+    "{{prefix}}"/bin/rclone genautocomplete bash "{{prefix}}"/etc/bash_completion.d/rclone
+    "{{prefix}}"/bin/rclone genautocomplete zsh "{{prefix}}"/share/zsh/site-functions/_rclone
+    "{{prefix}}"/bin/rclone genautocomplete fish "{{prefix}}"/share/fish/vendor_completions.d/rclone.fish
+
+dependencies:
+  go.dev: ^1.16
+
+caveats: |
+  Homebrew's installation does not include the `mount` subcommand on MacOS.
+
+test: 'rclone --version'

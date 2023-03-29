@@ -1,0 +1,89 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project jansson:
+
+
+        class Jansson < Formula
+          homepage "https://digip.org/jansson/"
+          url "https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz"
+          def install
+            system "./configure", *std_configure_args
+            system "make", "install"
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <jansson.h>
+              #include <assert.h>
+              int main()
+              {
+                json_t *json;
+                json_error_t error;
+                json = json_loads("\\"foo\\"", JSON_DECODE_ANY, &error);
+                assert(json && json_is_string(json));
+                json_decref(json);
+                return 0;
+              }
+            EOS
+            system ENV.cc, "test.c", "-L#{lib}", "-ljansson", "-o", "test"
+            system "./test"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project jansson:
+
+
+        distributable:
+          url: https://github.com/akheron/jansson/releases/download/v{{ version.raw }}/jansson-{{ version.raw }}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: akheron/jansson/tags
+          strip: /^v/
+
+        build:
+          dependencies:
+            linux:
+              gnu.org/gcc: '*'
+            darwin:
+              tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+          script: |
+            ./configure --prefix="{{prefix}}"
+            make --jobs {{ hw.concurrency }} install
+
+        test:
+          dependencies:
+            tea.xyz/gx/cc: c99
+          script: |
+            cc fixture.c -ljansson
+            ./a.out
+
+
+    Here's an example ruby formula for the project vde:
+
+
+        class Vde < Formula
+          homepage "https://github.com/virtualsquare/vde-2"
+          url "https://github.com/virtualsquare/vde-2/archive/refs/tags/v2.3.3.tar.gz"
+          license all_of: ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+          head "https://github.com/virtualsquare/vde-2.git", branch: "master"
+          depends_on "autoconf" => :build
+          depends_on "automake" => :build
+          depends_on "libtool" => :build
+          def install
+            system "autoreconf", "--install"
+            system "./configure", *std_configure_args
+            system "make", "install"
+          end
+          test do
+            system "vde_switch", "-v"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project vde in the yml format:

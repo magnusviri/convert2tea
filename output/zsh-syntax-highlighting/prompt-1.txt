@@ -1,0 +1,124 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project aria2:
+
+
+        class Aria2 < Formula
+          homepage "https://aria2.github.io/"
+          url "https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0.tar.xz"
+          revision 1
+          depends_on "pkg-config" => :build
+          depends_on "gettext"
+          depends_on "libssh2"
+          depends_on "sqlite"
+          uses_from_macos "libxml2"
+          uses_from_macos "zlib"
+          on_linux do
+            depends_on "openssl@1.1"
+          end
+          def install
+            ENV.cxx11
+            args = %W[
+              --disable-dependency-tracking
+              --prefix=#{prefix}
+              --with-libssh2
+              --without-gnutls
+              --without-libgmp
+              --without-libnettle
+              --without-libgcrypt
+            ]
+            if OS.mac?
+              args << "--with-appletls"
+              args << "--without-openssl"
+            else
+              args << "--without-appletls"
+              args << "--with-openssl"
+            end
+            system "./configure", *args
+            system "make", "install"
+            bash_completion.install "doc/bash_completion/aria2c"
+          end
+          test do
+            system "#{bin}/aria2c", "https://brew.sh/"
+            assert_predicate testpath/"index.html", :exist?, "Failed to create index.html!"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project aria2:
+
+
+        distributable:
+          url: https://github.com/aria2/aria2/releases/download/release-{{ version }}/aria2-{{ version }}.tar.xz
+          strip-components: 1
+
+        versions:
+          github: aria2/aria2
+          strip: /^aria2 /
+
+        provides:
+          - bin/aria2c
+
+        dependencies:
+          zlib.net: ^1
+          openssl.org: ^1
+          libexpat.github.io: '*'
+          sqlite.org: ^3
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            gnupg.org/libgcrypt: ^1
+            gnupg.org/libgpg-error: ^1
+            freedesktop.org/pkg-config: '*'
+          script: |
+            ./configure $ARGS
+            make --jobs {{hw.concurrency}}
+            make install
+          env:
+            ARGS:
+              - --prefix="{{prefix}}"
+              - --with-openssl
+              - --with-libgcrypt
+
+        test: |
+          aria2c -v
+          aria2c https://tea.xyz
+          aria2c --seed-time=0 "magnet:?xt=urn:btih:d984f67af9917b214cd8b6048ab5624c7df6a07a&tr=https%3A%2F%2Facademictorrents.com%2Fannounce.php&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce"
+
+
+    Here's an example ruby formula for the project zsh-syntax-highlighting:
+
+
+        class ZshSyntaxHighlighting < Formula
+          homepage "https://github.com/zsh-users/zsh-syntax-highlighting"
+          url "https://github.com/zsh-users/zsh-syntax-highlighting.git",
+              tag:      "0.7.1",
+              revision: "932e29a0c75411cb618f02995b66c0a4a25699bc"
+          head "https://github.com/zsh-users/zsh-syntax-highlighting.git", branch: "master"
+          uses_from_macos "zsh" => [:build, :test]
+          def install
+            system "make", "install", "PREFIX=#{prefix}"
+          end
+          def caveats
+            <<~EOS
+              To activate the syntax highlighting, add the following at the end of your .zshrc:
+                source #{HOMEBREW_PREFIX}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+              If you receive "highlighters directory not found" error message,
+              you may need to add the following to your .zshenv:
+                export ZSH_HIGHLIGHT_HIGHLIGHTERS_DIR=#{HOMEBREW_PREFIX}/share/zsh-syntax-highlighting/highlighters
+            EOS
+          end
+          test do
+            assert_match "#{version}\n",
+              shell_output("zsh -c '. #{pkgshare}/zsh-syntax-highlighting.zsh && echo $ZSH_HIGHLIGHT_VERSION'")
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project zsh-syntax-highlighting in the yml format:

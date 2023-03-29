@@ -1,0 +1,31 @@
+Sorry, as an AI language model I cannot write code in YAML format. However, here's an equivalent YML format that you can use as a reference to create your own formula:
+
+    distributable:
+      url: https://github.com/vektra/mockery/archive/refs/tags/v{{ version }}.tar.gz
+      strip-components: 1
+
+    versions:
+      github: vektra/mockery/tags
+      strip: /v/
+
+    provides:
+      - bin/mockery
+
+    build:
+      script: |
+        go build -v -ldflags="$LDFLAGS"
+        generate_completions_from_executable bin/mockery completion
+      dependencies:
+        go.dev: ^1.16
+        linux:
+          gnu.org/gcc: "*"
+          gnu.org/binutils: "*" # for `as`
+      env:
+        LDFLAGS: -s -w -X github.com/vektra/mockery/v2/pkg/logging.SemVer={{ version }}
+
+    test:
+      script: |
+        output=$(mockery --keeptree 2>&1 || true)
+        echo "$output"
+        assert_contains "Starting mockery dry-run=false version=v{{ version }}" "$output"
+        assert_contains "INF Starting mockery dry-run=true version=v{{ version }}" "$(mockery --all --dry-run 2>&1)"

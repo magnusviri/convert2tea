@@ -1,0 +1,28 @@
+distributable:
+  url: https://downloads.xvid.com/downloads/xvidcore-{{ version }}.tar.bz2
+  strip-components: 1
+
+versions:
+  bitbucket: xvidly/xvid-core
+  strip: /^xvidcore-/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    xz: '*'
+    bzip2: '*'
+  script: |
+    cd build/generic
+    ./configure --disable-assembly --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.cpp -lxvidcore
+    ./a.out

@@ -1,0 +1,57 @@
+distributable:
+      url: https://github.com/msgpack/msgpack-c/releases/download/c-{{version}}/msgpack-c-{{version}}.tar.gz
+      strip-components: 1
+
+    versions:
+      github: msgpack/msgpack-c
+      strip: /^c/
+
+    dependencies:
+      cmake.org: ^3
+      compiler-rt.llvm.org: '*'
+
+    build:
+      script: |
+        cmake -S . -B build -DMSGPACK_BUILD_TESTS=OFF $ARGS
+        cmake --build build
+        cmake --install build
+        for dylib in $(find "#{lib}" -type f -name "libmsgpack-c*.dylib"); do
+          old_name=$(basename "$dylib" ".dylib" | sed "s/msgpack-c/msgpackc/")
+          ln -s "$dylib" "#{lib}/$old_name.dylib"
+        done
+      env:
+        ARGS:
+          - -DCMAKE_INSTALL_PREFIX=#{prefix}
+        PATH: "#{Formula["compiler-rt"].opt_bin}:$PATH"
+
+    provides:
+      - bin/msgpack
+      - bin/msgpack-config
+
+    test:
+      script: |
+        cat <<'EOS' >test.c
+        #include <msgpack.h>
+        #include <stdio.h>
+        int main(void)
+        {
+           msgpack_sbuffer* buffer = msgpack_sbuffer_new();
+           msgpack_packer* pk = msgpack_packer_new(buffer, msgpack_sbuffer_write);
+           msgpack_pack_int(pk, 1);
+           msgpack_pack_int(pk, 2);
+           msgpack_pack_int(pk, 3);
+           msgpack_unpacker pac;
+           msgpack_unpacker_init(&pac, MSGPACK_UNPACKER_INIT_BUFFER_SIZE);
+           msgpack_unpacker_reserve_buffer(&pac, buffer->size);
+           memcpy(msgpack_unpacker_buffer(&pac), buffer->data, buffer->size);
+           msgpack_unpacker_buffer_consumed(&pac, buffer->size);
+           msgpack_unpacked result;
+           msgpack_unpacked_init(&result);
+           while(msgpack_unpacker_next(&pac, &result)) {
+               msgpack_object_print(stdout, result.data);
+               puts("");
+           }
+        }
+        EOS
+        cc -o test test.c -L"#{lib}" -lmsgpackc
+        ./test

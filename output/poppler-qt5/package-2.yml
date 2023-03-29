@@ -1,0 +1,118 @@
+distributable:
+  url: https://poppler.freedesktop.org/poppler-{{version.raw}}.tar.xz
+  strip-components: 1
+
+provides:
+  - bin/pdfdetach
+  - bin/pdffonts
+  - bin/pdfimages
+  - bin/pdfinfo
+  - bin/pdfseparate
+  - bin/pdfsig
+  - bin/pdftocairo
+  - bin/pdftohtml
+  - bin/pdftoppm
+  - bin/pdftops
+  - bin/pdfunite
+
+versions:
+  homepage: https://poppler.freedesktop.org/
+  strip: poppler-
+
+dependencies:
+  gobject-introspection: ~
+  pkgconfig: ~
+  cairo: ~
+  fontconfig: ~
+  freetype: ~
+  gettext: ~
+  glib: ~
+  jpeg-turbo: ~
+  libpng: ~
+  libtiff: ~
+  little-cms2: ~
+  nss: ~
+  openjpeg: ~
+  qtproject/qt5/qtbase: ~
+
+build:
+  dependencies:
+    cmake.org: '*'
+    gobject-introspection: *
+    pkgconfig: *
+    qtproject/qt5/qtbase: *
+    gperf: make
+    curl: '*'
+  script: |
+    export PATH="/usr/local/opt/qt/bin:$PATH"
+    cmake \
+      -DBUILD_GTK_TESTS=OFF \
+      -DENABLE_BOOST=OFF \
+      -DENABLE_CMS=lcms2 \
+      -DENABLE_GLIB=ON \
+      -DENABLE_Qt5=ON \
+      -DENABLE_Qt6=OFF \
+      -DCMAKE_INSTALL_RPATH={{rpath}} \
+      -DWITH_GObjectIntrospection=ON \
+      .
+    make -j {{hw.concurrency}} VERBOSE=1
+    make install
+    make clean
+    cmake \
+      -DBUILD_SHARED_LIBS=OFF \
+      -DENABLE_BOOST=OFF \
+      -DENABLE_CMS=lcms2 \
+      -DENABLE_GLIB=ON \
+      -DENABLE_Qt5=ON \
+      -DENABLE_Qt6=OFF \
+      -DCMAKE_INSTALL_RPATH={{rpath}} \
+      -DWITH_GObjectIntrospection=ON \
+      .
+    make VERBOSE=1
+    cp libpoppler-cpp.a {{prefix}}/lib/
+  env:
+    CPATH: {{prefix}}/include
+    LDFLAGS: -L{{prefix}}/lib
+    CC: clang
+    CXX: clang++
+    OBJC: clang
+    STRIP: strip
+
+runtime:
+  env:
+    PATH: "{{prefix}}/bin:$PATH"
+    PKG_CONFIG_PATH: "{{prefix}}/lib/pkgconfig:$PKG_CONFIG_PATH" 
+
+test:
+  script: |
+    sed -i.bak 's|&nbsp;| |g' test.pdf # Fixes pdftotext output
+    pdftotext -layout -nopgbrk test.pdf - | diff - test.txt
+  fixture: |
+    %PDF-1.4
+    1 0 obj
+    << /Type /Catalog /Pages 2 0 R>>
+    endobj
+    2 0 obj
+    << /Type /Pages /Kids [3 0 R] /Count 1 >>
+    endobj
+    3 0 obj
+    << /Type /Page /Parent 2 0 R /MediaBox [0 0 50 50] /Contents 4 0 R >>
+    endobj
+    4 0 obj
+    << /Length 13 >>
+    stream
+    BT /F1 8 Tf 0 40 TD (Hello, World!) Tj ET
+    endstream
+    endobj
+    xref
+    0 5
+    0000000000 65535 f
+    0000000017 00000 n
+    0000000077 00000 n
+    0000000178 00000 n
+    0000000307 00000 n
+    trailer
+    << /Size 5 /Root 1 0 R /ID [<0123456789ABCDEF> <0123456789ABCDEF>] >>
+    startxref
+    454
+    %%EOF

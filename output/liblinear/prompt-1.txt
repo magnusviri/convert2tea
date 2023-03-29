@@ -1,0 +1,156 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project duckdb:
+
+
+        class Duckdb < Formula
+          homepage "https://www.duckdb.org"
+          url "https://github.com/duckdb/duckdb.git",
+              tag:      "v0.7.1",
+              revision: "b00b93f0b14bfff869e1facfd86a6b556a6f1c6e"
+          depends_on "cmake" => :build
+          def install
+            mkdir "build"
+            cd "build" do
+              system "cmake", "..", *std_cmake_args, "-DBUILD_ICU_EXTENSION=1", "-DBUILD_JSON_EXTENSION=1",
+                     "-DBUILD_PARQUET_EXTENSION=1"
+              system "make"
+              system "make", "install"
+              bin.install "duckdb"
+              # The cli tool was renamed (0.1.8 -> 0.1.9)
+              # Create a symlink to not break compatibility
+              bin.install_symlink bin/"duckdb" => "duckdb_cli"
+            end
+          end
+          test do
+            path = testpath/"weather.sql"
+            path.write <<~EOS
+              CREATE TABLE weather (temp INTEGER);
+              INSERT INTO weather (temp) VALUES (40), (45), (50);
+              SELECT AVG(temp) FROM weather;
+            EOS
+            expected_output = <<~EOS
+              ┌─────────────┐
+              │ avg("temp") │
+              │   double    │
+              ├─────────────┤
+              │        45.0 │
+              └─────────────┘
+            EOS
+            assert_equal expected_output, shell_output("#{bin}/duckdb_cli < #{path}")
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project duckdb:
+
+
+        distributable:
+          url: https://github.com/duckdb/duckdb/archive/refs/tags/v{{version}}.tar.gz
+          strip-components: 1
+
+        # if there’s a github then we can parse the versions
+        versions:
+          github: duckdb/duckdb/releases/tags
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            cmake.org: ^3
+            git-scm.org: '*'
+          working-directory: build
+          script: |
+            # duckdb uses git to get its version
+            git init ..
+            git config user.email "bot@tea.xyz"
+            git config user.name "teabot"
+            git commit --allow-empty -mnil
+            git tag v{{version}}
+
+            cmake ..
+            make --jobs {{ hw.concurrency }}
+            mkdir -p "{{prefix}}"/bin
+            mv duckdb "{{prefix}}"/bin
+          env:
+            ARGS:
+              - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+              - -DCMAKE_BUILD_TYPE=Release
+              - -DBUILD_ICU_EXTENSION=1
+              - -DBUILD_JSON_EXTENSION=1
+              - -DBUILD_PARQUET_EXTENSION=1
+
+        provides:
+          - bin/duckdb
+          # ^^ specify the binaries or tea magic won’t work
+
+        test:
+          fixture: |
+            CREATE TABLE weather (temp INTEGER);
+            INSERT INTO weather (temp) VALUES (40), (45), (50);
+            SELECT AVG(temp) FROM weather;
+          script: |
+            out="$(duckdb < $FIXTURE)"
+            exp=$(cat <<EOS
+            ┌─────────────┐
+            │ avg("temp") │
+            │   double    │
+            ├─────────────┤
+            │        45.0 │
+            └─────────────┘
+            EOS)
+
+            test "$out" = "$exp"
+
+            if [[ "$(duckdb --version)" != "v{{version}}"* ]]; then
+              echo "invalid version" >&2
+              exit 1
+            fi
+
+
+
+    Here's an example ruby formula for the project liblinear:
+
+
+        class Liblinear < Formula
+          homepage "https://www.csie.ntu.edu.tw/~cjlin/liblinear/"
+          url "https://www.csie.ntu.edu.tw/~cjlin/liblinear/oldfiles/liblinear-2.46.tar.gz"
+          head "https://github.com/cjlin1/liblinear.git", branch: "master"
+          livecheck do
+            url "https://www.csie.ntu.edu.tw/~cjlin/liblinear/oldfiles/"
+            regex(/href=.*?liblinear[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          # Fix sonames
+          patch :p0 do
+            url "https://raw.githubusercontent.com/Homebrew/formula-patches/bac35ae9140405dec00f1f700d2ecc27cf82526b/liblinear/patch-Makefile.diff"
+          end
+          def install
+            soversion_regex = /^SHVER = (\d+)$/
+            soversion = (buildpath/"Makefile").read
+                                              .lines
+                                              .grep(soversion_regex)
+                                              .first[soversion_regex, 1]
+            system "make", "all"
+            bin.install "predict", "train"
+            lib.install shared_library("liblinear", soversion)
+            lib.install_symlink shared_library("liblinear", soversion) => shared_library("liblinear")
+            include.install "linear.h"
+          end
+          test do
+            (testpath/"train_classification.txt").write <<~EOS
+              +1 201:1.2 3148:1.8 3983:1 4882:1
+              -1 874:0.3 3652:1.1 3963:1 6179:1
+              +1 1168:1.2 3318:1.2 3938:1.8 4481:1
+              +1 350:1 3082:1.5 3965:1 6122:0.2
+              -1 99:1 3057:1 3957:1 5838:0.3
+            EOS
+            system "#{bin}/train", "train_classification.txt"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project liblinear in the yml format:

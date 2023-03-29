@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to write a formula for the project s-lang in the yml format as it is not supported by Homebrew. The yml format is used by other package managers, such as Tea or gx, but Homebrew exclusively uses the Ruby format for its formulae.

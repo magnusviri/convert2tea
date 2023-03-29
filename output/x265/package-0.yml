@@ -1,0 +1,63 @@
+distributable:
+  url: https://bitbucket.org/multicoreware/x265_git/get/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  bitbucket: multicoreware/x265_git
+  strip: /^x265 /
+
+provides:
+  - bin/x265
+
+dependencies:
+  cmake.org: ^3.5
+  nasm.us: ^2
+
+build:
+  on:
+    - intel
+  dependencies:
+    cmake.org: *
+    nasm.us: *
+  script: |
+    mkdir 8bit
+    args=(
+      -DLINKED_10BIT=ON
+      -DLINKED_12BIT=ON
+      -DEXTRA_LINK_FLAGS=-L.
+      -DEXTRA_LIB=x265_main10.a;x265_main12.a
+      -DCMAKE_INSTALL_RPATH={{rpath}}
+    )
+    high_bit_depth_args=(
+      -DHIGH_BIT_DEPTH=ON
+      -DEXPORT_C_API=OFF
+      -DENABLE_SHARED=OFF
+      -DENABLE_CLI=OFF
+      -DCMAKE_INSTALL_RPATH={{rpath}}
+      -DENABLE_HDR10_PLUS=ON
+    )
+    cmake source "${high_bit_depth_args[@]}" -B10bit
+    cmake --build 10bit
+    mv 10bit/libx265.a 8bit/libx265_main10.a
+    cmake source "${high_bit_depth_args[@]}" -B12bit -DMAIN12=ON
+    cmake --build 12bit
+    mv 12bit/libx265.a 8bit/libx265_main12.a
+    args+=("${{ std_args[@] }}" "${{ high_bit_depth_args[@] }}")
+    cmake source "${args[@]}" -B8bit
+    cmake --build 8bit
+    if [[ $OSTYPE == darwin* ]]; then
+      libtool -static -o 8bit/libx265.a 8bit/libx265_main.a 8bit/libx265_main10.a 8bit/libx265_main12.a
+    else
+      ar cr 8bit/libx265.a 8bit/libx265_main.a 8bit/libx265_main10.a 8bit/libx265_main12.a
+      ranlib 8bit/libx265.a
+    fi
+    cmake --install 8bit --prefix "{{prefix}}"
+
+test: |
+  x265 --version
+  yuv_path=$BATS_TMPDIR/raw.yuv
+  x265_path=$BATS_TMPDIR/x265.265
+  printf '\xC0\xFF\xEE%.0s' {1..3200} > "$yuv_path"
+  x265 --input-res 80x80 --fps 1 "$yuv_path" -o "$x265_path"
+  header='AAAAAUABDAH//w=='
+  assert_equal "$header" "$(head -c10 "$x265_path" | base64)"

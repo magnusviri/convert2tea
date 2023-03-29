@@ -1,0 +1,43 @@
+Sorry, as a language model, I cannot convert Ruby formula to YAML format. However, here is the corresponding YAML formula for Telnet:
+
+    distributable:
+      url: https://github.com/apple-oss-distributions/remote_cmds/archive/refs/tags/remote_cmds-64.tar.gz
+      strip-components: 1
+
+    versions:
+      github: apple-oss-distributions/remote_cmds/tags
+      strip: /^[^\d]+/
+
+    license: all_of
+      - BSD-4-Clause-UC
+      - APSL-1.0
+
+    build:
+      dependencies:
+        darwin:
+          'xcode-select': required
+        linux:
+          tea.xyz/gx/cc: gcc
+      script: |
+        pushd telnet.tproj/
+        export CC=$(which cc)
+        export CXX=$(which c++)
+        export LDFLAGS="$LDFLAGS -L$(brew --prefix openssl)/lib -lssl -lcrypto"
+        xcodebuild -configuration=Release -target telnet OTHER_LDFLAGS="-lssl -lcrypto" SYMROOT=build || exit
+        mkdir telnet.tproj/build/Products/usr/local/include/libtelnet/
+        cp libtelnet/libtelnet.h telnet.tproj/build/Products/usr/local/include/libtelnet/
+        cp build/Release/libtelnet.a telnet.tproj/build/Products/
+        popd
+        make --jobs {{ hw.concurrency }} SYMROOT=build/Intermediates DSTROOT=build/Archive OBJROOT=build/Intermediates RC_ARCHS={{ arch }} -C telnet.tproj/ CFLAGS="$(CC_Flags) {{ cflags }}" LDFLAGS="$(LD_Flags) -Lbuild/Products/" install
+        mv build/Archive/usr/local/opt/telnet/bin/telnet build/Archive/usr/local/bin/
+        mv build/Archive/usr/local/opt/telnet/share/man/man1/telnet.1 build/Archive/usr/local/share/man/man1/
+
+    test:
+      script: |
+        brew unlink telnet
+        brew link telnet
+        output=$(echo -n "" | telnet india.colorado.edu 13 || true)
+        echo "${output}"
+        if [[ "${output}" != *"Connected to"* ]]; then
+            exit 1
+        fi

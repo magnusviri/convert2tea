@@ -1,0 +1,45 @@
+distributable:
+  url: https://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-2.6.4.tgz
+
+versions:
+  - 2.6.4
+
+provides:
+  - bin/slappasswd
+
+build:
+  dependencies:
+    tea.xyz/gx/configure: '*'
+    tea.xyz/gx/make: '*'
+    tea.xyz/gx/patch: '*'
+
+  script: |
+    args="--disable-dependency-tracking \
+          --prefix={{prefix}} \
+          --sysconfdir=#{etc} \
+          --localstatedir=#{var} \
+          --enable-accesslog \
+          --enable-auditlog \
+          --enable-bdb=no \
+          --enable-constraint \
+          --enable-dds \
+          --enable-deref \
+          --enable-dyngroup \
+          --enable-dynlist \
+          --enable-hdb=no \
+          --enable-memberof \
+          --enable-ppolicy \
+          --enable-proxycache \
+          --enable-refint \
+          --enable-retcode \
+          --enable-seqmod \
+          --enable-translucent \
+          --enable-unique \
+          --enable-valsort \
+          --without-systemd"
+
+    tea configure $args
+    tea make install
+
+test:
+  script: bin/slappasswd -s test

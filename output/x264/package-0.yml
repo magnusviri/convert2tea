@@ -1,0 +1,46 @@
+distributable:
+  url: https://code.videolan.org/videolan/x264/-/archive/{{ version }}/x264-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  git: git://git.videolan.org/x264.git
+  overrides:
+    r{major}.{minor}.{patch}:
+      version: "{major}.{minor}.{patch}"
+      tag: x264_{major}.{minor}.{patch}
+
+detect:
+  cmd: x264 --version
+  regex: x264 {{version}}
+
+dependencies:
+  makepkg.archlinux.org/nasm: 1
+
+provides:
+  darwin:
+  - bin/x264
+  linux:
+  - bin/x264
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    tea.xyz/gx/make: '*'
+  script: |-
+    export CFLAGS+="-I#{deps.makepkg.archlinux.org/nasm.prefix}/include"
+    export LDFLAGS+="-L#{deps.makepkg.archlinux.org/nasm.prefix}/lib"
+    ./configure --prefix={{prefix}} --disable-lsmash --disable-swscale --disable-ffms --enable-shared --enable-static --enable-strip
+    make --jobs {{hw.concurrency}} install
+  env:
+    PKG_CONFIG_LIBDIR: "{{prefix}}/lib/pkgconfig:{{deps.makepkg.archlinux.org/nasm.prefix}}/lib/pkgconfig"
+    NPM_CONFIG_PREFIX: '{{prefix}}'
+    ASM_NASM: '{{deps.makepkg.archlinux.org/nasm.prefix}}/bin/nasm'
+    AS: '{{deps.x86_64_linux.musl.pkg/binutils.prefix}}/bin/as'
+    LD: '{{deps.x86_64_linux.musl.pkg/binutils.prefix}}/bin/ld'
+    YASM: '{{deps.x86_64_linux.musl.pkg/yasm.prefix}}/bin/yasm'
+  error-log:
+    config.log
+
+test:
+  script:
+    x264 --version

@@ -1,0 +1,23 @@
+distributable:
+  url: https://github.com/jhford/screenresolution/archive/v{{version.raw}}.tar.gz
+
+versions:
+  github: jhford/screenresolution/tags
+  ignore: []
+
+dependencies:
+  macos: '*'
+
+provides:
+  - bin/screenresolution
+
+build:
+  dependencies: []
+  script: |
+    make CC={{env.cc}}
+    make PREFIX={{prefix}} install
+
+test:
+  dependencies: []
+  script:
+    screenresolution get

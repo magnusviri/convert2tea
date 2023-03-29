@@ -1,0 +1,36 @@
+distributable:
+  url: https://github.com/strukturag/libheif/releases/download/v{{version}}/libheif-{{version}}.tar.gz
+
+versions:
+  github: strukturag/libheif
+  strip: /^v/
+
+dependencies:
+  aom: '*'
+  jpeg-turbo: '*'
+  libde265: '*'
+  libpng: '*'
+  shared-mime-info: '*'
+  x265: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99 # installs C99 compiler
+    tea.xyz/gx/make: '*' # installs latest version of make
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --prefix={{prefix}}
+  post_install:
+    - update-mime-database {{HOMEBREW_PREFIX}}/share/mime
+
+test:
+  script: |
+    HEIF_EXAMPLES_PATH=`brew --prefix libheif`/share/libheif/examples
+    heif-convert $HEIF_EXAMPLES_PATH/example.heic $HEIF_EXAMPLES_PATH/example.heic.jpg
+    heif-convert $HEIF_EXAMPLES_PATH/example.avif $HEIF_EXAMPLES_PATH/example.avif.jpg
+
+provides:
+  - bin/heif-convert

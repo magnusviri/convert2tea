@@ -1,0 +1,42 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.6.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.1.6
+
+provides:
+  - include/opencore-amrwb/dec_if.h
+  - include/opencore-amrnb/interf_enc.h
+  - include/opencore-amrnb/interf_dec.h
+  - include/opencore-amrwb/interf_dec.h
+  - include/opencore-amrwb/interf_enc.h
+  - lib/libopencore-amrnb.a
+  - lib/libopencore-amrwb.a
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: gcc
+    tea.xyz/gx/make: '*'
+
+  script: |
+    ./configure --disable-dependency-tracking --prefix={{prefix}}
+    make install
+
+test:
+  script: |
+    (echo "#include <opencore-amrwb/dec_if.h>"; echo "int main(){}") > test.c
+    {{#crossCompile}} {{#host}} {{#target}}
+    {{#isOS "macos"}} {{#isArch "x86_64"}}
+    xcrun -sdk {{sdk}} clang -o test test.c -I{{prefix}}/include -L{{prefix}}/lib -lopencore-amrwb
+    {{/isArch}} {{/isOS}}
+    {{/target}} {{/host}} {{/crossCompile}}
+    {{^crossCompile}}
+    {{#isOS "macos"}} {{#isArch "x86_64"}}
+    clang -o test test.c -I{{prefix}}/include -L{{prefix}}/lib -lopencore-amrwb
+    {{/isArch}} {{/isOS}}
+    {{#isOS "linux"}} {{#isArch "x86_64"}}
+    gcc -o test test.c -I{{prefix}}/include -L{{prefix}}/lib -lopencore-amrwb
+    {{/isArch}} {{/isOS}}
+    {{/crossCompile}}
+    ./test

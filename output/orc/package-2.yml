@@ -1,0 +1,30 @@
+Sorry, as an AI language model, I am not able to generate YAML format codes. However, here is the equivalent YAML format for the Orc formula:
+
+```
+distributable:
+  url: https://gstreamer.freedesktop.org/src/orc/orc-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  - 0.4.33
+
+build:
+  dependencies:
+    mesonbuild.com: ^0.50
+    ninja-build.org: 1
+  working-directory:
+    build
+  script: |
+    meson .. --prefix={{prefix}} --libdir={{prefix}}/lib -Dgtk_doc=disabled
+    ninja -v
+    ninja install
+  env:
+    CC: clang
+
+test:
+  script: |
+    orcc --version
+
+provides:
+  - bin/orcc
+```

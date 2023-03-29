@@ -1,0 +1,74 @@
+Sorry, as a language model, I am not able to generate YAML code. However, here is an equivalent MacVim formula in the Homebrew YAML format:
+
+```
+distributable:
+  url: https://github.com/macvim-dev/macvim/archive/refs/tags/release-176.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/macvim
+  - bin/mvim
+
+versions:
+  github: macvim-dev/macvim
+  strategy: git
+
+dependencies:
+  gettext: '*'
+  libsodium: '*'
+  lua: '*'
+  python.org: 'python@3.11'
+  ruby: '*'
+  system:
+    - cscope
+    - ncurses
+
+runtime:
+  depends_on:
+    - :macos
+
+build:
+  env:
+    CFLAGS: -O3 -march=native -fomit-frame-pointer
+    MACOSX_DEPLOYMENT_TARGET: {{ macos.version }}
+    PATH: ${{env.PATH}}:{{deps.gettext.prefix}}/bin
+  script: |
+    ./configure \
+      --with-features=huge \
+      --enable-multibyte \
+      --enable-perlinterp \
+      --enable-rubyinterp \
+      --enable-tclinterp \
+      --enable-terminal \
+      --with-tlib=ncurses \
+      --with-compiledby=Homebrew \
+      --with-local-dir={{prefix}} \
+      --enable-cscope \
+      --enable-luainterp \
+      --with-lua-prefix={{deps.lua.prefix}} \
+      --enable-python3interp \
+      --disable-sparkle \
+      --with-macarchs={{cpu.arch}}
+    make
+    make install
+
+test:
+  env:
+    LANG: en_US.UTF-8
+  script: |
+    printf ':python3 import vim;vim.current.buffer[0] = "vim Homebrew rocks!"\n:wq\n' | mvim - -f -u NONE -U NONE --noplugin >/dev/null
+    test -e test.txt
+    grep -q 'vim Homebrew rocks!' test.txt
+  teardown: |
+    rm -f test.txt
+
+caveats: |
+  MacVim.app installed to:
+    #{prefix}
+
+  To link the application to a normal Mac OS X location:
+    brew linkapps
+
+  Add the following to your zshrc or bashrc:
+    alias vim='mvim -v'
+```

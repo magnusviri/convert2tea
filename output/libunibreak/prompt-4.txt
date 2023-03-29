@@ -1,0 +1,167 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project curl:
+
+
+        class Curl < Formula
+          homepage "https://curl.se"
+          url "https://curl.se/download/curl-8.0.1.tar.bz2"
+          mirror "https://github.com/curl/curl/releases/download/curl-8_0_0/curl-8.0.1.tar.bz2"
+          mirror "http://fresh-center.net/linux/www/curl-8.0.1.tar.bz2"
+          mirror "http://fresh-center.net/linux/www/legacy/curl-8.0.1.tar.bz2"
+          livecheck do
+            url "https://curl.se/download/"
+            regex(/href=.*?curl[._-]v?(.*?)\.t/i)
+          end
+          head do
+            url "https://github.com/curl/curl.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+          end
+          keg_only :provided_by_macos
+          depends_on "pkg-config" => :build
+          depends_on "brotli"
+          depends_on "libidn2"
+          depends_on "libnghttp2"
+          depends_on "libssh2"
+          depends_on "openldap"
+          depends_on "openssl@1.1"
+          depends_on "rtmpdump"
+          depends_on "zstd"
+          uses_from_macos "krb5"
+          uses_from_macos "zlib"
+          def install
+            system "./buildconf" if build.head?
+            args = %W[
+              --disable-debug
+              --disable-dependency-tracking
+              --disable-silent-rules
+              --prefix=#{prefix}
+              --with-ssl=#{Formula["openssl@1.1"].opt_prefix}
+              --without-ca-bundle
+              --without-ca-path
+              --with-ca-fallback
+              --with-secure-transport
+              --with-default-ssl-backend=openssl
+              --with-libidn2
+              --with-librtmp
+              --with-libssh2
+              --without-libpsl
+            ]
+            args << if OS.mac?
+              "--with-gssapi"
+            else
+              "--with-gssapi=#{Formula["krb5"].opt_prefix}"
+            end
+            system "./configure", *args
+            system "make", "install"
+            system "make", "install", "-C", "scripts"
+            libexec.install "scripts/mk-ca-bundle.pl"
+          end
+          test do
+            # Fetch the curl tarball and see that the checksum matches.
+            # This requires a network connection, but so does Homebrew in general.
+            filename = (testpath/"test.tar.gz")
+            system "#{bin}/curl", "-L", stable.url, "-o", filename
+            filename.verify_checksum stable.checksum
+            system libexec/"mk-ca-bundle.pl", "test.pem"
+            assert_predicate testpath/"test.pem", :exist?
+            assert_predicate testpath/"certdata.txt", :exist?
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project curl:
+
+
+        distributable:
+          url: https://curl.se/download/curl-{{version}}.tar.bz2
+          strip-components: 1
+
+        versions:
+          github: curl/curl
+          strip: /^curl /
+
+        dependencies:
+          openssl.org: ^1.1
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+          script: |
+            ./configure $ARGS
+            make --jobs {{ hw.concurrency }} install
+          env:
+            ARGS:
+            - --prefix={{prefix}}
+            - --with-openssl
+            - --with-ca-fallback  # uses openssl’s certs (which we control)
+          test:
+            make test
+
+        test:
+          script: |
+            curl -i tea.xyz
+            curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org
+
+        # TODO need to fix the .la file
+
+        provides:
+          - bin/curl
+          - bin/curl-config
+
+
+
+    Here's an example ruby formula for the project libunibreak:
+
+
+        class Libunibreak < Formula
+          homepage "https://github.com/adah1972/libunibreak"
+          url "https://github.com/adah1972/libunibreak/releases/download/libunibreak_5_1/libunibreak-5.1.tar.gz"
+          livecheck do
+            url :stable
+            regex(/v?(\d+(?:[_-]\d+)+)$/i)
+            strategy :git do |tags|
+              tags.map { |tag| tag[regex, 1]&.tr("_", ".") }
+            end
+          end
+          def install
+            system "./configure", *std_configure_args, "--disable-silent-rules"
+            system "make", "install"
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <unibreakbase.h>
+              #include <linebreak.h>
+              #include <assert.h>
+              #include <stdlib.h>
+              #include <string.h>
+              int main() {
+                static const utf8_t input[] = "test\\nstring \xF0\x9F\x98\x8A test";
+                char output[sizeof(input) - 1];
+                static const char expected[] = {
+                  2, 2, 2, 2, 0,
+                  2, 2, 2, 2, 2, 2, 1,
+                  3, 3, 3, 2, 1,
+                  2, 2, 2, 4
+                };
+                assert(sizeof(output) == sizeof(expected));
+                init_linebreak();
+                set_linebreaks_utf8(input, sizeof(output), NULL, output);
+                return memcmp(output, expected, sizeof(output)) != 0;
+              }
+            EOS
+            system ENV.cc, "-o", "test", "test.c", "-I#{include}",
+                           "-L#{lib}", "-lunibreak"
+            system "./test"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project libunibreak in the yml format:

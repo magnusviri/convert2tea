@@ -1,0 +1,50 @@
+distributable:
+  url: https://github.com/yaml/libyaml/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: yaml/libyaml
+  strip: /^libyaml-/
+
+dependencies:
+  - tea.xyz/gx/cc: c99
+  - tea.xyz/gx/make: '*'
+  - libtool
+
+build:
+  dependencies: []
+  script: |
+    ./bootstrap
+    ./configure --disable-dependency-tracking --prefix={{prefix}}
+    make --jobs={{hw.concurrency}} install
+
+test:
+  script: |
+    cc test.c -o test -I{{include}} -L{{lib}} -lyaml
+    ./test
+
+provides:
+  - bin/yaml2json
+  - bin/yaml2msgpack
+  - bin/yaml2plist
+  - bin/yaml2xml
+  - bin/yaml2csv
+  - bin/yaml2yaml
+  - bin/libyaml-0.2.dylib
+  - bin/libyaml.la
+  - bin/libyaml.a
+  - bin/pkgconfig/libyaml.pc
+  - lib/libyaml-0.2.dylib
+  - lib/libyaml.la
+  - lib/libyaml.a
+  - include/yaml.h
+  - include/yaml.h.win32
+  - share/doc/libyaml
+  - share/man/man1/yaml2json.1
+  - share/man/man1/yaml2msgpack.1
+  - share/man/man1/yaml2plist.1
+  - share/man/man1/yaml2xml.1
+  - share/man/man1/yaml2csv.1
+  - share/man/man1/yaml2yaml.1
+  - share/man/man3/yaml_version.3
+  - share/pkgconfig/libyaml.pc

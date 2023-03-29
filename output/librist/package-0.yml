@@ -1,0 +1,26 @@
+distributable:
+  url: https://code.videolan.org/rist/librist/-/archive/v{{version.raw}}/librist-v{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.2.7
+
+dependencies:
+  tea.xyz/gx/cjson: ^1.8
+  mbedtls.com: ^2.27
+
+build:
+  dependencies:
+    mesonbuild.com: ^0.57
+    ninja-build.org: ^1.8
+  working-directory: build
+  script: |
+    meson .. --prefix={{prefix}} --buildtype=release --default-library=both -Dfallback_builtin=false
+    ninja
+    ninja install
+
+test: |
+  assert_match "Starting ristsender", shell_output("ristsender 2>&1", 1)
+
+provides:
+  - bin/ristsender

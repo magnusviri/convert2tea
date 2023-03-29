@@ -1,0 +1,89 @@
+distributable:
+  url: https://www.vtk.org/files/release/{{version.major_minor}}/VTK-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  gitlab: vtk/vtk
+  strip: /^VTK /
+
+dependencies:
+  cmake.org: ^3.3
+  boost.org: ^1
+  eigen.tuxfamily.org: ^3
+  fontconfig.org: '*'
+  gitlab.kitware.com/vtk/gl2ps: '^2'
+  gitlab.kitware.com/vtk/glew: '^2'
+  hdfgroup.org/HDF5: ^1
+  jpeg.org: '*'
+  jsoncpp.org: '*'
+  xiph.org/libogg: '*'
+  libpng.org: '*'
+  sgi.com/tiff: '*'
+  lz4.github.io/lz4: '*'
+  unidata.ucar.edu/netcdf: '^4'
+  pugixml.org: '*'
+  pyqt.sourceforge.net/PyQt5: '*'
+  python.org: ^3
+  qt.io/qt5: '*'
+  sqlite.org: '*'
+  xiph.org/theora: '*'
+  utfcpp.com: '*'
+  tukaani.org/xz: '*'
+  expat.sourceforge.net: '*'
+  libxml.org: '*'
+  tcl.tk: '*'
+  zlib.net: '*'
+
+build:
+  script: |
+    cmake -S . -B build $ARGS
+    cmake --build build
+    cmake --install build
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_RPATH=#{rpath}
+      - -DBUILD_SHARED_LIBS:BOOL=ON
+      - -DBUILD_TESTING:BOOL=ON
+      - -DVTK_WRAP_PYTHON:BOOL=ON
+      - -DVTK_PYTHON_VERSION:STRING=3
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_boost:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_eigen:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_expat:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_gl2ps:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_glew:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_hdf5:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_jpeg:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_jsoncpp:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_libogg:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_libpng:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_sqlite:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_tiff:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_lz4:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_netcdf:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_pugixml:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_pyqt5:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_python:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_qt:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_theora:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_tiff:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_utf8cpp:BOOL=ON
+      - -DVTK_MODULE_USE_EXTERNAL_VTK_xz:BOOL=ON
+      - -DBUILD_EXAMPLES:BOOL=OFF
+      - -DVTK_LEGACY_SILENT:BOOL=ON
+      - -DBUILD_SHARED_LIBS:BOOL=ON
+      - -DCMAKE_INSTALL_PREFIX=#{prefix}
+      - -DVTK_GROUP_ENABLE_Web:STRING=NO
+      - -DVTK_GROUP_ENABLE_Views:STRING=NO
+      - -DVTK_GROUP_ENABLE_Qt:STRING=YES
+      - -DVTK_QT_VERSION:STRING=5
+      - -DCMAKE_MACOSX_RPATH:BOOL=ON
+      - -DVTK_USE_COCOA:BOOL=ON
+
+provides:
+  - bin/vtkpython
+  - lib/vtk-{{version.major_minor}}/cmake/vtk-module-find-packages.cmake
+
+test:
+  cmake -S . -B build -DBUILD_TESTING:BOOL=ON $ARGS
+  cmake --build build
+  cmake --build build --target test

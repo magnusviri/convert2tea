@@ -1,0 +1,46 @@
+distributable:
+          url: https://www.libssh2.org/download/libssh2-{{version}}.tar.gz
+          mirrors:
+            - https://github.com/libssh2/libssh2/releases/download/libssh2-{{version}}/libssh2-{{version}}.tar.gz
+            - http://download.openpkg.org/components/cache/libssh2/libssh2-{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: libssh2/libssh2/releases
+          regex: libssh2-(\d+(?:\.\d+)+)
+
+        provides:
+          - lib/libssh2.dylib
+          - lib/pkgconfig/libssh2.pc
+          - include/libssh2.h
+          - include/libssh2_agent.h
+          - include/libssh2_publickey.h
+          - include/libssh2_sftp.h
+
+        build:
+          dependencies:
+            openssl.dev: 1.1
+            zlib: '*'
+            autoconf: '*'
+            automake: '*'
+            libtool: '*'
+          script: |
+            args=(
+              --disable-silent-rules
+              --disable-examples-build
+              --with-openssl
+              --with-libz
+              --with-libssl-prefix="{{ openssl.prefix }}"
+            )
+
+            if [[ "{{ version }}" == "HEAD" ]]; then
+              ./buildconf
+            fi
+
+            ./configure "${args[@]}" && make install
+
+        test:
+          test: |-
+            (echo "#include <libssh2.h>"; echo "int main(void) { libssh2_exit(); return 0; }") > test.c
+            {{ cc }} -I{{ include }} test.c -L{{ lib }} -lssh2 -o test
+            ./test

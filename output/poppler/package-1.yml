@@ -1,0 +1,51 @@
+distributable:
+  url: https://poppler.freedesktop.org/poppler-{{version}}.tar.xz
+  extract: true
+  strip-components: 1
+
+versions:
+  - 23.03.0
+
+build:
+  dependencies:
+    - tea.xyz/gx/cc: cxx17
+    - tea.xyz/gx/make: '*'
+    - gnu.org/gperf: '*'
+    - cmake.org: ^3.17
+    - freetype.org: '*'
+    - gnu.org/gettext: '*'
+    - gnu.org/glib: '*'
+    - jpeg.org: '*'
+    - libpng.org: '*'
+    - libtiff.org: '*'
+    - lcms-group.org: '*'
+    - mozilla.org/nspr: '*'
+    - mozilla.org/nss: '*'
+    - oracle.com/jdk: 8
+  working-directory: build
+  script: |
+    cmake $ARGS ..
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DENABLE_BOOST=OFF
+      - -DENABLE_CMS=lcms2
+      - -DENABLE_GLIB=ON
+      - -DENABLE_QT5=OFF
+      - -DENABLE_QT6=OFF
+      - -DENABLE_UNSTABLE_API_ABI_HEADERS=ON
+      - -DWITH_GObjectIntrospection=ON
+      - -DCMAKE_INSTALL_RPATH=#{rpath}
+
+provides:
+  - bin/pdfinfo
+  - lib/libpoppler.a
+  - lib/libpoppler-cpp.a
+  - lib/libpoppler-glib.a
+
+test:
+  script: |
+    pdfinfo test.pdf

@@ -1,0 +1,36 @@
+distributable:
+  url: https://github.com/lima-vm/lima/archive/v{{version.raw}}.tar.gz
+
+versions:
+  github: lima-vm/lima/tags
+  tag-prefix: "v"
+
+dependencies:
+  go: "*"
+  qemu: "*"
+
+provides:
+  - bin/limactl
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    make VERSION={{version}} clean binaries
+    cp -r _output/bin {{prefix}}
+    cp -r _output/share {{prefix}}
+    # Install shell completions
+    generate-completions.ts --executable={{prefix}}/bin/limactl --name=limactl
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script:
+    info=$(limactl info | tail -n +2)
+    # Verify that the VM drivers are compiled in
+    [[ "$info" =~ qemu ]]
+    if [[ `uname -m` == "arm64" ]]; then
+        [[ "$info" =~ vz ]]
+    fi
+    # Verify that the template files are installed
+    [[ "$info" =~ default ]]

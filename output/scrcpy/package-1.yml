@@ -1,0 +1,49 @@
+Unfortunately, it is not possible to translate the Ruby formula for Scrcpy directly into YAML format, as YAML is a more concise and lower-level representation of package configuration. However, the following is a YAML-based recipe for building Scrcpy with Meson and Ninja:
+
+```
+distributable:
+  url: https://github.com/Genymobile/scrcpy/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    mesonbuild.com: ^0.47
+    ninja-build.org: 1
+    ffmpeg: *
+    libusb: *
+    sdl2: *
+    pkg-config: *
+  working-directory:
+    build
+  script: |
+    jar -tvf ../prebuilt-server.jar >/dev/null || curl -L https://github.com/Genymobile/scrcpy/releases/download/v2.0/scrcpy-server-v2.0.jar > prebuilt-server.jar
+    meson .. --prefix={{prefix}} --libdir={{prefix}}/lib -Dprebuilt_server=$PWD/prebuilt-server.jar
+    ninja install
+  env:
+    PATH: $PATH:/usr/local/opt/android-platform-tools/bin
+
+test:
+  script: |
+    fakeadb() {
+      echo "\$@" >> "$PWD/fakeadb.log"
+      if [ "\$1" = "devices" ]; then
+        echo "List of devices attached"
+        echo "emulator-1337          device product:sdk_gphone64_x86_64 model:sdk_gphone64_x86_64 device:emulator64_x86_64_arm64 transport_id:1"
+      fi
+      if [ "\$3" = "reverse" ]; then
+        exit 42
+      fi
+    }
+    export ADB="$PWD/fakeadb.sh"
+    out=$(scrcpy -v -Nr file.mp4 -p 1337 2>&1 || echo "Failed")
+    echo "$out"
+    log_content=$(cat "$PWD/fakeadb.log")
+    echo "$log_content"
+    echo "$out" | grep -q 'reverse' && echo "Success"
+```
+
+Note that this recipe uses the `jar` command to check the SHA of the pre-built `scrcpy-server.jar` file before inserting it into the build directory. It also exports the `PATH` environment variable to include the `adb` binary from the Android Platform Tools package installed via Homebrew Cask. Finally, the test script sets up a fake `adb` script to test Scrcpy's adb-related features.

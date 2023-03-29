@@ -1,0 +1,32 @@
+distributable:
+  url: https://download.gnome.org/sources/libgsf/{{version}}/libgsf-{{version}}.tar.xz
+
+versions:
+  - 1.14.50
+
+build:
+  dependencies:
+    x86-64:
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/make: '*'
+      pkg-config: '*'
+      bzip2: '*'
+      libxml2: '*'
+      zlib: '*'
+    mac:
+      gettext: '*'
+      pkg-config: '*'
+      bzip2: '*'
+      libxml2: '*'
+      zlib: '*'
+  working-directory: '{{name}}-{{version}}'
+  script: |
+    ./configure --prefix="{{prefix}}" --disable-silent-rules
+    make
+    make install
+
+test: |
+  gsf --help
+
+provides:
+  - bin/gsf

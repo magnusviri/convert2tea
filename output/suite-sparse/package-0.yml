@@ -1,0 +1,76 @@
+Sorry, as an AI language model, I cannot provide a solution in the YAML format as it needs to be tested and verified. However, here's an approximation of the solution in YAML format:
+
+    distributable:
+      url: https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/v{{ version }}.tar.gz
+      strip-components: 1
+
+    versions:
+      github: DrTimothyAldenDavis/SuiteSparse/releases/tags
+      ignore: /-rc\d/
+
+    detect:
+      cmd: suitesparse-config --version
+      regex: \d+\.\d+\.\d+
+
+    dependencies:
+      cmake: '*'
+      openblas: '*'
+      metis: '*'
+
+    provides:
+      darwin:
+        - lib/libsuitsparseconfig.dylib
+        - lib/libumfpack.dylib
+        - lib/libcholmod.dylib
+        - lib/libklu.dylib
+        - lib/libldl.dylib
+      linux:
+        - lib/libsuitsparseconfig.so
+        - lib/libumfpack.so
+        - lib/libcholmod.so
+        - lib/libklu.so
+        - lib/libldl.so
+
+    build:
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+      script: |-
+        make library \
+          BLAS="-L$(brew --prefix openblas)/lib -lopenblas" \
+          LAPACK="$(BLAS)" \
+          MY_METIS_LIB="-L$(brew --prefix metis)/lib -lmetis" \
+          MY_METIS_INC="$(brew --prefix metis)/include" \
+          CMAKE_OPTIONS="$CMAKE_OPTIONS $(echo $EXTRA_CMAKE_OPTIONS | tr ',' ' ')" \
+          INSTALL="$(brew --prefix)" \
+          JOBS=$(sysctl -n hw.ncpu)
+        make install \
+          BLAS="-L$(brew --prefix openblas)/lib -lopenblas" \
+          LAPACK="$(BLAS)" \
+          MY_METIS_LIB="-L$(brew --prefix metis)/lib -lmetis" \
+          MY_METIS_INC="$(brew --prefix metis)/include" \
+          CMAKE_OPTIONS="$CMAKE_OPTIONS $(echo $EXTRA_CMAKE_OPTIONS | tr ',' ' ')" \
+          INSTALL="$(brew --prefix)" \
+          JOBS=$(sysctl -n hw.ncpu)
+      env:
+        EXTRAS_CMAKE_OPTIONS: '--no-abbreviate'
+        CMAKE_OPTIONS:
+          - -DBUILD_SHARED_LIBS=ON
+          - -DCMAKE_BUILD_TYPE=Release
+          - -DBUILD_WITH_INSTALL_RPATH=ON
+          - -DSUITESPARSEconfig_INSTALL_HEADERS=ON
+          - -DCMAKE_INSTALL_RPATH=$(brew --prefix)/lib
+          - -DCMAKE_INSTALL_NAME_DIR=$(brew --prefix)/lib
+          - -DBLAS_LIBRARIES="$(brew --prefix openblas)/lib/libopenblas.dylib"
+          - -DLAPACK_LIBRARIES="$(brew --prefix openblas)/lib/libopenblas.dylib"
+          - -DAMD_LIBRARIES="$(brew --prefix suitesparseconfig)/lib/libsuitesparseconfig.dylib"
+          - -DCAMD_LIBRARIES="$(brew --prefix suitesparseconfig)/lib/libsuitesparseconfig.dylib"
+          - -DCOLSAMD_LIBRARIES="$(brew --prefix suitesparseconfig)/lib/libsuitesparseconfig.dylib"
+          - -DCCOLAMD_LIBRARIES="$(brew --prefix suitesparseconfig)/lib/libsuitesparseconfig.dylib"
+          - -DCHOLMOD_LIBRARIES="$(brew --prefix cholmod)/lib/libcholmod.dylib"
+          - -DCMAKE_INCLUDE_PATH=$(brew --prefix metis)/include
+          - -DCMAKE_LIBRARY_PATH=$(brew --prefix metis)/lib
+
+    test:
+      script: >
+        suitesparse-config --version | grep -q {{ version }}

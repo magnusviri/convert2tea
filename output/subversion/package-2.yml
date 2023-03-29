@@ -1,0 +1,18 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.cgi/subversion/subversion-{{ version.major_minor_patch }}.tar.bz2
+  strip-components: 1
+
+provides:
+  - bin/svn
+  - bin/svnadmin
+
+interprets:
+  extensions: svn
+  args: ''
+
+versions:
+  github: apache/subversion
+  strip: /[a-zA-Z]*-/
+
+dependencies:
+  openssl.org: '*'

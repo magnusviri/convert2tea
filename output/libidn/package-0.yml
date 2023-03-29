@@ -1,0 +1,29 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/libidn/libidn-{{version.raw}}.tar.gz
+  mirror: https://ftpmirror.gnu.org/libidn/libidn-{{version.raw}}.tar.gz
+
+versions:
+  github: null     # no relevant github tags
+
+dependencies:
+  pkg-config: '*'
+
+provides:
+  - bin/idn
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/libtool: '*'
+  script: |
+    ./bootstrap
+    ./configure --disable-dependency-tracking \\
+                --prefix={{prefix}} \\
+                --disable-csharp \\
+                --with-lispdir={{elisp}}
+    make install
+
+test:
+  script:
+    idn räksmörgås.se blåbærgrød.no

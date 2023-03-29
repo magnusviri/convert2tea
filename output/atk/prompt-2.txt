@@ -1,0 +1,127 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project shared-mime-info:
+
+
+        class SharedMimeInfo < Formula
+          homepage "https://wiki.freedesktop.org/www/Software/shared-mime-info"
+          url "https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/2.2/shared-mime-info-2.2.tar.bz2"
+          head "https://gitlab.freedesktop.org/xdg/shared-mime-info.git", branch: "master"
+          livecheck do
+            url "https://gitlab.freedesktop.org/api/v4/projects/1205/releases"
+            regex(/shared-mime-info v?(\d+(?:\.\d+)+)/i)
+          end
+          depends_on "gettext" => :build
+          depends_on "itstool" => :build
+          depends_on "meson" => :build
+          depends_on "ninja" => :build
+          depends_on "pkg-config" => :build
+          depends_on "xmlto" => :build
+          depends_on "glib"
+          uses_from_macos "libxml2"
+          def install
+            ENV["XML_CATALOG_FILES"] = etc/"xml/catalog"
+            # Disable the post-install update-mimedb due to crash
+            mkdir "build" do
+              system "meson", *std_meson_args, ".."
+              system "ninja"
+              system "ninja", "install"
+              pkgshare.install share/"mime/packages"
+              rmdir share/"mime"
+            end
+          end
+          def post_install
+            global_mime = HOMEBREW_PREFIX/"share/mime"
+            cellar_mime = share/"mime"
+            # Remove bad links created by old libheif postinstall
+            rm_rf global_mime if global_mime.symlink?
+            if !cellar_mime.exist? || !cellar_mime.symlink?
+              rm_rf cellar_mime
+              ln_sf global_mime, cellar_mime
+            end
+            (global_mime/"packages").mkpath
+            cp (pkgshare/"packages").children, global_mime/"packages"
+            system bin/"update-mime-database", global_mime
+          end
+          test do
+            cp_r share/"mime", testpath
+            system bin/"update-mime-database", testpath/"mime"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project shared-mime-info:
+
+
+        distributable:
+          url: https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/{{version.raw}}/shared-mime-info-{{version.raw}}.tar.bz2
+          strip-components: 1
+
+        versions:
+          - 2.2
+
+        dependencies:
+          gnome.org/glib: 2
+          gnu.org/gettext: ^0.21
+
+        build:
+          dependencies:
+            freedesktop.org/pkg-config: ^0.29
+            mesonbuild.com: ^0.63
+            ninja-build.org: 1
+            gnome.org/libxml2: 2
+            tea.xyz/gx/cc: c99
+          working-directory: build
+          script: |
+            meson .. --prefix={{prefix}} --buildtype=release
+            ninja
+            ninja install
+            {{prefix}}/bin/update-mime-database {{prefix}}/share/mime
+
+        #TODO you need a library to use this db
+        #see: https://www.freedesktop.org/wiki/Specifications/shared-mime-info-spec/
+        test: |
+          test -f "{{prefix}}"/share/mime/packages/freedesktop.org.xml
+
+        provides:
+          - bin/update-mime-database
+
+
+
+    Here's an example ruby formula for the project atk:
+
+
+        class Atk < Formula
+          homepage "https://library.gnome.org/devel/atk/"
+          url "https://download.gnome.org/sources/atk/2.38/atk-2.38.0.tar.xz"
+          depends_on "gettext" => :build
+          depends_on "gobject-introspection" => :build
+          depends_on "meson" => :build
+          depends_on "ninja" => :build
+          depends_on "pkg-config" => [:build, :test]
+          depends_on "glib"
+          def install
+            system "meson", "setup", "build", *std_meson_args
+            system "meson", "compile", "-C", "build", "--verbose"
+            system "meson", "install", "-C", "build"
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <atk/atk.h>
+              int main(int argc, char *argv[]) {
+                const gchar *version = atk_get_version();
+                return 0;
+              }
+            EOS
+            flags = shell_output("pkg-config --cflags --libs atk").chomp.split
+            system ENV.cc, "test.c", "-o", "test", *flags
+            system "./test"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project atk in the yml format:

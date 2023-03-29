@@ -1,0 +1,31 @@
+distributable:
+  url: https://download.gnome.org/sources/atk/{{version.raw}}/atk-{{version.raw}}.tar.xz
+  strip-components: 1
+
+versions:
+  - 2.38.0
+
+dependencies:
+  gnome.org/glib: 2
+  gnome.org/gobject-introspection: 1
+  gnu.org/gettext: ^0.21
+
+build:
+  dependencies:
+    mesonbuild.com: ^0.63
+    ninja-build.org: 1
+    freedesktop.org/pkg-config: ^0.29
+  working-directory: build
+  script: |
+    meson .. --prefix={{prefix}} --buildtype=release
+    ninja
+    ninja install
+
+test: |
+  test_c="test.c"
+  printf '#include <atk/atk.h>\nint main(int argc, char *argv[]) {\n  const gchar *version = atk_get_version();\n  return 0;\n}\n' > ${test_c}
+  {{prefix}}/bin/${CC:-cc} -o test ${test_c} $('pkg-config' --cflags --libs atk)
+  ./test
+
+provides:
+  - bin/{{prefix}}/bin/atktopdb

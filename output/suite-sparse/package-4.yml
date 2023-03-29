@@ -1,0 +1,68 @@
+detect:
+          cmd: ldd --version
+          regex: empty
+
+        distributable:
+          url: https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/v{{ version }}.tar.gz
+          checksum: 6181bfc29b9a81869d94e690b50a65deb32f1bab00c8e83228b2ff2f77cce2e9
+          file: SuiteSparse-{{ version }}
+
+        versions:
+          github: DrTimothyAldenDavis/SuiteSparse/releases
+          regex: SuiteSparse-(\d+(?:\.\d+)*)
+
+        build:
+          script: |-
+            cmake \
+              -DCMAKE_INSTALL_PREFIX={{prefix}} \
+              -DBUILD_SHARED_LIBS=ON \
+              -DAMD_LIBRARY_DIRS=#{Formula["openblas"].opt_lib} \
+              -DAMD_INCLUDE_DIRS=#{Formula["openblas"].opt_include} \
+              -DCMAKE_INSTALL_NAME_DIR=#{opt_prefix}/lib \
+              -DCMAKE_INSTALL_RPATH=#{rpath} \
+              -DCHOLMOD_LIBRARY_DIRS=#{Formula["openblas"].opt_lib} \
+              -DCHOLMOD_INCLUDE_DIRS=#{Formula["openblas"].opt_include} \
+              -DKLU_LIBRARY_DIRS=#{Formula["openblas"].opt_lib} \
+              -DKLU_INCLUDE_DIRS=#{Formula["openblas"].opt_include} \
+              -LLAPACK_LIBRARIES=#{Formula["openblas"].opt_lib}/libopenblas.dylib \
+              -DMETIS_LIBRARY_DIRS=#{Formula["metis"].opt_lib} \
+              -DMETIS_INCLUDE_DIRS=#{Formula["metis"].opt_include} \
+              -DSUITESPARSE_CONFIG_FILE=#{etc}/SuiteSparse.cfg \
+              -DSPQR_CONFIG_DIR=#{etc} \
+              -DBLAS_LIBRARIES=#{Formula["openblas"].opt_lib}/libopenblas.dylib \
+              -DSUITESPARSE_BLAS_INT=int32_t \
+              -DSUITESPARSE_INSTALL_LIBRARY_DIR=#{lib}/ \
+              -DSUITESPARSE_INSTALL_INCLUDE_DIR=#{include}/ \
+              -DSUITESPARSE_BUILD_TESTS=OFF \
+              -DSUITESPARSE_BUILD_UMFPACK=OFF \
+              -DSUITESPARSE_UMFPACK_CONFIG_FILE=#{etc}/SuiteSparse.cfg \
+              ./
+            make
+            make install INSTALL_MAN=#{man}/man1
+
+        dependencies:
+          openblas: any
+          metis: any
+          cmake.se: any
+
+        provides:
+          darwin:
+          - lib/libsuitesparseconfig.dylib
+          - lib/libumfpack.dylib
+          - lib/libspqr.dylib
+          - lib/libccolamd.dylib
+          - lib/libldl.dylib
+          - lib/libklu.dylib
+          - lib/libcholmod.dylib
+          - lib/libcamd.dylib
+          - lib/libcolamd.dylib
+          linux:
+          - lib/libsuitesparseconfig.so
+          - lib/libumfpack.so
+          - lib/libspqr.so
+          - lib/libccolamd.so
+          - lib/libldl.so
+          - lib/libklu.so
+          - lib/libcholmod.so
+          - lib/libcamd.so
+          - lib/libcolamd.so

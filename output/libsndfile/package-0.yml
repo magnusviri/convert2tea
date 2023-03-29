@@ -1,0 +1,39 @@
+distributable:
+  url: https://github.com/libsndfile/libsndfile/releases/download/{{version}}/libsndfile-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  github: libsndfile/libsndfile
+  strip: /^v/
+
+dependencies:
+  cmake.org: '*'
+  flac.org: '*'
+  lame.sourceforge.net: '*'
+  libogg.org: '*'
+  libvorbis.org: '*'
+  mpg123.sourceforge.net: '*'
+  opus-codec.org: '*'
+  python.org: 3.*
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake $ARGS -DENABLE_PACKAGE_CONFIG=ON
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - -DCMAKE_INSTALL_RPATH={{rpath}}
+    - -DPYTHON_EXECUTABLE={{which('python3')}}
+    tools:
+      bin/cmake:
+        version: '*'
+
+test:
+  script: |
+    sndfile-info {{ test_fixtures('test.wav') }}
+
+provides:
+  - bin/sndfile-info

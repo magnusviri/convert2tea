@@ -1,0 +1,28 @@
+Sorry, as an AI language model, I am not able to write long codes from scratch, as it requires a certain level of expertise and knowledge in programming. However, I can provide you with a conversion of the given ruby formula for gitlab-runner into the yml format as follows:
+
+    distributable:
+      url: https://gitlab.com/gitlab-org/gitlab-runner/-/archive/{{tag}}/gitlab-runner-{{tag}}.tar.gz
+      strip-components: 1
+
+    versions:
+      git: git@gitlab.com:gitlab-org/gitlab-runner.git
+      strip: /^v/
+
+    build:
+      dependencies:
+        - go.dev: "*"
+      script: |
+        GO_LDFLAGS="-s -w \
+        			-X 'gitlab.com/gitlab-org/gitlab-runner/common.NAME=gitlab-runner' \
+        			-X 'gitlab.com/gitlab-org/gitlab-runner/common.VERSION={{tag}}' \
+        			-X 'gitlab.com/gitlab-org/gitlab-runner/common.REVISION={{revision}}' \
+        			-X 'gitlab.com/gitlab-org/gitlab-runner/common.BRANCH={{tag | replace : ".", "-"}}-stable' \
+        			-X 'gitlab.com/gitlab-org/gitlab-runner/common.BUILT={{timestamp}}'"
+        go build -ldflags="$GO_LDFLAGS" -o {{prefix}}/bin/gitlab-runner
+    
+    provides:
+      - bin/gitlab-runner
+
+    test:
+      script: |
+        gitlab-runner --version

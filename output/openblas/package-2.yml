@@ -1,0 +1,57 @@
+Here's the converted OpenBLAS formula in the YAML format:
+
+    distributable:
+      url: https://github.com/xianyi/OpenBLAS/archive/v{{version.marketing}}.tar.gz
+
+    versions:
+      - 0.3.22
+
+    dependencies:
+      gcc: '*'
+
+    keg_only:
+      shadowed_by_macos: macOS provides BLAS in Accelerate.framework
+
+    build:
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/gfortran: '*'
+      script: |
+        export MACOSX_DEPLOYMENT_TARGET={{system_version}}
+        export DYNAMIC_ARCH=1
+        export USE_OPENMP=1
+        export NUM_THREADS=56
+        target_os=$(
+          if [ "{{arch.family}}" = "arm" ]
+          then echo "VORTEX"
+          else echo "{{arch.cpu}}"
+          fi
+        )
+        make CC="{{cc}}" FC=gfortran libs netlib shared TARGET="$target_os"
+        make PREFIX={{prefix}} install
+        ln -s "$(brew list -1 | grep -m1 openblas)/lib/libopenblas.dylib" "$(brew list -1 | grep -m1 openblas)/lib/libblas.dylib"
+        ln -s "$(brew list -1 | grep -m1 openblas)/lib/libopenblas.dylib" "$(brew list -1 | grep -m1 openblas)/lib/liblapack.dylib"
+
+    test:
+      script: |
+        echo '#include <stdio.h>
+        #include <stdlib.h>
+        #include <math.h>
+        #include "cblas.h"
+        int main(void) {
+          int i;
+          double A[6] = {1.0, 2.0, 1.0, -3.0, 4.0, -1.0};
+          double B[6] = {1.0, 2.0, 1.0, -3.0, 4.0, -1.0};
+          double C[9] = {.5, .5, .5, .5, .5, .5, .5, .5, .5};
+          cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans,
+                      3, 3, 2, 1, A, 3, B, 3, 2, C, 3);
+          for (i = 0; i < 9; i++)
+            printf("%lf ", C[i]);
+          printf("\\n");
+          if (fabs(C[0]-11) > 1.e-5) abort();
+          if (fabs(C[4]-21) > 1.e-5) abort();
+          return 0;
+        }' | {{cc}} -xc - -o test -I{{prefix}}/include -L{{prefix}}/lib -lopenblas
+        ./test
+
+Note that this conversion is not exact because some details, such as `head` and `livecheck`, have been omitted as they do not have direct equivalents in the YAML format.

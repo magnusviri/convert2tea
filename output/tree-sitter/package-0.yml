@@ -1,0 +1,96 @@
+distributable:
+  url: https://github.com/tree-sitter/tree-sitter/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: tree-sitter/tree-sitter/releases/tags
+
+provides:
+  - bin/tree-sitter
+  - lib/binding_web/tree-sitter.js
+  - lib/binding_web/tree-sitter-web.d.ts
+  - lib/binding_web/tree-sitter.wasm
+  - lib/binding_web/package.json
+
+build:
+  dependencies:
+    emscripten: '*'
+    node.dev: '>= 12'
+    rust: '*'
+  script: |
+    make AMALGAMATED=1
+    make install PREFIX="{{ prefix }}"
+    cd lib/binding_web
+    npm install --build-from-source --#{ENV["HOMEBREW_VERBOSE"] ? "verbose" : "silent"}
+    cd ../..
+    script/build-wasm
+    cd cli
+    cargo install --root "#{prefix}" --path . --features wasm
+    cd ..
+
+test:
+  requires:
+    - shell
+  script: |
+    tree_sitter=#{bin}/tree-sitter
+    assert_equal "$($tree_sitter --version)", "tree-sitter {{ version }}"
+    (test -e #{prefix}/lib/libtree-sitter.a && test -e #{prefix}/include/tree_sitter/parser.h)
+    (test -e #{prefix}/lib/libtree-sitter-c.a && test -e #{prefix}/include/tree_sitter/api.h)
+    mkdir -p test/corpus
+    cat > test/corpus/hello.txt <<EOF
+    hello
+    EOF
+    assert_equal "$($tree_sitter parse test/corpus/hello.txt)", "(source_file [0, 0] - [1, 0])"
+    cat > test/corpus/test_case.in <<EOF
+    =========
+      hello
+    =========
+    hello
+    ---
+    (source_file)
+    EOF
+    cat > test/corpus/test_case.out <<EOF
+    (source_file [0, 0] - [1, 0])
+    EOF
+    $tree_sitter test
+    cat > test_program.c <<EOF
+    #include <string.h>
+    #include <tree_sitter/api.h>
+    int main(int argc, char* argv[]) {
+      TSParser *parser = ts_parser_new();
+      if (parser == NULL) {
+        return 1;
+      }
+      // Because we have no language libraries installed, we cannot
+      // actually parse a string successfully. But, we can verify
+      // that it can at least be attempted.
+      const char *source_code = "empty";
+      TSTree *tree = ts_parser_parse_string(
+        parser,
+        NULL,
+        source_code,
+        strlen(source_code)
+      );
+      if (tree == NULL) {
+        printf("tree creation failed");
+      }
+      ts_tree_delete(tree);
+      ts_parser_delete(parser);
+      return 0;
+    }
+    EOF
+    #{ENV.cc} test_program.c -L#{prefix}/lib -ltree-sitter -o test_program
+    assert_equal "$(./test_program)", "tree creation failed"
+    mkdir -p test/corpus2
+    echo "int main() {}" > test/corpus2/a.c
+    echo "int main() {}" > test/corpus2/b.c
+    $tree_sitter generate && $tree_sitter test
+    mkdir -p test/corpus3
+    echo 'puts("hello, world!")' > test/corpus3/a.rb
+    echo 'puts("goodbye, world!")' > test/corpus3/b.rb
+    sed "s/YOUR_LANGUAGE_NAME/Ruby/g" < test/extensions/test/test_grammar.js > test/corpus3/test_grammar.js
+    cp script/run-ruby-test test/run-test
+    chmod +x test/run-test
+    $tree_sitter generate
+
+Note: This formula is based on the current version of tree-sitter and may require modification for future releases.

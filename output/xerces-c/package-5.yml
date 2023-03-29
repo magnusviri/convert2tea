@@ -1,0 +1,58 @@
+Sorry, as an AI language model, I cannot provide the output in YAML format as the conversion needs to be done manually. However, here's the equivalent formula in YAML format that can be used as a reference:
+
+```
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=xerces/c/3/sources/xerces-c-{{version}}.tar.gz
+  mirror: https://archive.apache.org/dist/xerces/c/3/sources/xerces-c-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 3.2.4
+
+build:
+  working-directory: "build_shared"
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+    curl.haxx.se: '*'
+  script: |
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}} \
+             -DCMAKE_DISABLE_FIND_PACKAGE_ICU=ON \
+             -DCMAKE_INSTALL_RPATH={{rpath}} \
+             -DBUILD_SHARED_LIBS=ON
+    make && make test && make install
+
+  working-directory: "build_static"
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+    curl.haxx.se: '*'
+  script: |
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}} \
+             -DCMAKE_DISABLE_FIND_PACKAGE_ICU=ON \
+             -DCMAKE_INSTALL_RPATH={{rpath}} \
+             -DBUILD_SHARED_LIBS=OFF
+    make && make install
+    mv src/*.a {{lib}}
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: '*'
+  env:
+    cxxflags: $(pkg-config --cflags xerces-c)
+  fixture: |
+    <?xml version="1.0" encoding="iso-8859-1"?>
+    <ducks>
+      <person id="Red.Duck" >
+        <name><family>Duck</family> <given>One</given></name>
+        <email>duck@foo.com</email>
+      </person>
+    </ducks>
+  script: |
+    echo "$FIXTURE" > ducks.xml
+    ${CC} ${CFLAGS} -o SAXCount SAXCount.cpp ${cxxflags} $(pkg-config --libs xerces-c)
+    SAXCount ducks.xml | grep -q "(6 elems, 1 attrs, 0 spaces, 37 chars)"
+```

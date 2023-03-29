@@ -1,0 +1,57 @@
+Sorry, as an AI language model, I cannot provide a direct conversion from Ruby to YAML. However, you could use the structure and content of the example Ruby formula to write a formula for the project libheif in the YAML format. Here are the sections that the YAML formula should include: 
+
+- `distributable`: This section specifies the URL of the source code package and any necessary configuration options for extracting and building the package. 
+- `versions`: This section lists the different sources of version information for the project. 
+- `dependencies`: This section lists the dependencies for building and running the project. 
+- `build`: This section describes the steps to configure and build the project. 
+- `test`: This section describes how to test the installed software. 
+- `provides`: This section lists the executables and libraries provided by the package. 
+
+Here is a possible example of a YAML formula for the project libheif: 
+
+```
+distributable:
+  url: https://github.com/strukturag/libheif/releases/download/v{{version}}/libheif-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: strukturag/libheif
+  strip: /^v/
+
+dependencies:
+  pkg-config: '*'
+  aom: '*'
+  jpeg-turbo: '*'
+  libde265: '*'
+  libpng: '*'
+  shared-mime-info: '*'
+  x265: '*'
+
+build:
+  dependencies:
+    # For example, use the official ubuntu-based Docker image:
+    ceejatec/ubuntu-development:v2021.09
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: cmake
+    tea.xyz/gx/cmake: '*'
+  script: |
+    cmake \
+      -D CMAKE_INSTALL_PREFIX={{prefix}} \
+      -D CMAKE_BUILD_TYPE=None \
+      -D CMAKE_INSTALL_DOCDIR=share/doc/libheif \
+      -D CMAKE_INSTALL_LIBDIR=lib \
+      -D CMAKE_INSTALL_INCLUDEDIR=include \
+      -D WITH_BEER=ON \
+      .
+    make install
+  env:
+    PKG_CONFIG_PATH: "{{prefix}}/lib/pkgconfig"
+
+test:
+  script: |
+    # Smoke test
+    heif-convert --version
+
+provides:
+  - bin/heif-convert
+```

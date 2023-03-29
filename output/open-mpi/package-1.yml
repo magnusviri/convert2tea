@@ -1,0 +1,77 @@
+project:
+      name: openmpi
+      homepage: https://www.open-mpi.org/
+      version: 4.1.5
+      distributable:
+        url: https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.5.tar.bz2
+        strip-components: 1
+      livecheck:
+        url: https://www.open-mpi.org/
+        regex: "MPI v?(\\d+(?:\\.\\d+)+) release"
+      provides:
+        - bin/mpicc
+        - bin/mpicxx
+        - bin/mpifort
+      build:
+        dependencies:
+          - tea.xyz/gx/gcc: '*'
+          - tea.xyz/gx/hwloc: '*'
+          - tea.xyz/gx/libevent: '*'
+          - tea.xyz/gx/autoconf: '*' # only for head
+          - tea.xyz/gx/automake: '*' # only for head
+          - tea.xyz/gx/libtool: '*' # only for head
+        script: |
+          export MACOSX_DEPLOYMENT_TARGET=$MACOS_VERSION
+          ENV.cxx11
+          ENV.runtime_cpu_detection
+          args=(
+              --disable-silent-rules
+              --enable-ipv6
+              --enable-mca-no-build=reachable-netlink
+              --sysconfdir={{etc}}
+              --with-libevent={{tea.xyz/gx/libevent}}/opt
+              --with-sge
+          )
+          if [ $CI_HEAD == 'true' ]; then
+              args+=(--with-platform-optimized)
+              ./autogen.pl --force
+          fi
+          ./configure "${args[@]}" {{system.make}}
+          make all
+          make check
+          make install
+      test:
+        script: |
+          cat <<EOF > hello.c
+          #include <mpi.h>
+          #include <stdio.h>
+          int main()
+          {
+            int size, rank, nameLen;
+            char name[MPI_MAX_PROCESSOR_NAME];
+            MPI_Init(NULL, NULL);
+            MPI_Comm_size(MPI_COMM_WORLD, &size);
+            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+            MPI_Get_processor_name(name, &nameLen);
+            printf("[%d/%d] Hello, world! My name is %s.\\n", rank, size, name);
+            MPI_Finalize();
+            return 0;
+          }
+          EOF
+          mpicc hello.c -o hello
+          ./hello
+          mpirun ./hello
+          cat <<EOF > hellof.f90
+          program hello
+          include 'mpif.h'
+          integer rank, size, ierror, tag, status(MPI_STATUS_SIZE)
+          call MPI_INIT(ierror)
+          call MPI_COMM_SIZE(MPI_COMM_WORLD, size, ierror)
+          call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierror)
+          print*, 'node', rank, ': Hello Fortran world'
+          call MPI_FINALIZE(ierror)
+          end
+          EOF
+          mpif90 hellof.f90 -o hellof
+          ./hellof
+          mpirun ./hellof

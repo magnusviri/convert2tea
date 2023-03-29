@@ -1,0 +1,55 @@
+distributable:
+  url: https://www.leonerd.org.uk/code/libtermkey/libtermkey-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.22
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    libtool: '*'
+    freedesktop.org/pkg-config: '*'
+    github.com/mauke/termkey-capi : '^0'
+  script: |
+    CFLAGS="-I$(brew --prefix unibilium)/include -I$(brew --prefix termkey-capi)/include"
+    LIBS="-L$(brew --prefix unibilium)/lib -L$(brew --prefix termkey-capi)/lib"
+    
+    ./configure --disable-dependency-tracking --prefix={{prefix}}
+    make
+    make install
+  post_install: |
+    ln -s libtermkey.dylib ${{prefix}}/lib/libtermkey.1.dylib
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: ^0.29
+  env:
+    cflags: $(pkg-config --cflags termkey)
+    libs: $(pkg-config --libs termkey)
+  fixture: |
+    #include <termkey.h>
+    #include <stdio.h>
+    int main(void) {
+      TermKey* tk = termkey_new(0, 0);
+      if (!tk) return 1;
+      termkey_advisereadable(tk);
+      if (termkey_getkey(tk) != TERMKEY_RES_KEY) return 1;
+      const char* name = termkey_lookup_keyname(tk, termkey_get_key(tk));
+      if (!name) return 1;
+      puts(name);
+      termkey_destroy(tk);
+      return 0;
+    }
+  script: |
+    mv $FIXTURE test.c
+    ${CC:-cc} test.c ${cflags} ${libs} -o test
+    ./test > output.txt
+    out=$(cat output.txt)
+    if test "$out" = "Enter"; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

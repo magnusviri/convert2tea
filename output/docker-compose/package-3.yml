@@ -1,0 +1,18 @@
+distributable:
+  url: https://github.com/docker/compose/archive/v{{version}}.tar.gz
+
+versions:
+  github: docker/compose
+
+provides:
+  - bin/docker-compose
+
+build:
+  script: |
+    go build -ldflags="-w -s -X github.com/docker/compose/v2/internal.Version={{version}}" -o "{{prefix}}/bin/docker-compose" ./cmd
+  dependencies:
+    go.dev: ^1.16
+
+test:
+  - docker-compose up --no-start
+  - docker-compose version

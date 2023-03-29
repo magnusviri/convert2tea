@@ -1,0 +1,63 @@
+package:
+  name: vtk
+  version: 9.2.6
+
+sources:
+  - type: tar
+    url: https://www.vtk.org/files/release/9.2/VTK-9.2.6.tar.gz
+    strip-components: 1
+
+dependencies:
+  - oracle.com/berkeley-db: "^18"
+  - boost.org: "^1"
+  - double-conversion: "*"
+  - eigen: "*"
+  - fontconfig: "*"
+  - gl2ps: "*"
+  - glew: "*"
+  - hdf5: "*"
+  - jpeg-turbo: "*"
+  - jsoncpp: "*"
+  - libogg: "*"
+  - libpng: "*"
+  - libtiff: "*"
+  - lz4: "*"
+  - netcdf: "*"
+  - pugixml: "*"
+  - pyqt@5: "*"
+  - python@3.11: "*"
+  - qt@5: "^5.12"
+  - sqlite: "*"
+  - theora: "*"
+  - utf8cpp: "*"
+  - xz: "*"
+  - expat: "*"
+  - libxml2: "*"
+  - tcl-tk: "*"
+  - zlib: "*"
+
+build:
+  script: |
+    cmake -S . -B build -DCMAKE_INSTALL_PREFIX={{prefix}}
+    cmake --build build --parallel
+    cmake --install build
+  env:
+    HOMEBREW_ARCH: "{{ hw.target }}"
+    CC: "{{ cc }}"
+    CXX: "{{ cxx }}"
+    CMAKE_GENERATOR: "Ninja"
+    CMAKE_MAKE_PROGRAM: "{{ make }}"
+    VTK_PYTHON_VERSION: "3"
+    VTK_GROUP_ENABLE_Qt: "YES"
+    VTK_QT_VERSION: "5"
+
+provides:
+  - bin/vtkpython
+  - bin/vtkpython3
+
+test:
+  script: |
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+    cmake --build build --parallel
+    cd build
+    ctest -V -j{{ processors.logical }}

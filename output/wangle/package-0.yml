@@ -1,0 +1,48 @@
+distributable:
+  url: https://github.com/facebook/wangle/archive/v{{version}}.tar.gz
+
+versions:
+  - v2023.03.27.00
+  
+build:
+  dependencies:
+    - x86-64:
+        llvm.org/clang: '*'
+        cmake.org: ^3
+        boost.org: 1.74
+        double-conversion.org: '*'
+        facebookincubator/fizz: '*'
+        fmt.dev: '*'
+        facebook/folly: '*'
+        gflags: '*'
+        glog: '*'
+        libevent: '*'
+        libsodium: '*'
+        lz4: '*'
+        openssl: 1.1
+        snappy: '*'
+        zstd: '*'
+    - bzip2
+    - zlib
+  working-directory:
+    wangle-{{version}}
+  script: |
+    mkdir build && cd build
+    cmake .. -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX={{prefix}} $ARGS
+    cmake --build .
+    cmake --install .
+  env:
+    ARGS:
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -DFOLLY_USE_SYMBOLIZE_DEBUG=ON
+      - -DOPENSSL_ROOT_DIR={{prefix}}
+      - -DOPENSSL_LIBRARIES={{prefix}}/lib
+    linux:
+      CXXFLAGS: -Wno-error=deprecated-copy
+test: |
+  EchoClient -port $(python -c 'from random import randint; print(randint(30000, 40000))')
+  EchoServer -port $(python -c 'from random import randint; print(randint(30000, 40000))')
+
+provides:
+  - bin/EchoClient
+  - bin/EchoServer

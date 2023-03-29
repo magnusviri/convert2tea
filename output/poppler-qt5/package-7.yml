@@ -1,0 +1,76 @@
+distributable:
+  url: https://poppler.freedesktop.org/poppler-{{ version }}.tar.xz
+  strip-components: 1
+
+provides:
+  - bin/pdfattach
+  - bin/pdfdetach
+  - bin/pdffonts
+  - bin/pdfimages
+  - bin/pdfinfo
+  - bin/pdfseparate
+  - bin/pdfsig
+  - bin/pdftocairo
+  - bin/pdftohtml
+  - bin/pdftoppm
+  - bin/pdftops
+  - bin/pdftotext
+  - lib/libpoppler.a
+  - lib/libpoppler-cpp.a
+  - lib/libpoppler-glib.a
+
+versions:
+  homepage: https://poppler.freedesktop.org/
+  regex: /poppler-(\d+\.\d+\.\d+)\.tar\.xz/
+
+dependencies:
+  freetype.org/freetype: '*'
+  gettext: '*'
+  glib: '*'
+  jpeg.org/jpeg: '*'
+  libpng: '*'
+  libtiff: '*'
+  little-cms2: '*'
+  mozilla/nss: '*'
+  openjpeg.org/openjpeg: '*'
+  qt.io/qt5: '*'
+  cairographics.org/cairo: '*'
+
+runtime:
+  env:
+    PKG_CONFIG_PATH: ${{prefix}}/lib/pkgconfig
+    FONTCONFIG_PATH: ${{deps.freetype.org.freetype.fontconfig}}/etc/fonts
+
+build:
+  dependencies:
+    cmake.org/cmake: '*'
+    gobject-introspection: '*'
+    pkg-config: '*'
+    gnu.org/gperf: '*'
+  script: |
+    export PKG_CONFIG_LIBDIR="${PKG_CONFIG_LIBDIR}:${PREFIX}/lib/pkgconfig"
+    export CPPFLAGS="${CPPFLAGS} -I${FONTCONFIG_PATH}"
+    export LDFLAGS="${LDFLAGS} -L${FONTCONFIG_PATH}/lib"
+    cmake ${CMAKE_ARGS} \
+      -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+      -DENABLE_CMS=lcms2 \
+      -DENABLE_GLIB=ON \
+      -DENABLE_QT5=ON \
+      -DENABLE_QT6=OFF \
+      -DENABLE_UNSTABLE_API_ABI_HEADERS=ON \
+      -DWITH_GObjectIntrospection=ON \
+      ..
+    make install
+  env:
+    CMAKE_ARGS:
+      - "-DBUILD_GTK_TESTS=OFF"
+      - "-DENABLE_BOOST=OFF"
+  darwin:
+    CMAKE_ARGS:
+      - "-DCMAKE_MACOSX_RPATH=ON"
+
+test:
+  script: |
+    echo "test" > testfile.pdf
+    pdftotext testfile.pdf
+    [[ "$(cat testfile.txt)" == "test" ]]

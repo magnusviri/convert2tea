@@ -1,0 +1,28 @@
+distributable:
+  url: https://releases.hashicorp.com/vault/{{version}}/vault_{{version}}_darwin_amd64.zip
+
+versions:
+  homepage: https://www.vaultproject.io/downloads/
+  regex: /href="https:\/\/releases.hashicorp.com\/vault\/(\d+\.\d+\.\d+)\/"/
+
+build:
+  dependencies:
+    golang.org: ~1.17.2
+    hashicorp.com/gox: ~1.0.1
+    nodejs.org: ~16
+    python.org: ^3
+    yarnpkg.com/install.sh: ~1.22.17
+  script: |
+    make bootstrap static-dist dev-ui
+    install -d "{{prefix}}/bin"
+    install vault "{{prefix}}/bin"
+
+provides:
+  - bin/vault
+
+test:
+  script: |
+    VAULT_DEV_LISTEN_ADDRESS="127.0.0.1:8200" vault server -dev &
+    sleep 5
+    vault status
+    kill %1

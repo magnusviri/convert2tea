@@ -1,0 +1,40 @@
+distributable:
+  url: ftp://ftp.knackered.org/pub/psutils/psutils-p17.tar.gz
+  mirrors:
+    - https://ftp.osuosl.org/pub/blfs/conglomeration/psutils/psutils-p17.tar.gz
+  strip-components: 1
+
+versions:
+  regex: psutils[._-](p\d+)
+  url: http://knackered.org/angus/psutils/
+  source:
+    type: tar
+    main: build/Makefile.unix
+    include:
+      - build/psutils-common.make
+      - build/paperconf.h
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      gnu.org/make: '*'
+      gnu.org/m4: '*'
+      gnu.org/autoconf: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/make: '*'
+      tea.xyz/gx/m4: '*'
+      tea.xyz/gx/autoconf: '*'
+  script: |
+    env CC=#{ENV.cc}
+        ./configure --prefix={{prefix}} --includedir={{include}} --mandir=#{man1}
+        make --jobs={{hw.concurrency}} PERL=/usr/bin/perl BINDIR=#{bin} install
+
+test:
+  script: >-
+    echo "test" &&
+    "#{bin}/showchar" Palatino B > test.ps &&
+    "#{bin}/psmerge" -omulti.ps test.ps test.ps test.ps test.ps &&
+    "#{bin}/psnup" -n 2 multi.ps nup.ps &&
+    "#{bin}/psselect" -p 1 multi.ps test2.ps

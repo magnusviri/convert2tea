@@ -1,0 +1,51 @@
+distributable:
+      url: https://ftp.postgresql.org/pub/source/v{{version}}/postgresql-{{version}}.tar.bz2
+      archives:
+        - type: signature
+          url: https://ftp.postgresql.org/pub/source/v{{version}}/postgresql-{{version}}.tar.bz2.asc
+          key_url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+
+    versions:
+      ftp:
+        url: https://ftp.postgresql.org/pub/source/
+        regex: postgresql-(\d+(?:\.\d+)+)\.tar\.bz2
+
+    provides:
+      - bin/pg_config
+      - bin/pg_dump
+      - bin/pg_restore
+      - bin/psql
+      - include/postgresql
+      - lib/libpq.dylib
+      - lib/pg_config_ext.h
+      - lib/pkgconfig/libpq.pc
+      - share/man/man1/pg_config.1
+      - share/man/man1/pg_dump.1
+      - share/man/man1/pg_restore.1
+      - share/man/man1/psql.1
+
+    build:
+      dependencies:
+        krb5: '*'
+        openssl@1.1: '*'
+      uses_from_macos:
+        - zlib
+      on_linux:
+        dependencies:
+          readline: '*'
+      script: |
+        ./configure --disable-debug \
+                    --prefix=${{prefix}} \
+                    --with-gssapi \
+                    --with-openssl \
+                    --libdir=${{opt_lib}} \
+                    --includedir=${{opt_include}}
+        make
+        make install
+        make -C doc install-html
+
+    test:
+      script: |
+        echo "SELECT 1" | ${{bin}}/psql -d postgres
+        ${{bin}}/pg_dumpall --schema-only > dump.sql
+        ${{bin}}/psql -d postgres < dump.sql

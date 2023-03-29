@@ -1,0 +1,31 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/libidn/libidn-{{version}}.tar.gz
+  mirror: https://ftpmirror.gnu.org/libidn/libidn-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: ''
+  gitlab: ''
+  bitbucket: ''
+  ignore: []
+
+dependencies:
+  pkg-config: '*'
+
+provides:
+  - bin/idn
+
+build:
+  dependencies: {}
+  script: |
+    ./configure --disable-dependency-tracking \
+                --prefix={{prefix}} \
+                --disable-csharp \
+                --with-lispdir={{elisp}}
+    make install
+
+test:
+  dependencies: {}
+  script: |
+    export CHARSET=UTF-8
+    idn räksmörgås.se blåbærgrød.no

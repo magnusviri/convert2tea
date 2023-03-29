@@ -1,0 +1,91 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project wumpus:
+
+
+        class Wumpus < Formula
+          homepage "http://www.catb.org/~esr/wumpus/"
+          url "http://www.catb.org/~esr/wumpus/wumpus-1.9.tar.gz"
+          livecheck do
+            url :homepage
+            regex(/href=.*?wumpus[._-]v?(\d+(?:\.\d+)+)\.t/i)
+          end
+          def install
+            system "make"
+            system "make", "prefix=#{prefix}", "install"
+          end
+          test do
+            assert_match("HUNT THE WUMPUS",
+                         pipe_output(bin/"wumpus", "^C"))
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project wumpus:
+
+
+        distributable:
+          url: http://www.catb.org/~esr/wumpus/wumpus-1.7.tar.gz
+          strip-components: 1
+
+        # When https://gitlab.com/esr/wumpus/-/merge_requests/3 is merged, then switch to
+        #   https://gitlab.com/esr/wumpus/-/archive/{{ version.raw }}/wumpus-{{ version.raw }}.tar.gz
+
+        versions:
+          - 1.7
+
+        # TODO: Is there a gitlab version provider?
+
+        provides:
+          - bin/wumpus
+          - bin/superhack
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+
+          script: |
+            make
+            make prefix={{prefix}} install
+
+        test:
+          script: echo no way to test this
+
+
+
+    Here's an example ruby formula for the project qhull:
+
+
+        class Qhull < Formula
+          homepage "http://www.qhull.org/"
+          url "http://www.qhull.org/download/qhull-2020-src-8.0.2.tgz"
+          version "2020.2"
+          head "https://github.com/qhull/qhull.git", branch: "master"
+          # It's necessary to match the version from the link text, as the filename
+          # only contains the year (`2020`), not a full version like `2020.2`.
+          livecheck do
+            url "http://www.qhull.org/download/"
+            regex(/href=.*?qhull[._-][^"' >]+?[._-]src[^>]*?\.t[^>]+?>[^<]*Qhull v?(\d+(?:\.\d+)*)/i)
+          end
+          depends_on "cmake" => :build
+          def install
+            ENV.cxx11
+            cd "build" do
+              system "cmake", "..", *std_cmake_args
+              system "make", "install"
+            end
+          end
+          test do
+            input = shell_output(bin/"rbox c D2")
+            output = pipe_output("#{bin}/qconvex s n 2>&1", input, 0)
+            assert_match "Number of facets: 4", output
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project qhull in the yml format:

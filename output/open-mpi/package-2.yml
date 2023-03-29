@@ -1,0 +1,46 @@
+distributable:
+  url: https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.5.tar.bz2
+  strip-components: 1
+
+versions:
+  - 4.1.5
+
+provides:
+  - bin/mpicc
+  - bin/mpicxx
+  - bin/mpifort
+
+build:
+  dependencies:
+    tea.xyz/gx/gcc: '*'
+    tea.xyz/gx/hwloc: '*'
+    tea.xyz/gx/libevent: '*'
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/libtool: '*'
+
+  script: |
+    export MACOSX_DEPLOYMENT_TARGET=#{MacOS.version}
+    CXX=#{ENV.cxx}  # For Linux
+    CXX=#{OS.mac? ? ENV.cxx : 'g++'}  # For Mac
+    inreplace ompi/tools/ompi_info/param.c ompi/tools/oshmem_info/param.c 'OMPI_CXX_ABSOLUTE' "\"${CXX}\""
+    cc=#{ENV.cc}  # For Linux
+    cc=#{OS.mac? ? ENV.cc : 'gcc'}  # For Mac
+    inreplace ompi/tools/ompi_info/param.c ompi/tools/oshmem_info/param.c  /(OPAL|PMIX)_CC_ABSOLUTE/, "\"${cc}\""
+    #{ENV.cxx11}
+    #{ENV.runtime_cpu_detection}
+    ./configure --disable-silent-rules --enable-ipv6 --enable-mca-no-build=reachable-netlink \
+                --sysconfdir=#{etc} --with-libevent=#{Formula["libevent"].opt_prefix} --with-sge #{std_configure_args} \
+                --with-platform-optimized
+    make all
+    make check
+    make install
+    mkdir -p #{include}
+    mv #{lib}/*.mod #{include}
+
+test:
+  script: |
+    mpicc -o hello_c #{testpath}/hello.c
+    mpirun -np 4 ./hello_c
+    mpif90 -o hello_f90 #{testpath}/hellof.f90
+    mpirun -np 4 ./hello_f90

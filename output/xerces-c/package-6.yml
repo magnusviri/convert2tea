@@ -1,0 +1,52 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=xerces/c/3/sources/xerces-c-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 3.2.4
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+    curl: '*'
+  script: |
+    mkdir build_shared
+    cmake .. -S . -B build_shared -DBUILD_SHARED_LIBS=ON -DCMAKE_DISABLE_FIND_PACKAGE_ICU=ON -DCMAKE_INSTALL_RPATH={{rpath}} {{std_cmake_args}}
+    cmake --build build_shared
+    ctest --test-dir build_shared --verbose
+    cmake --install build_shared
+
+    mkdir build_static
+    cmake .. -S . -B build_static -DBUILD_SHARED_LIBS=OFF -DCMAKE_DISABLE_FIND_PACKAGE_ICU=ON -DCMAKE_INSTALL_RPATH={{rpath}} {{std_cmake_args}}
+    cmake --build build_static
+    cp build_static/src/*.a {{lib}}
+
+    # Remove a sample program that conflicts with libmemcached
+    # on case-insensitive file systems
+    rm -f {{bin}}/MemParse
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: '*'
+  env:
+    cxxflags: $(pkg-config --cflags xerces-c)
+  fixture: |
+    <?xml version="1.0" encoding="iso-8859-1"?>
+    <ducks>
+      <person id="Red.Duck" >
+        <name><family>Duck</family> <given>One</given></name>
+        <email>duck@foo.com</email>
+      </person>
+    </ducks>
+  script: |
+    echo "$FIXTURE" > ducks.xml
+    output=$(SAXCount ducks.xml)
+    if test "$output" = "(6 elems, 1 attrs, 0 spaces, 37 chars)"; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

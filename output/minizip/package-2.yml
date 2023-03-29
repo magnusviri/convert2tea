@@ -1,0 +1,29 @@
+distributable:
+  url: https://zlib.net/zlib-1.2.13.tar.gz
+  strip-components: 1
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/libtool: '*'
+    gnu.org/binutils: '*'
+    zlib.net/zlib-ng: '*'
+  configure: |
+    ./configure --prefix={{prefix}}
+  build: |
+    make
+    cd contrib/minizip
+    autoreconf -fi
+    ./configure --prefix={{prefix}}
+    make install
+  post-install:
+    - |
+      echo "Minizip headers installed in 'minizip' subdirectory, since they conflict with the venerable 'unzip' library."
+
+provides:
+  - bin/minizip
+
+test:
+  script: |
+    true # no test available

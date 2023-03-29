@@ -1,0 +1,74 @@
+distributable:
+  url: https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-boost-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/mysql
+  - lib/libmysqlclient.dylib
+  - lib/plugin/auth/xxx.so # ...
+
+versions:
+  url: "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-boost-#{version}.tar.gz"
+  regex: "^mysql-boost-(\\d+\\.\\d+\\.\\d+)"
+
+dependencies:
+  openssl.org: '*'
+  libevent.org: '*'
+  libedit: '*'
+
+runtime:
+  env:
+    MYSQL_HOME: ${{prefix}}/mysql-client
+    PATH: ${{prefix}}/mysql-client/bin:$PATH
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    tea.xyz/gx/cmake: '*'
+    pkg-config: '*'
+  script: |
+    # -DCMAKE_INSTALL_PREFIX will be prefix/a/mysql-client/
+    cmake . \
+      ${CMAKE_ARGS} \
+      -DCMAKE_INSTALL_PREFIX=#{prefix} \
+      -DWITH_SSL=system \
+      -DWITH_ZLIB=bundled \
+      -DWITHOUT_SERVER=1 \
+      -DINSTALL_LIBDIR=lib \
+      -DINSTALL_INCLUDEDIR=include/mysql \
+      -DINSTALL_MANDIR=share/man \
+      -DINSTALL_DOCREADMEDIR=share/doc/mysql \
+      -DINSTALL_INFODIR=share/info \
+      -DINSTALL_MYSQLSHAREDIR=share/mysql \
+      -DINSTALL_SQLBENCHDIR=share/mysql/bench \
+      -DINSTALL_SUPPORTFILESDIR=share/mysql \
+      -DINSTALL_PLUGINDIR=lib/plugin
+
+    make -j#{hw.ncpus} install
+
+  env:
+    CMAKE_ARGS: []
+    CFLAGS: "-I#{Formula["openssl@1.1"].opt_include}"
+    LDFLAGS: "-L#{Formula["openssl@1.1"].opt_lib} -L#{Formula["libevent"].opt_lib}"
+
+
+test:
+  script: |
+    mysql_install_db --pcg-utf8
+    mysqld_safe --user=$(whoami) --datadir=$(pwd) &
+    mysqladmin ping -h 127.0.0.1 --silent && exit 0
+    for i in {30..0}; do
+      if mysqladmin ping -h 127.0.0.1 --silent; then
+        break
+      fi
+      echo 'MySQL init process in progress...'
+      sleep 1
+    done
+    mysql --version
+  timeout: 60
+
+meta:
+  revision: 1
+  license: "GPL-2.0-only with FOSS License Exception"
+  version: "8.0.32"
+  description: "MySQL Client 8.0.32"

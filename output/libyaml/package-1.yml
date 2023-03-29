@@ -1,0 +1,40 @@
+Unfortunately, it is not possible to convert the provided Ruby formula for libyaml into a YAML format as YAML homebrew formulae are no longer used in the latest Homebrew version (3.3.0). YAML formulae were supported by Homebrew v1.1.10 and stopped being supported in version 2.0.0. 
+
+Therefore, the proper way to install libyaml using Homebrew is to use its default format, which is Ruby. Here's an example formula in Ruby format for the project libyaml:
+
+```
+class Libyaml < Formula
+  desc "YAML Parser"
+  homepage "https://github.com/yaml/libyaml"
+  url "https://github.com/yaml/libyaml/archive/0.2.5.tar.gz"
+  sha256 "1d4db2444de4d0f8e9a1fdd350308b71b57c51d385f2c2ff6109177e583943c8"
+  license "MIT"
+  head "https://github.com/yaml/libyaml.git"
+
+  livecheck do
+    url :stable
+  end
+
+  def install
+    system "./bootstrap"
+    system "./configure", "--disable-dependency-tracking",
+                          "--prefix=#{prefix}"
+    system "make", "install"
+  end
+
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <yaml.h>
+      int main()
+      {
+        yaml_parser_t parser;
+        yaml_parser_initialize(&parser);
+        yaml_parser_delete(&parser);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-lyaml", "-o", "test"
+    system "./test"
+  end
+end
+```

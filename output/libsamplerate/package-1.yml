@@ -1,0 +1,32 @@
+distributable:
+  url: https://github.com/libsndfile/libsamplerate/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: libsndfile/libsamplerate
+  strip: /^{{name}}-/
+
+provides:
+  - lib/libsamplerate.dylib
+  - lib/libsamplerate.a
+  - include/samplerate.h
+
+dependencies:
+  cmake.org: '*'
+  freedesktop.org/pkg-config: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake -S . -B build $ARGS
+    cmake --build build
+    cmake --install build
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+
+test: |
+  gcc -o test test.c -lsamplerate
+  ./test

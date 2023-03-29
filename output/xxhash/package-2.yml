@@ -1,0 +1,25 @@
+distributable:
+  url: https://github.com/Cyan4973/xxHash/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.8.1
+
+dependencies:
+  -
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    make
+    make install PREFIX={{prefix}}
+    cp cli/COPYING {{prefix}}/COPYING
+
+provides:
+  - bin/xxhsum
+
+test:
+  script: |
+    echo "No computer should be without one!" > leaflet.txt
+    xxhsum leaflet.txt | grep -q '^67bc7cc242ebc50a'

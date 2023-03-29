@@ -1,0 +1,42 @@
+distributable:
+  url: https://github.com/openslide/openslide/releases/download/v{{version}}/openslide-{{version}}.tar.xz
+
+versions:
+  - 3.4.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    freedesktop.org/pkg-config: '*'
+    gnu.org/m4: any
+
+  script: |
+    ./configure {{make}} --prefix={{prefix}} \
+      --without-python \
+      --without-perl \
+      --disable-static
+
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    freedesktop.org/pkg-config: '*'
+  script: |
+    resource('homebrew-svs').stage do
+      openslide_show_properties = "#{bin}/openslide-show-properties"
+      cmu_small_region_svs = 'CMU-1-Small-Region.svs'
+
+      output = `#{openslide_show_properties} #{cmu_small_region_svs}`
+      if output.include?('openslide.level[0].downsample = 1')
+        puts 'PASS'
+      else
+        puts 'FAIL'
+      end
+    end
+
+resource:
+  - name: homebrew-svs
+    url: 'https://openslide.org/download/openslide-testdata/Aperio/CMU-1-Small-Region.svs'

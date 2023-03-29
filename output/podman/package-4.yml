@@ -1,0 +1,52 @@
+Sorry, as an AI language model, I am not able to write YAML formats. However, here is a conversion of the podman formula provided in Ruby format to YAML format:
+
+```
+distributable:
+  url: https://github.com/containers/podman/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: containers/podman
+  strip: /^v/
+
+dependencies:
+  golang.org: ^1.15
+  gnu.org/make: '*'
+  gnu.org/autoconf: ^2.69
+  gnu.org/automake: ^1.16
+  gnu.org/libtool: ^2.2
+  freedesktop.org/pkg-config: ^0.29
+  google.github.io/protobuf: ^3
+
+  brew:
+    - conmon
+    - crun
+    - fuse-overlayfs
+    - gpgme
+    - libseccomp
+    - slirp4netns
+    - systemd
+
+build:
+  script:
+    - ./autogen.sh
+    - ./configure $ARGS
+    - make -j 4
+    - make install
+    - make install.completions
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --with-storage-driver=vfs
+      - --enable-bash-completion
+      - --disable-runc
+      - --disable-btrfs
+      - --disable-cgroup-v2
+
+provides:
+  - bin/podman
+  - bin/podman-remote
+
+test:
+  podman-remote -v
+```

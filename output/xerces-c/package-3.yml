@@ -1,0 +1,43 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=xerces/c/3/sources/xerces-c-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 3.2.4
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+  script: |
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}} \
+            -DCMAKE_DISABLE_FIND_PACKAGE_ICU=ON \
+            -DCMAKE_INSTALL_RPATH={{rpath}}
+    cmake --build . --config Release
+    ctest --test-dir . --output-on-failure
+    cmake --build . --config Release --target install
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}} \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DCMAKE_DISABLE_FIND_PACKAGE_ICU=ON \
+            -DCMAKE_INSTALL_RPATH={{rpath}}
+    cmake --build . --config Release
+    cmake --install . --config Release --prefix={{prefix}}
+    cp -a src/. {{lib}}
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    curl.haxx.se: '*'
+  fixture: |
+    <?xml version="1.0" encoding="iso-8859-1"?>
+    <ducks>
+      <person id="Red.Duck" >
+        <name><family>Duck</family> <given>One</given></name>
+        <email>duck@foo.com</email>
+      </person>
+    </ducks>
+  script: |
+    echo "$FIXTURE" > ducks.xml
+    SAXCount ducks.xml | grep '(6 elems, 1 attrs, 0 spaces, 37 chars)' > /dev/null && echo "PASS" || echo "FAIL"

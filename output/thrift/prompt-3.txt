@@ -1,0 +1,193 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project duckdb:
+
+
+        class Duckdb < Formula
+          homepage "https://www.duckdb.org"
+          url "https://github.com/duckdb/duckdb.git",
+              tag:      "v0.7.1",
+              revision: "b00b93f0b14bfff869e1facfd86a6b556a6f1c6e"
+          depends_on "cmake" => :build
+          def install
+            mkdir "build"
+            cd "build" do
+              system "cmake", "..", *std_cmake_args, "-DBUILD_ICU_EXTENSION=1", "-DBUILD_JSON_EXTENSION=1",
+                     "-DBUILD_PARQUET_EXTENSION=1"
+              system "make"
+              system "make", "install"
+              bin.install "duckdb"
+              # The cli tool was renamed (0.1.8 -> 0.1.9)
+              # Create a symlink to not break compatibility
+              bin.install_symlink bin/"duckdb" => "duckdb_cli"
+            end
+          end
+          test do
+            path = testpath/"weather.sql"
+            path.write <<~EOS
+              CREATE TABLE weather (temp INTEGER);
+              INSERT INTO weather (temp) VALUES (40), (45), (50);
+              SELECT AVG(temp) FROM weather;
+            EOS
+            expected_output = <<~EOS
+              ┌─────────────┐
+              │ avg("temp") │
+              │   double    │
+              ├─────────────┤
+              │        45.0 │
+              └─────────────┘
+            EOS
+            assert_equal expected_output, shell_output("#{bin}/duckdb_cli < #{path}")
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project duckdb:
+
+
+        distributable:
+          url: https://github.com/duckdb/duckdb/archive/refs/tags/v{{version}}.tar.gz
+          strip-components: 1
+
+        # if there’s a github then we can parse the versions
+        versions:
+          github: duckdb/duckdb/releases/tags
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            cmake.org: ^3
+            git-scm.org: '*'
+          working-directory: build
+          script: |
+            # duckdb uses git to get its version
+            git init ..
+            git config user.email "bot@tea.xyz"
+            git config user.name "teabot"
+            git commit --allow-empty -mnil
+            git tag v{{version}}
+
+            cmake ..
+            make --jobs {{ hw.concurrency }}
+            mkdir -p "{{prefix}}"/bin
+            mv duckdb "{{prefix}}"/bin
+          env:
+            ARGS:
+              - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+              - -DCMAKE_BUILD_TYPE=Release
+              - -DBUILD_ICU_EXTENSION=1
+              - -DBUILD_JSON_EXTENSION=1
+              - -DBUILD_PARQUET_EXTENSION=1
+
+        provides:
+          - bin/duckdb
+          # ^^ specify the binaries or tea magic won’t work
+
+        test:
+          fixture: |
+            CREATE TABLE weather (temp INTEGER);
+            INSERT INTO weather (temp) VALUES (40), (45), (50);
+            SELECT AVG(temp) FROM weather;
+          script: |
+            out="$(duckdb < $FIXTURE)"
+            exp=$(cat <<EOS
+            ┌─────────────┐
+            │ avg("temp") │
+            │   double    │
+            ├─────────────┤
+            │        45.0 │
+            └─────────────┘
+            EOS)
+
+            test "$out" = "$exp"
+
+            if [[ "$(duckdb --version)" != "v{{version}}"* ]]; then
+              echo "invalid version" >&2
+              exit 1
+            fi
+
+
+
+    Here's an example ruby formula for the project thrift:
+
+
+        class Thrift < Formula
+          homepage "https://thrift.apache.org/"
+          stable do
+            url "https://www.apache.org/dyn/closer.lua?path=thrift/0.18.1/thrift-0.18.1.tar.gz"
+            mirror "https://archive.apache.org/dist/thrift/0.18.1/thrift-0.18.1.tar.gz"
+            # Fix -flat_namespace being used on Big Sur and later.
+            patch do
+              url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+            end
+          end
+          head do
+            url "https://github.com/apache/thrift.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+            depends_on "pkg-config" => :build
+          end
+          depends_on "bison" => :build
+          depends_on "boost" => [:build, :test]
+          depends_on "openssl@1.1"
+          uses_from_macos "zlib"
+          def install
+            system "./bootstrap.sh" unless build.stable?
+            args = %W[
+              --disable-debug
+              --disable-tests
+              --prefix=#{prefix}
+              --libdir=#{lib}
+              --with-openssl=#{Formula["openssl@1.1"].opt_prefix}
+              --without-java
+              --without-kotlin
+              --without-python
+              --without-py3
+              --without-ruby
+              --without-haxe
+              --without-netstd
+              --without-perl
+              --without-php
+              --without-php_extension
+              --without-dart
+              --without-erlang
+              --without-go
+              --without-d
+              --without-nodejs
+              --without-nodets
+              --without-lua
+              --without-rs
+              --without-swift
+            ]
+            ENV.cxx11 if ENV.compiler == :clang
+            # Don't install extensions to /usr:
+            ENV["PY_PREFIX"] = prefix
+            ENV["PHP_PREFIX"] = prefix
+            ENV["JAVA_PREFIX"] = buildpath
+            system "./configure", *args
+            ENV.deparallelize
+            system "make"
+            system "make", "install"
+          end
+          test do
+            (testpath/"test.thrift").write <<~EOS
+              service MultiplicationService {
+                i32 multiply(1:i32 x, 2:i32 y),
+              }
+            EOS
+            system "#{bin}/thrift", "-r", "--gen", "cpp", "test.thrift"
+            system ENV.cxx, "-std=c++11", "gen-cpp/MultiplicationService.cpp",
+              "gen-cpp/MultiplicationService_server.skeleton.cpp",
+              "-I#{include}/include",
+              "-L#{lib}", "-lthrift"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project thrift in the yml format:

@@ -1,0 +1,33 @@
+distributable:
+  url: "https://downloads.xiph.org/releases/vorbis/libvorbis-{{ version }}.tar.xz"
+  using: homebrew_curl
+  mirror: "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-{{ version }}.tar.xz"
+  strip-components: 1
+
+versions:
+  - 1.3.7
+
+build:
+  dependencies:
+    - tea.xyz/gx/cc: c99
+    - tea.xyz/gx/autoconf: '*' # required only for head version
+    - tea.xyz/gx/automake: '*' # required only for head version
+    - tea.xyz/gx/libtool: '*' # required only for head version
+    - tea.xyz/gx/pkg-config: '*'
+  head:
+    url: "https://gitlab.xiph.org/xiph/vorbis.git"
+    script: |
+      ./autogen.sh
+      ./configure --disable-dependency-tracking --prefix={{ prefix }}
+      make --jobs {{ hw.concurrency }} install
+  stable:
+    script: |
+      ./configure --disable-dependency-tracking --prefix={{ prefix }}
+      make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    - tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -o test -lvorbisfile
+    ./test < "{{ resources.oggfile.path }}"

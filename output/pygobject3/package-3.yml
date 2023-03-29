@@ -1,0 +1,56 @@
+distributable:
+  url: https://download.gnome.org/sources/pygobject/{{ version.split(".")[0] }}.{{ version.split(".")[1] }}/pygobject-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  - 3.44.1
+
+dependencies:
+  gnome.org/gobject-introspection: ^1.44
+  tea.xyz/py3cairo: ^1.18
+
+build:
+  dependencies:
+    mesonbuild.com: ^0.56
+    ninja-build.org: ^1.8
+    freedesktop.org/pkg-config: ^0.29
+    python.org: ^3.10.0 || ^3.11.0
+  script: |
+    pythons=""
+    for python in $(echo "$DEPS" | jq -r '.[] | select(.name | match("^python@3\\.(\\d)+$";"g")) | .path')
+    do
+      xy="$(basename $python | sed -E 's/python@(.+)\\.(.+)/\\1.\\2/g')"
+      builddir="buildpy${xy//./}"
+      meson setup $builddir -Dpycairo=enabled \
+                             -Dpython=$python \
+                             -Dpython.platlibdir=$PREFIX/lib/python$xy/site-packages \
+                             -Dpython.purelibdir=$PREFIX/lib/python$xy/site-packages \
+                             $ARGS
+      meson compile -C $builddir --verbose
+      meson install -C $builddir
+      pythons+="$python "
+    done
+    sed -i'.bak' -E "s|($PREFIX/[^:]+/python)([0-9]+[.][0-9]+)/site-packages/|\\1\\2/lib/python\\2/site-packages/|g" $(find $PREFIX/bin -type f)
+  env:
+    ARGS:
+      - --prefix=$PREFIX
+      - --libdir=$PREFIX/lib
+      - --buildtype=release
+      - --wrap-mode=nodownload
+    DEPS: $DEPS
+
+test:
+  dependencies:
+    python.org: ^3.10.0 || ^3.11.0
+  script: |
+    cat > test.py <<EOS
+    import gi
+    gi.require_version("GLib", "2.0")
+    assert("__init__" in gi.__file__)
+    from gi.repository import GLib
+    assert(31 == GLib.Date.get_days_in_month(GLib.DateMonth.JANUARY, 2000))
+    EOS
+    for python in $(echo "$DEPS" | jq -r '.[] | select(.name | match("^python@3\\.(\\d)+$";"g")) | .path')
+    do
+      $python test.py
+    done

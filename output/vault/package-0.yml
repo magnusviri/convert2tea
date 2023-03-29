@@ -1,0 +1,38 @@
+distributable:
+  url: https://github.com/hashicorp/vault/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+# Use GitHub API to parse versions
+versions:
+  github: hashicorp/vault/releases/tags
+
+build:
+  dependencies:
+    brew: go
+    tea.xyz/gx/make: "*"
+  script: |
+    make bootstrap static-dist dev-ui
+    mkdir -p "{{prefix}}"/bin
+    mv bin/vault "{{prefix}}"/bin/
+  env:
+    GOPATH: "{{var "GOPATH"}}"
+    PATH: "{{var "PATH" | replace ":" " "}}"
+
+provides:
+  - bin/vault
+
+service:
+  run: [bin/vault, server, "-dev"]
+  keep_alive: true
+  working_directory: "{{var "HOME"}}/.vault.d"
+  log: "{{var "HOME"}}/Library/Logs/vault.log"
+
+test:
+  script: |
+    export VAULT_DEV_LISTEN_ADDRESS="127.0.0.1:0"
+    export VAULT_ADDR="http://127.0.0.1:{{free_port}}"
+    vault server -dev &
+    pid=$!
+    sleep 5
+    vault status
+    kill $pid

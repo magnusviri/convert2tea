@@ -1,0 +1,341 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project erlang:
+
+
+        class Erlang < Formula
+          homepage "https://www.erlang.org/"
+          # Download tarball from GitHub; it is served faster than the official tarball.
+          # Don't forget to update the documentation resource along with the url!
+          url "https://github.com/erlang/otp/releases/download/OTP-25.3/otp_src_25.3.tar.gz"
+          livecheck do
+            url :stable
+            regex(/^OTP[._-]v?(\d+(?:\.\d+)+)$/i)
+          end
+          head do
+            url "https://github.com/erlang/otp.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+          end
+          depends_on "openssl@1.1"
+          depends_on "unixodbc"
+          depends_on "wxwidgets" # for GUI apps like observer
+          uses_from_macos "libxslt" => :build
+          def install
+            # Unset these so that building wx, kernel, compiler and
+            # other modules doesn't fail with an unintelligible error.
+            %w[LIBS FLAGS AFLAGS ZFLAGS].each { |k| ENV.delete("ERL_#{k}") }
+            # Do this if building from a checkout to generate configure
+            system "./otp_build", "autoconf" unless File.exist? "configure"
+            args = %W[
+              --enable-dynamic-ssl-lib
+              --enable-hipe
+              --enable-shared-zlib
+              --enable-smp-support
+              --enable-threads
+              --enable-wx
+              --with-odbc=#{Formula["unixodbc"].opt_prefix}
+              --with-ssl=#{Formula["openssl@1.1"].opt_prefix}
+              --without-javac
+            ]
+            if OS.mac?
+              args << "--enable-darwin-64bit"
+              args << "--enable-kernel-poll" if MacOS.version > :el_capitan
+              args << "--with-dynamic-trace=dtrace" if MacOS::CLT.installed?
+            end
+            system "./configure", *std_configure_args, *args
+            system "make"
+            system "make", "install"
+            # Build the doc chunks (manpages are also built by default)
+            ENV.deparallelize { system "make", "docs", "DOC_TARGETS=chunks" }
+            ENV.deparallelize { system "make", "install-docs" }
+            doc.install resource("html")
+          end
+          def caveats
+            <<~EOS
+              Man pages can be found in:
+                #{opt_lib}/erlang/man
+              Access them with `erl -man`, or add this directory to MANPATH.
+            EOS
+          end
+          test do
+            assert_equal version, resource("html").version, "`html` resource needs updating!"
+            system "#{bin}/erl", "-noshell", "-eval", "crypto:start().", "-s", "init", "stop"
+            (testpath/"factorial").write <<~EOS
+              #!#{bin}/escript
+              %% -*- erlang -*-
+              %%! -smp enable -sname factorial -mnesia debug verbose
+              main([String]) ->
+                  try
+                      N = list_to_integer(String),
+                      F = fac(N),
+                      io:format("factorial ~w = ~w\n", [N,F])
+                  catch
+                      _:_ ->
+                          usage()
+                  end;
+              main(_) ->
+                  usage().
+              usage() ->
+                  io:format("usage: factorial integer\n").
+              fac(0) -> 1;
+              fac(N) -> N * fac(N-1).
+            EOS
+            chmod 0755, "factorial"
+            assert_match "usage: factorial integer", shell_output("./factorial")
+            assert_match "factorial 42 = 1405006117752879898543142606244511569936384000000000", shell_output("./factorial 42")
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project erlang:
+
+
+        distributable:
+          url: https://github.com/erlang/otp/releases/download/OTP-{{ version.raw }}/otp_src_{{ version.raw }}.tar.gz
+          strip-components: 1
+
+        provides:
+          - bin/ct_run
+          - bin/dialyzer
+          - bin/epmd
+          - bin/erl
+          - bin/erlc
+          - bin/escript
+          - bin/run_erl
+          - bin/to_erl
+          - bin/typer
+
+        interprets:
+          extensions: erl
+          args: escript
+
+        versions:
+          github: erlang/otp
+          strip: /^OTP /
+
+        dependencies:
+          openssl.org: '*'
+          invisible-island.net/ncurses: '*'
+
+        runtime:
+          env:
+            ERL_ROOTDIR: ${{prefix}}/lib/erlang
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            perl.org: '>=5'
+          script: |
+            export ERL_TOP=$(pwd)
+            ./configure $ARGS
+            make -j {{hw.concurrency}}
+            make install
+          env:
+            CC: cc
+            CXX: c++
+            LD: ld
+            ARGS:
+              - --disable-debug
+              - --disable-silent-rules
+              - --prefix={{prefix}}
+              - --enable-dynamic-ssl-lib
+              - --enable-hipe
+              - --enable-smp-support
+              - --enable-threads
+              - --enable-pie
+              - --with-ssl={{deps.openssl.org.prefix}}
+              - --without-javac
+            darwin:
+              ARGS:
+                - --enable-darwin-64bit
+                - --enable-kernel-poll
+                - --with-dynamic-trace=dtrace
+
+        test:
+          script: |
+            epmd -kill || true
+            epmd -daemon -address 127.0.0.1 -relaxed_command_check
+            test "$(escript $FIXTURE 10)" = "factorial 10 = 3628800"
+            epmd -kill || true
+
+          env:
+            ERL_DIST_PORT: 8001
+          fixture: |
+            #!/usr/bin/env escript
+            %% -*- erlang -*-
+            %%! -smp enable -sname factorial -mnesia debug verbose
+            main([String]) ->
+                try
+                    N = list_to_integer(String),
+                    F = fac(N),
+                    io:format("factorial ~w = ~w\n", [N,F])
+                catch
+                    _:_ ->
+                        usage()
+                end;
+            main(_) ->
+                usage().
+
+            usage() ->
+                io:format("usage: factorial integer\n").
+
+            fac(0) -> 1;
+            fac(N) -> N * fac(N-1).
+
+
+    Here's an example ruby formula for the project openjdk:
+
+
+        class Openjdk < Formula
+          homepage "https://openjdk.java.net/"
+          url "https://github.com/openjdk/jdk19u/archive/refs/tags/jdk-19.0.2-ga.tar.gz"
+          livecheck do
+            url :stable
+            regex(/^jdk[._-]v?(\d+(?:\.\d+)*)-ga$/i)
+          end
+          keg_only :shadowed_by_macos
+          depends_on "autoconf" => :build
+          depends_on "pkg-config" => :build
+          depends_on xcode: :build
+          depends_on "giflib"
+          depends_on "harfbuzz"
+          depends_on "jpeg-turbo"
+          depends_on "libpng"
+          depends_on "little-cms2"
+          depends_on macos: :catalina
+          uses_from_macos "cups"
+          uses_from_macos "unzip"
+          uses_from_macos "zip"
+          uses_from_macos "zlib"
+          on_linux do
+            depends_on "alsa-lib"
+            depends_on "fontconfig"
+            depends_on "freetype"
+            depends_on "libx11"
+            depends_on "libxext"
+            depends_on "libxrandr"
+            depends_on "libxrender"
+            depends_on "libxt"
+            depends_on "libxtst"
+          end
+          fails_with gcc: "5"
+          # From https://jdk.java.net/archive/
+              on_intel do
+                url "https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_macos-x64_bin.tar.gz"
+              end
+            end
+            on_linux do
+              on_arm do
+                url "https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_linux-aarch64_bin.tar.gz"
+              end
+              on_intel do
+                url "https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_linux-x64_bin.tar.gz"
+              end
+            end
+          end
+          # Patch to restore build on macOS 13
+          patch :DATA
+          def install
+            boot_jdk = buildpath/"boot-jdk"
+            resource("boot-jdk").stage boot_jdk
+            boot_jdk /= "Contents/Home" if OS.mac?
+            java_options = ENV.delete("_JAVA_OPTIONS")
+            args = %W[
+              --disable-warnings-as-errors
+              --with-boot-jdk-jvmargs=#{java_options}
+              --with-boot-jdk=#{boot_jdk}
+              --with-debug-level=release
+              --with-jvm-variants=server
+              --with-native-debug-symbols=none
+              --with-vendor-bug-url=#{tap.issues_url}
+              --with-vendor-name=#{tap.user}
+              --with-vendor-url=#{tap.issues_url}
+              --with-vendor-version-string=#{tap.user}
+              --with-vendor-vm-bug-url=#{tap.issues_url}
+              --with-version-build=#{revision}
+              --without-version-opt
+              --without-version-pre
+              --with-giflib=system
+              --with-harfbuzz=system
+              --with-lcms=system
+              --with-libjpeg=system
+              --with-libpng=system
+              --with-zlib=system
+            ]
+            ldflags = ["-Wl,-rpath,#{loader_path.gsub("$", "\\$$")}/server"]
+            args += if OS.mac?
+              ldflags << "-headerpad_max_install_names"
+              %W[
+                --enable-dtrace
+                --with-sysroot=#{MacOS.sdk_path}
+              ]
+            else
+              %W[
+                --with-x=#{HOMEBREW_PREFIX}
+                --with-cups=#{HOMEBREW_PREFIX}
+                --with-fontconfig=#{HOMEBREW_PREFIX}
+                --with-freetype=system
+                --with-stdc++lib=dynamic
+              ]
+            end
+            args << "--with-extra-ldflags=#{ldflags.join(" ")}"
+            system "bash", "configure", *args
+            ENV["MAKEFLAGS"] = "JOBS=#{ENV.make_jobs}"
+            system "make", "images"
+            jdk = libexec
+            if OS.mac?
+              libexec.install Dir["build/*/images/jdk-bundle/*"].first => "openjdk.jdk"
+              jdk /= "openjdk.jdk/Contents/Home"
+            else
+              libexec.install Dir["build/linux-*-server-release/images/jdk/*"]
+            end
+            bin.install_symlink Dir[jdk/"bin/*"]
+            include.install_symlink Dir[jdk/"include/*.h"]
+            include.install_symlink Dir[jdk/"include"/OS.kernel_name.downcase/"*.h"]
+            man1.install_symlink Dir[jdk/"man/man1/*"]
+          end
+          def caveats
+            on_macos do
+              <<~EOS
+                For the system Java wrappers to find this JDK, symlink it with
+                  sudo ln -sfn #{opt_libexec}/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk
+              EOS
+            end
+          end
+          test do
+            (testpath/"HelloWorld.java").write <<~EOS
+              class HelloWorld {
+                public static void main(String args[]) {
+                  System.out.println("Hello, world!");
+                }
+              }
+            EOS
+            system bin/"javac", "HelloWorld.java"
+            assert_match "Hello, world!", shell_output("#{bin}/java HelloWorld")
+          end
+        end
+        __END__
+        diff -pur a/src/jdk.net/macosx/native/libextnet/MacOSXSocketOptions.c b/src/jdk.net/macosx/native/libextnet/MacOSXSocketOptions.c
+        --- a/src/jdk.net/macosx/native/libextnet/MacOSXSocketOptions.c	2022-08-12 22:24:53.000000000 +0200
+        +++ b/src/jdk.net/macosx/native/libextnet/MacOSXSocketOptions.c	2022-10-24 18:27:36.000000000 +0200
+        @@ -29,9 +29,9 @@
+         #include <unistd.h>
+         
+         #include <jni.h>
+        -#include <netinet/tcp.h>
+         
+         #define __APPLE_USE_RFC_3542
+        +#include <netinet/tcp.h>
+         #include <netinet/in.h>
+         
+         #ifndef IP_DONTFRAG
+
+
+
+    Based on the examples provided, write a formula for the project openjdk in the yml format:

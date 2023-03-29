@@ -1,0 +1,252 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project bitcoin:
+
+
+        class Bitcoin < Formula
+          homepage "https://bitcoincore.org/"
+          url "https://bitcoincore.org/bin/bitcoin-core-24.0.1/bitcoin-24.0.1.tar.gz"
+          head "https://github.com/bitcoin/bitcoin.git", branch: "master"
+          livecheck do
+            url "https://bitcoincore.org/en/download/"
+            regex(/latest version.*?v?(\d+(?:\.\d+)+)/i)
+          end
+          depends_on "autoconf" => :build
+          depends_on "automake" => :build
+          depends_on "libtool" => :build
+          depends_on "pkg-config" => :build
+          # berkeley db should be kept at version 4
+          # https://github.com/bitcoin/bitcoin/blob/master/doc/build-osx.md
+          # https://github.com/bitcoin/bitcoin/blob/master/doc/build-unix.md
+          depends_on "berkeley-db@4"
+          depends_on "boost"
+          depends_on "libevent"
+          depends_on macos: :catalina
+          depends_on "miniupnpc"
+          depends_on "zeromq"
+          uses_from_macos "sqlite"
+          on_linux do
+            depends_on "util-linux" => :build # for `hexdump`
+          end
+          fails_with :gcc do
+            version "7" # fails with GCC 7.x and earlier
+            cause "Requires std::filesystem support"
+          end
+          def install
+            system "./autogen.sh"
+            system "./configure", *std_configure_args,
+                                  "--disable-silent-rules",
+                                  "--with-boost-libdir=#{Formula["boost"].opt_lib}"
+            system "make", "install"
+            pkgshare.install "share/rpcauth"
+          end
+          service do
+            run opt_bin/"bitcoind"
+          end
+          test do
+            system "#{bin}/test_bitcoin"
+            # Test that we're using the right version of `berkeley-db`.
+            port = free_port
+            bitcoind = spawn bin/"bitcoind", "-regtest", "-rpcport=#{port}", "-listen=0", "-datadir=#{testpath}"
+            sleep 15
+            # This command will fail if we have too new a version.
+            system bin/"bitcoin-cli", "-regtest", "-datadir=#{testpath}", "-rpcport=#{port}",
+                                      "createwallet", "test-wallet", "false", "false", "", "false", "false"
+          ensure
+            Process.kill "TERM", bitcoind
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project bitcoin:
+
+
+        distributable:
+          url: https://bitcoincore.org/bin/bitcoin-core-{{version}}/bitcoin-{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: bitcoin/bitcoin
+          strip: /^Bitcoin Core /
+
+        dependencies:
+          oracle.com/berkeley-db: ^18
+          boost.org: ^1
+          libevent.org: ^2
+          zeromq.org: ^4
+          sqlite.org: ^3
+
+        build:
+          dependencies:
+            gnu.org/autoconf: ^2
+            gnu.org/automake: ^1
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            freedesktop.org/pkg-config: ^0.29
+            gnu.org/libtool: ^2
+          script: |
+            ./autogen.sh
+            ./configure $ARGS
+            make --jobs {{ hw.concurrency }} install
+          env:
+            ARGS:
+              - --prefix={{prefix}}
+              - --disable-debug
+              - --disable-tests  # needs: `hexedit`
+              - --disable-bench  # fails: linux/aarch64/v24.0.1
+
+        provides:
+          - bin/bitcoin-cli
+          - bin/bitcoin-tx
+          - bin/bitcoin-util
+          - bin/bitcoin-wallet
+          - bin/bitcoind
+
+        test:
+          bitcoind -version
+
+
+
+    Here's an example ruby formula for the project podman:
+
+
+        class Podman < Formula
+          homepage "https://podman.io/"
+          url "https://github.com/containers/podman.git",
+              tag:      "v4.4.4",
+              revision: "c8223435f49a860c8ac4281a85db39232745a7cb"
+          license all_of: ["Apache-2.0", "GPL-3.0-or-later"]
+          head "https://github.com/containers/podman.git", branch: "main"
+          depends_on "go" => :build
+          depends_on "go-md2man" => :build
+          on_macos do
+            depends_on "make" => :build
+            depends_on "qemu"
+          end
+          on_linux do
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+            depends_on "pkg-config" => :build
+            depends_on "protobuf" => :build
+            depends_on "rust" => :build
+            depends_on "conmon"
+            depends_on "crun"
+            depends_on "fuse-overlayfs"
+            depends_on "gpgme"
+            depends_on "libseccomp"
+            depends_on "slirp4netns"
+            depends_on "systemd"
+          end
+          end
+            end
+          end
+          end
+          end
+          def install
+            if OS.mac?
+              ENV["CGO_ENABLED"] = "1"
+              ENV.prepend_path "PATH", Formula["make"].opt_libexec/"gnubin"
+              system "make", "podman-remote"
+              bin.install "bin/darwin/podman" => "podman-remote"
+              bin.install_symlink bin/"podman-remote" => "podman"
+              system "make", "podman-mac-helper"
+              bin.install "bin/darwin/podman-mac-helper" => "podman-mac-helper"
+              resource("gvproxy").stage do
+                system "make", "gvproxy"
+                (libexec/"podman").install "bin/gvproxy"
+              end
+              # Remove the "-j1" flag at next release
+              system "make", "-j1", "podman-remote-darwin-docs"
+              man1.install Dir["docs/build/remote/darwin/*.1"]
+              bash_completion.install "completions/bash/podman"
+              zsh_completion.install "completions/zsh/_podman"
+              fish_completion.install "completions/fish/podman.fish"
+            else
+              paths = Dir["**/*.go"].select do |file|
+                (buildpath/file).read.lines.grep(%r{/etc/containers/}).any?
+              end
+              inreplace paths, "/etc/containers/", etc/"containers/"
+              ENV.O0
+              ENV["PREFIX"] = prefix
+              ENV["HELPER_BINARIES_DIR"] = opt_libexec/"podman"
+              system "make"
+              system "make", "install", "install.completions"
+              (prefix/"etc/containers/policy.json").write <<~EOS
+                {"default":[{"type":"insecureAcceptAnything"}]}
+              EOS
+              (prefix/"etc/containers/storage.conf").write <<~EOS
+                [storage]
+                driver="overlay"
+              EOS
+              (prefix/"etc/containers/registries.conf").write <<~EOS
+                unqualified-search-registries=["docker.io"]
+              EOS
+              resource("catatonit").stage do
+                system "./autogen.sh"
+                system "./configure"
+                system "make"
+                mv "catatonit", libexec/"podman/"
+              end
+              resource("netavark").stage do
+                system "make"
+                mv "bin/netavark", libexec/"podman/"
+              end
+              resource("aardvark-dns").stage do
+                system "make"
+                mv "bin/aardvark-dns", libexec/"podman/"
+              end
+            end
+          end
+          def caveats
+            on_linux do
+              <<~EOS
+                You need "newuidmap" and "newgidmap" binaries installed system-wide
+                for rootless containers to work properly.
+              EOS
+            end
+            on_macos do
+              <<-EOS
+                In order to run containers locally, podman depends on a Linux kernel.
+                One can be started manually using `podman machine` from this package.
+                To start a podman VM automatically at login, also install the cask
+                "podman-desktop".
+              EOS
+            end
+          end
+          service do
+            run linux: [opt_bin/"podman", "system", "service", "--time=0"]
+            environment_variables PATH: std_service_path_env
+            working_dir HOMEBREW_PREFIX
+          end
+          test do
+            assert_match "podman-remote version #{version}", shell_output("#{bin}/podman-remote -v")
+            out = shell_output("#{bin}/podman-remote info 2>&1", 125)
+            assert_match "Cannot connect to Podman", out
+            if OS.mac?
+              out = shell_output("#{bin}/podman-remote machine init --image-path fake-testi123 fake-testvm 2>&1", 125)
+              assert_match "Error: open fake-testi123: no such file or directory", out
+            else
+              assert_equal %W[
+                #{bin}/podman
+                #{bin}/podman-remote
+              ].sort, Dir[bin/"*"].sort
+              assert_equal %W[
+                #{libexec}/podman/catatonit
+                #{libexec}/podman/netavark
+                #{libexec}/podman/aardvark-dns
+                #{libexec}/podman/quadlet
+                #{libexec}/podman/rootlessport
+              ].sort, Dir[libexec/"podman/*"].sort
+              out = shell_output("file #{libexec}/podman/catatonit")
+              assert_match "statically linked", out
+            end
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project podman in the yml format:

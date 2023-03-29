@@ -1,0 +1,34 @@
+distributable:
+  url: https://github.com/p7zip-project/p7zip/archive/v{{version}}.tar.gz
+
+versions:
+  - 17.05
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    tea.xyz/gx/cc: gcc
+    tea.xyz/gx/cxx: g++
+    tea.xyz/gx/make: '*'
+  working-directory:
+    p7zip-17.05
+  script: |
+    ln -s makefile.linux_clang_64bits makefile.machine
+    make
+    make DEST_HOME="{{prefix}}" DEST_MAN="{{man}}" install
+  env:
+    linux:
+      CC: gcc
+      CXX: g++
+    macOS:
+      CC: clang
+      CXX: clang++
+      CFLAGS: -mmacosx-version-min=10.9 -arch x86_64
+      CXXFLAGS: -mmacosx-version-min=10.9 -arch x86_64
+      LDFLAGS: -mmacosx-version-min=10.9 -arch x86_64
+test: |
+  7z --help
+
+provides:
+  - bin/7z

@@ -1,0 +1,27 @@
+distributable:
+  url: https://download-mirror.savannah.gnu.org/releases/lzip/lzip-{{ version.raw }}.tar.gz
+
+versions:
+  github: savannah-gnu/lzip/tags
+  strip: /^lzip-
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      gnu.org/glibc: '*'
+    darwin:
+      tea.xyz/gx/cc: clang
+      tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: clang
+  script: |
+    dd if=/dev/random of=test.txt bs=1024 count=1024
+    "{{bin}}/lzip" test.txt -o test.lz
+    "{{bin}}/lzip" -d test.lz -o test.out
+    cmp test.txt test.out

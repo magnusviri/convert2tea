@@ -1,0 +1,65 @@
+distributable:
+  url: https://github.com/openslide/openslide/releases/download/v{{version}}/openslide-{{version}}.tar.xz
+
+versions:
+  - 3.4.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    tea.xyz/pkg-config: '*'
+    gtk.org: '*'
+    sorah/go-to-rpm: '*'
+  script: |
+    ./configure \
+      --prefix={{prefix}} \
+      --with-pic
+    make install
+  artifacts:
+    - src/openslide-*.tar.xz
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: '^0.29'
+    gtk.org: '*'
+  env:
+    cflags: $(pkg-config --cflags openslide)
+    libraries: $(pkg-config --libs openslide)
+  fixture: |
+    #include <openslide/openslide.h>
+    #include <stdio.h>
+
+    int main(int argc, char **argv)
+    {
+        const char *filename;
+        openslide_t *osr;
+        GError *err = NULL;
+
+        if (argc != 2) {
+            fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+            return 1;
+        }
+        filename = argv[1];
+
+        osr = openslide_open(filename, &err);
+        if (osr == NULL) {
+            fprintf(stderr, "openslide_open(): %s\n", err->message);
+            g_error_free(err);
+            return 1;
+        }
+
+        printf("Vendor: %s\n", openslide_get_property_value(osr, OPENSLIDE_PROPERTY_NAME_VENDOR));
+        openslide_close(osr);
+        return 0;
+    }
+  script: |
+    mv $FIXTURE test.c
+    gcc ${cflags} test.c ${libraries} -o test
+    out=$(./test CMU-1-Small-Region.svs)
+    if [[ "$out" =~ "Vendor: Hamamatsu" ]]; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

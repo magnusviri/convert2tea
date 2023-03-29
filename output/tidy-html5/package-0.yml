@@ -1,0 +1,25 @@
+Sorry, as an AI language model, I am not able to create YAML formats. However, I can provide you with equivalent YAML format based on the provided ruby formula:
+
+distributable:
+  url: https://github.com/htacg/tidy-html5/archive/{{version}}.tar.gz
+
+versions:
+  regex: /^v?(\d+\.\d*?[02468](?:\.\d+)*)$/i
+
+build:
+  dependencies:
+    freedesktop.org/cmake: ^3
+  script: |
+    cd build/cmake
+    cmake $ARGS ../..
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX={{prefix}}
+
+dependencies:
+  musl: "*"
+
+provides:
+  - bin/tidy

@@ -1,0 +1,70 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/tcl/Tcl/{{ version }}/tcl{{ version }}-src.tar.gz
+  strip-components: 1
+
+versions:
+  github: TclTk/tcl
+  strip: /^tcl/
+
+provides:
+  - bin/tclsh
+  - bin/wish
+
+dependencies:
+  openssl.org: ^1
+  zlib.net: ^1
+  itcl.tk: '*'
+  itk4.tk: '*'
+  tcllib.sourceforge.net: '*'
+  tcltls.sourceforge.net: '*'
+  
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    freedesktop.org/pkg-config: '*'
+    freetype.org: ^2.10
+    x.org:xtrans: '^1.3.5'
+    x.org:xorgproto: '^2020.1'
+    gdk-pixbuf.freedesktop.org: ^2.38
+  script: |
+    --prefix={{prefix}}
+    --enable-threads
+    --enable-symbols
+    --mandir=#{man}
+
+    ./configure $ARGS && make && make install && ln -s "#{bin}/tclsh8.6" "#{bin}/tclsh"
+
+    ARGS="--prefix=#{prefix} --enable-threads --mandir=#{man}"
+    resource-pkgconfig --install --prefix=#{prefix} x11 xrender xft 
+    resource-pkgconfig --install --prefix=#{prefix} tcl
+    resource-pkgconfig --install --prefix=#{prefix} tk
+
+    cd unix && ./configure $ARGS --with-tcl=#{prefix}/lib --with-tk=#{prefix}/lib --without-xft && make && make install && ln -s "#{bin}/wish8.6" "#{bin}/wish"
+
+    pushd "#{buildpath}/pkgs/itcl4.2.0" do
+      system "./configure", "--prefix=#{prefix}", "--mandir=#{man}"
+      system "make", "install" 
+    end
+
+    pushd "#{buildpath}/pkgs/itk4.2.0" do
+      system "./configure", "--prefix=#{prefix}", "--mandir=#{man}"
+      system "make", "install" 
+    end
+
+    pushd "#{buildpath}/pkgs/tcllib1.18" do
+      system "./configure", "--prefix=#{prefix}", "--mandir=#{man}"
+      system "make", "install" 
+    end
+
+    pushd "#{buildpath}/pkgs/tls1.7.16" do
+      system "./configure", "--prefix=#{prefix}", "--mandir=#{man}", "--with-openssl=#{Formula["openssl"].prefix}"
+      system "make"
+      system "make", "install"
+    end
+
+test: |
+  #{bin}/tclsh8.6 -v
+  #{bin}/tclsh8.6 -c "puts {tclsh test}"
+  #{bin}/wish8.6 -v
+  #{bin}/wish8.6 -c "puts {wish test}"

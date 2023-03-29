@@ -1,0 +1,32 @@
+distributable:
+  url: https://download.libsodium.org/libsodium/releases/libsodium-{{version}}.tar.gz
+
+versions:
+  - 1.0.18
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{prefix}} &&
+    make &&
+    make check &&
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  fixture: |
+    #include <assert.h>
+    #include <sodium.h>
+    int main()
+    {
+      assert(sodium_init() != -1);
+      return 0;
+    }
+  script: |
+    mv $FIXTURE test.c &&
+    cc test.c -I{{prefix}}/include -L{{prefix}}/lib -lsodium -o test &&
+    ./test

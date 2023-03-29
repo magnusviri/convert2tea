@@ -1,0 +1,43 @@
+distributable:
+  url: https://github.com/tldr-pages/tldr-c-client/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.5.0
+
+build:
+  working-directory: tldr-c-client
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    tea.xyz/curl: '*'
+    libzip.org: '*'
+    freedesktop.org/pkg-config: '*'
+  script: |
+    make PREFIX={{prefix}} install
+    curl -o autocomplete/complete.bash https://raw.githubusercontent.com/tldr-pages/tldr-bash-client/master/autocomplete/complete.bash
+    curl -o autocomplete/complete.zsh https://raw.githubusercontent.com/tldr-pages/tldr-zsh-client/master/autocomplete/complete.zsh
+    curl -o autocomplete/complete.fish https://raw.githubusercontent.com/tldr-pages/tldr-fish-client/master/autocomplete/complete.fish
+    install -d {{prefix}}/share/bash-completion/completions
+    install -d {{prefix}}/share/zsh/site-functions
+    install -d {{prefix}}/share/fish/vendor_completions.d
+    install -m644 autocomplete/complete.bash {{prefix}}/share/bash-completion/completions/tldr
+    install -m644 autocomplete/complete.zsh {{prefix}}/share/zsh/site-functions/_tldr
+    install -m644 autocomplete/complete.fish {{prefix}}/share/fish/vendor_completions.d/tldr.fish
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: '*'
+  env:
+    cxxflags: $(pkg-config --cflags libzip)
+  fixture: |
+    printf 'usage: tldr <command>\n\nexample:\n  tldr tar\n' > expected_output.txt
+  script: |
+    printf 'brew' > test_input.txt
+    {{prefix}}/bin/tldr < test_input.txt > output.txt
+    if cmp expected_output.txt output.txt; then
+      echo "PASS";
+    else
+      echo "FAIL";
+    fi

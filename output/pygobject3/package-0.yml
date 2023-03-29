@@ -1,0 +1,52 @@
+distributable:
+  url: https://download.gnome.org/sources/pygobject/3.44/pygobject-3.44.1.tar.xz
+  strip-components: 1
+
+versions:
+  - 3.44.1
+
+dependencies:
+  gnome.org/gobject-introspection: ^1.44
+  tea.xyz/py3cairo: ^1
+
+build:
+  dependencies:
+    mesonbuild.com: ^0.54
+    ninja-build.org: 1
+    freedesktop.org/pkg-config: ^0.29
+    python.org: ^3.10 || ^3.11
+  script: |
+    for PY in $PYTHON_VERSIONS; do
+      meson setup --buildtype=release --prefix="{{prefix}}" --libdir="{{prefix}}/lib/$PY" --bindir="{{prefix}}/bin/$PY" --includedir="{{prefix}}/include/$PY" --datadir="{{prefix}}/share/$PY" --mandir="{{prefix}}/share/man" --infodir="{{prefix}}/share/info" --localedir="{{prefix}}/share/locale" --default-library=both --wrap-mode=nodownload "build-$PY" \
+      -Dpycairo=enabled \
+      -Dpython="$PY" \
+      -Dpython_bin="${PY}3" \
+      -Dpython3="${PY}3" \
+      -Dpython3_libdir="$("$PY-config" --configdir)" \
+      -Dpython3_include_dir="$("$PY-config" --prefix)/include/$("$PY-config" --with-pydebug)/$("$PY-config" --without-ensurepip)" \
+      -Dpython3_version="$("$PY-config" --pyver)" \
+      -Dpython3_package_prefix="$("$PY-config" --prefix)/$("$PY-config" --with-pydebug)" \
+      -Dpython3_libs="$("$PY-config" --libs) -L$("$PY-config" --configdir) -lpython$("$PY-config" --pyver | sed 's/\.//g')" \
+      $ARGS
+      ninja -v -C "build-$PY" install
+    done
+  env:
+    PYTHON_VERSIONS: "3.10 3.11"
+    ARGS:
+      - --auto-features=enabled
+      - -Db_asneeded=false
+
+test:
+  dependencies:
+    python.org: ^3.10 || ^3.11
+  script: |
+    for PY in $PYTHON_VERSIONS; do
+      cat <<EOF > test.py
+      import gi
+      gi.require_version("GLib", "2.0")
+      assert("__init__" in gi.__file__)
+      from gi.repository import GLib
+      assert(31 == GLib.Date.get_days_in_month(GLib.DateMonth.JANUARY, 2000))
+      EOF
+      "$PY" "test.py"
+    done

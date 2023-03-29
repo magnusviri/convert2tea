@@ -1,0 +1,73 @@
+distributable:
+  url: https://github.com/libvips/libvips/releases/download/v{{version.raw}}/vips-{{version.raw}}.tar.xz
+  strip-components: 1
+
+versions:
+  - 8.14.2
+
+dependencies:
+  - gnome.org/glib: 2
+  - imagemagick.org: 6
+  - littlecms.com: 2.7
+  - poppler.freedesktop.org: 0.74
+  - gnu.org/gettext: ^0.19.8
+  - openslide.org: 3.4
+
+build:
+  dependencies:
+    freedesktop.org/pkg-config: ^0.28
+    mesonbuild.com: ^0.57
+    ninja-build.org: 1
+    gnome.org/cairo: 1.16
+    gnome.org/gobject-introspection: 1.56
+    cgif.freedesktop.org: 5.0.0
+    fftw.org: 3
+    gnu.org/libiconv: 1.16
+    jpegclub.org/mozjpeg: ^3.3.1
+    libexif.sourceforge.net: 0.6.22
+    libgsf.sourceforge.io: 1.14.45
+    github.com/hiberis/fmemopen: ^1.0.0
+    github.com/jcupitt/libimagequant: ^2.12.2
+    github.com/jakedouglas/matio-cmake: ^1.5.16
+    librsvg.sourceforge.net: 2.40
+    libspng.org: 0.6.2
+    libtiff.org: 4.3
+    openexr.com: 2.5.5
+    github.com/uclouvain/openjpeg: ^2.4.0
+    orc-project.org: 0.4.29
+    pango.org: 1.44
+    webmproject.org/webp: 1.2.0
+  working-directory: build
+  script: |
+    meson .. --prefix={{prefix}} --buildtype=release
+    ninja install
+    {{prefix}}/bin/vipsheader -f width {{testpath}}/test.png
+    {{prefix}}/bin/vipsthumbnail -s 48 -o {{testpath}}/thumbnail.png {{testpath}}/test.png
+
+test: |
+  test -z "$(vipsheader -a {{prefix}}/lib/libgsf2.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/liborc-0.4.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libpoppler-glib.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libgobject-2.0.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libcairo.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libpoppler.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libfftw3.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libmatio.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libpng16.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libimagequant.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libspng.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libtiff.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libjpeg.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libglib-2.0.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libexif.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libvips-cpp.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libvipsCC.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libxml2.vip)"
+  test -z "$(vipsheader -a {{prefix}}/lib/libvips.vip)"
+
+provides:
+  - bin/vips
+  - bin/vipsedit
+  - bin/vipsheader
+  - bin/vipsprofile
+  - bin/vipsthumbnail

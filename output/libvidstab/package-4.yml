@@ -1,0 +1,25 @@
+distributable:
+  url: https://github.com/georgmartius/vid.stab/archive/v{{version}}.tar.gz
+
+versions:
+  github: georgmartius/vid.stab
+
+dependencies:
+  cmake.org: '*'
+
+build:
+  dependencies:
+    cmake.org: Latest
+  script: |
+    cmake . -DUSE_OMP=OFF $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX={{prefix}}
+
+provides:
+  - bin/vid.stab_filter
+  - bin/vid.stab_transform
+
+test: |
+  vid.stab_transform --help

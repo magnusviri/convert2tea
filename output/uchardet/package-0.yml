@@ -1,0 +1,26 @@
+distributable:
+  url: https://www.freedesktop.org/software/uchardet/releases/uchardet-{{ version.raw }}.tar.xz
+
+versions:
+  github: uchardet/uchardet/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      gnu.org/make: '*'
+      gnu.org/cmake: '*'
+    darwin:
+      tea.xyz/gx/cc: '*'
+      tea.xyz/gx/make: '*'
+      tea.xyz/gx/cmake: '*'
+  script: |
+    cmake -DCMAKE_INSTALL_NAME_DIR="{{ lib }}" .
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+  script: |
+    echo "Homebrew" | {{ bin }}/uchardet | grep -q "ASCII"

@@ -1,0 +1,161 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project aom:
+
+
+        class Aom < Formula
+          homepage "https://aomedia.googlesource.com/aom"
+          url "https://aomedia.googlesource.com/aom.git",
+              tag:      "v3.6.0",
+              revision: "3c65175b1972da4a1992c1dae2365b48d13f9a8d"
+          depends_on "cmake" => :build
+          # `jpeg-xl` is currently not bottled on Linux
+          on_macos do
+            depends_on "pkg-config" => :build
+            depends_on "jpeg-xl"
+            depends_on "libvmaf"
+          end
+          on_intel do
+            depends_on "yasm" => :build
+          end
+          def install
+            ENV.runtime_cpu_detection unless Hardware::CPU.arm?
+            args = std_cmake_args + [
+              "-DCMAKE_INSTALL_RPATH=#{rpath}",
+              "-DENABLE_DOCS=off",
+              "-DENABLE_EXAMPLES=on",
+              "-DENABLE_TESTDATA=off",
+              "-DENABLE_TESTS=off",
+              "-DENABLE_TOOLS=off",
+              "-DBUILD_SHARED_LIBS=on",
+            ]
+            # Runtime CPU detection is not currently enabled for ARM on macOS.
+            args << "-DCONFIG_RUNTIME_CPU_DETECT=0" if Hardware::CPU.arm?
+            # Make unconditional when `jpeg-xl` is bottled on Linux
+            if OS.mac?
+              args += [
+                "-DCONFIG_TUNE_BUTTERAUGLI=1",
+                "-DCONFIG_TUNE_VMAF=1",
+              ]
+            end
+            system "cmake", "-S", ".", "-B", "brewbuild", *args
+            system "cmake", "--build", "brewbuild"
+            system "cmake", "--install", "brewbuild"
+          end
+          test do
+            resource("homebrew-bus_qcif_15fps.y4m").stage do
+              system "#{bin}/aomenc", "--webm",
+                                      "--tile-columns=2",
+                                      "--tile-rows=2",
+                                      "--cpu-used=8",
+                                      "--output=bus_qcif_15fps.webm",
+                                      "bus_qcif_15fps.y4m"
+              system "#{bin}/aomdec", "--output=bus_qcif_15fps_decode.y4m",
+                                      "bus_qcif_15fps.webm"
+            end
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project aom:
+
+
+        distributable:
+          url: https://aomedia.googlesource.com/aom/+archive/v{{version}}.tar.gz
+
+        versions:
+          - 3.5.0
+
+        build:
+          dependencies:
+            x86-64:
+              nasm.us: 2
+            tea.xyz/gx/cc: c99
+            cmake.org: ^3
+            tea.xyz/gx/make: '*'
+          working-directory:
+            out
+          script: |
+            cmake .. $ARGS
+            make
+            make install
+          env:
+            ARGS:
+              - -DCMAKE_BUILD_TYPE=Release
+              - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+            linux:
+              CFLAGS: -fPIC
+              CXXFLAGS: -fPIC
+              LDFLAGS: -pie
+        test: |
+          aomenc --help
+          aomdec --help
+
+        provides:
+          - bin/aomenc
+          - bin/aomdec
+
+
+
+    Here's an example ruby formula for the project p7zip:
+
+
+        class P7zip < Formula
+          homepage "https://github.com/p7zip-project/p7zip"
+          url "https://github.com/p7zip-project/p7zip/archive/v17.05.tar.gz"
+          license all_of: ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
+          # Remove non-free RAR sources
+          patch :DATA
+          def install
+            if OS.mac?
+              mv "makefile.macosx_llvm_64bits", "makefile.machine"
+            else
+              mv "makefile.linux_any_cpu", "makefile.machine"
+            end
+            system "make", "all3",
+                           "CC=#{ENV.cc} $(ALLFLAGS)",
+                           "CXX=#{ENV.cxx} $(ALLFLAGS)"
+            system "make", "DEST_HOME=#{prefix}",
+                           "DEST_MAN=#{man}",
+                           "install"
+          end
+          test do
+            (testpath/"foo.txt").write("hello world!\n")
+            system bin/"7z", "a", "-t7z", "foo.7z", "foo.txt"
+            system bin/"7z", "e", "foo.7z", "-oout"
+            assert_equal "hello world!\n", File.read(testpath/"out/foo.txt")
+          end
+        end
+        __END__
+        diff -u -r a/makefile b/makefile
+        --- a/makefile	2021-02-21 14:27:14.000000000 +0800
+        +++ b/makefile	2021-02-21 14:27:31.000000000 +0800
+        @@ -31,7 +31,6 @@
+         	$(MAKE) -C CPP/7zip/UI/Client7z           depend
+         	$(MAKE) -C CPP/7zip/UI/Console            depend
+         	$(MAKE) -C CPP/7zip/Bundles/Format7zFree  depend
+        -	$(MAKE) -C CPP/7zip/Compress/Rar          depend
+         	$(MAKE) -C CPP/7zip/UI/GUI                depend
+         	$(MAKE) -C CPP/7zip/UI/FileManager        depend
+        @@ -42,7 +41,6 @@
+         common7z:common
+         	$(MKDIR) bin/Codecs
+         	$(MAKE) -C CPP/7zip/Bundles/Format7zFree all
+        -	$(MAKE) -C CPP/7zip/Compress/Rar         all
+         lzham:common
+         	$(MKDIR) bin/Codecs
+        @@ -67,7 +65,6 @@
+         	$(MAKE) -C CPP/7zip/UI/FileManager       clean
+         	$(MAKE) -C CPP/7zip/UI/GUI               clean
+         	$(MAKE) -C CPP/7zip/Bundles/Format7zFree clean
+        -	$(MAKE) -C CPP/7zip/Compress/Rar         clean
+         	$(MAKE) -C CPP/7zip/Compress/Lzham       clean
+         	$(MAKE) -C CPP/7zip/Bundles/LzmaCon      clean2
+         	$(MAKE) -C CPP/7zip/Bundles/AloneGCOV    clean
+
+
+
+    Based on the examples provided, write a formula for the project p7zip in the yml format:

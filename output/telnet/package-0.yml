@@ -1,0 +1,44 @@
+distributable:
+  url: https://github.com/apple-oss-distributions/remote_cmds/archive/refs/tags/remote_cmds-64.tar.gz
+  strip-components: 1
+
+versions:
+  github: apple-oss-distributions/remote_cmds/tags
+  strip: /^remote_cmds-/
+
+licenses: 
+  - BSD-4-Clause-UC
+  - APSL-1.0
+
+build:
+  dependencies:
+    darwin:
+      tea.xyz/gx/xcode: '*'
+    linux:
+      handle_implementations
+  script: |
+    resource libtelnet:
+      url: https://opensource.apple.com/tarballs/libtelnet/libtelnet-22.tar.gz
+      build:
+        dependencies:
+          darwin:
+            tea.xyz/gx/xcode: '*'
+          linux:
+            handle_implementations
+        script: |
+          make
+          make install prefix="{{prefix}}"
+    {{resource "libtelnet"}}  # stage the dependency
+    make OBJROOT=build/Intermediates SYMROOT=build/Products \
+         DSTROOT=build/Archive \
+         CC=$(brew --prefix)/{{item.tapsale.xcode}}/usr/bin/clang \
+         install \
+         prefix="{{prefix}}"
+    ln -sf $(brew --prefix)/{{item.tapsale.xcode}}/SDKs/MacOSX{{os_major}}.sdk/usr/include build/Products/include
+    ln -sf $(brew --prefix)/{{item.tapsale.xcode}}/SDKs/MacOSX{{os_major}}.sdk/usr/lib build/Products/lib
+
+test:
+  script: |
+    {{exe}} hostname 8765 2>&1 | grep "Connected to"
+  output: |
+    Connected to {{eff']]['telnet']['test']['hostname']}}.
