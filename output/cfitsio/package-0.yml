@@ -1,0 +1,34 @@
+distributable:
+  url: https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio-{{version}}.tar.gz
+
+versions:
+  homepage:
+    url: https://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html
+    regex: "<title>CFITSIO(.*)</title>"
+  regex: "v?(\\d+(\\.\\d+)+)"
+
+provides:
+  - bin/fitscheck
+  - bin/fitscopy
+  - bin/fitsdump
+  - bin/fitsheader
+  - lib/libcfitsio.9.dylib
+
+build:
+  dependencies:
+    macos:
+      zlib: '*'
+  script: |
+    ./configure --prefix="{{ prefix }}" --enable-reentrant
+    make shared
+    make install
+    ./maketests
+    ./runsched
+
+test:
+  script: |
+    cp "#{pkgshare}/testprog/testprog*" .
+    "#{ENV.cc}" testprog.c -o testprog -I"{{ include }}" -L"{{ lib }}" -lcfitsio
+    ./testprog > testprog.lis
+    cmp testprog.lis testprog.out
+    cmp testprog.fit testprog.std

@@ -1,0 +1,32 @@
+distributable:
+  url: http://files.itstool.org/itstool/itstool-{{ version.raw }}.tar.bz2
+  strip-components: 1
+
+versions:
+  github: itstool/itstool/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      libxml2-dev: '*'
+      python-dev: '>=3'
+    darwin:
+      brew.sh/gcc: '*'
+      libxml2: '*'
+      python@3.11: '*'
+  script: |
+    export PYTHONPATH="$PYTHONPATH:$(brew --prefix libxml2)/lib/python3.9/site-packages"
+    ./autogen.sh
+    ./configure --prefix="{{prefix}}" PYTHON="$(which python3.11)"
+    make --jobs {{ hw.concurrency }}
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    (echo '<tag>Homebrew</tag>' > test.xml)
+    itstool -o test.pot test.xml
+    grep 'Homebrew' test.pot

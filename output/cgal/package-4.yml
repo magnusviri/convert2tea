@@ -1,0 +1,48 @@
+distributable:
+  url: https://github.com/CGAL/cgal/releases/download/v{{version}}/CGAL-{{version}}.tar.xz
+
+versions:
+  github: CGAL/cgal
+  strip: /^CGAL-/
+
+dependencies:
+  boost.org: ^1.48
+  eigen: '*'
+  gmp: '*'
+  mpfr: '*'
+  cmake.org: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cmake: '{{build.dependencies.cmake.org}}'
+    tea.xyz/gx/gcc: 4.8  # minimum required version
+    tea.xyz/gx/make: '*'
+  env:
+    CXXFLAGS: '-std=c++14'
+    LDFLAGS: '-lc++'
+    # The following options ensure CGAL finds dependencies installed by Homebrew
+    CPPFLAGS: '-I{{include}}'
+    LDFLAGS: '-L{{lib}}'
+    script: |
+      cmake \\
+        -DCMAKE_BUILD_TYPE=Release \\
+        -DWITH_Eigen3=ON \\
+        -DWITH_LAPACK=ON \\
+        -DWITH_GMP=ON \\
+        -DWITH_MPFR=ON \\
+        -DBoost_INCLUDE_DIR={{include}} \\
+        -DBOOST_LIBRARYDIR={{lib}} \\
+        .
+      make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cmake: '{{test.dependencies.cmake.org}}'
+    tea.xyz/gx/make: '*'
+  env:
+    CXXFLAGS: '-std=c++14 -I{{include}}'
+    LDFLAGS: '-L{{lib}}'
+    script: |
+      cmake . -DWITH_Eigen3=ON
+      make
+      make test

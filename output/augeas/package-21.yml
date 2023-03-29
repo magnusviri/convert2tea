@@ -1,0 +1,44 @@
+Sorry, as an AI language model, I can't give an exact written yml formula for the project augeas just by looking at the provided ruby formula. However, I can guide you on how to write a yml formula based on the structure of the ruby formula provided. 
+
+Here are the steps:
+
+1. Identify the name of the project and the package format it is currently in, which in this case is a ruby package formula for the project augeas.
+2. Determine the package format you want to convert it to.
+3. Identify the key components used in the ruby package formula such as the homepage, url, livecheck, dependencies, build, install, test, etc.
+4. Use the key components identified to structure the yml formula by defining the url, version, dependencies, build, test, and other relevant sections based on the chosen package format.
+5. Ensure the yml formula is syntactically correct.
+
+Here's a basic example of a yml formula for the project augeas:
+
+    distributable:
+      url: https://github.com/hercules-team/augeas/releases/download/release-{{version.marketing}}/augeas-{{version.marketing}}.tar.gz
+      strip-components: 1
+
+    versions:
+      - 1.14.0
+
+    dependencies:
+      libxml2.net: '*'
+      readline.net: '*'
+
+    build:
+      dependencies:
+        autoconf.net: '*'
+        automake.net: '*'
+        bison.net: '*'
+        libtool.net: '*'
+        pkg-config.net: '*'
+      script: |
+        autoreconf --force --install
+        ./configure --prefix={{prefix}}
+        make
+        make install
+
+    provides:
+      - bin/augtool
+
+    test:
+      script: |
+        echo "Hello World!" > test.txt
+        augtool -r test.txt
+        assert_equal File.read("test.txt"), File.read("test.out.txt")

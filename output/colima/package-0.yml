@@ -1,0 +1,51 @@
+distributable:
+  url: https://github.com/abiosoft/colima/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.5.4
+
+build:
+  dependencies:
+    golang.org/dl: '*'
+    lima: '*'
+  script: |
+    export VERSION="v{{version}}"
+    export REVISION=$(git rev-parse --short=8 HEAD || echo "unknown")
+    export LD_FLAGS="-s -w -X github.com/abiosoft/colima/config.appVersion=${VERSION} -X github.com/abiosoft/colima/config.revision=${REVISION}"
+    go build -ldflags="$LD_FLAGS" -o colima ./cmd/colima
+    ./colima generate --shell bash > colima-completion.bash
+    ./colima generate --shell zsh > colima-completion.zsh
+    echo "prefix='{{prefix}}'" >> colima.sh
+    echo "export PATH=\"$PATH:$prefix/bin\"" >> colima.sh
+  test:
+    dependencies:
+      bash.org: '*'
+      zsh.org: '*'
+    fixture: |
+      echo 'version'
+      colima version
+      echo 'status should fail'
+      ! colima status
+
+    script: |
+      ./colima.sh
+      bash -c "source colima-completion.bash && complete -p colima" > bash-completion-output
+      zsh -c "compdef _colima colima" > zsh-completion-output
+      ./colima --version > version-output
+      ./colima status > status-output || true
+      if ! grep -q "version $version" version-output; then
+          echo "FAIL: invalid version"
+          exit 1
+      elif grep -q "colima is running" status-output; then
+          echo "FAIL: should not be running"
+          exit 1
+      elif ! grep -q "completion" bash-completion-output; then
+          echo "FAIL: bash completion not found"
+          exit 1
+      elif ! grep -q "compdef \_colima colima" zsh-completion-output; then
+          echo "FAIL: zsh completion not found"
+          exit 1
+      else
+          echo "PASS"
+      fi

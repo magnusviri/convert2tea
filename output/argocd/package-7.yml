@@ -1,0 +1,28 @@
+distributable:
+          url: https://github.com/argoproj/argo-cd/archive/{{ version }}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 2.6.7
+
+        build:
+          dependencies:
+            tea.xyz/gx/go: '1.16.x'
+            tea.xyz/gx/node: lts/*
+            tea.xyz/gx/yarn: '*'
+          script: |
+            make dep-ui-local
+            NODE_ENV=production NODE_ONLINE_ENV=online yarn --cwd ui build
+            make cli-local
+            install -d {{prefix}}/bin/
+            cp dist/argocd {{prefix}}/bin/
+            generate_completions_from_executable {{prefix}}/bin/argocd completion --shells=bash,zsh
+
+        test:
+          dependencies:
+            tea.xyz/gx/shellcheck: stable
+          script: |
+            argocd --help
+            touch argocd-config
+            chmod 600 argocd-config
+            argocd context --config ./argocd-config

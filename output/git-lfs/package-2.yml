@@ -1,0 +1,61 @@
+distributable:
+  url: https://github.com/git-lfs/git-lfs/releases/download/v{{version}}/git-lfs-v{{version}}.tar.gz
+
+versions:
+  - 3.3.0
+
+build:
+  dependencies:
+    x86-64:
+      git-scm.com: '*'
+      gcc.gnu.org: '*'
+      asciidoctor.org: '*'
+      golang.org: '*'
+      ruby-lang.org: '*'
+      ronn.lang: '*'
+    arm64:
+      git-scm.com: '*'
+      gcc.gnu.org: '*'
+      asciidoctor.org: '*'
+      golang.org: '*'
+      ruby-lang.org: '*'
+      ronn.lang: '*'
+  working-directory: .
+  script: |
+    make
+    make man RONN=/usr/local/bin/ronn
+    mkdir -p {{prefix}}/bin
+    mkdir -p {{prefix}}/share/man/man1
+    mkdir -p {{prefix}}/share/man/man5
+    mkdir -p {{prefix}}/share/man/man7
+    cp bin/git-lfs {{prefix}}/bin/
+    cp man/man1/git-lfs-* {{prefix}}/share/man/man1/
+    cp man/man5/gitattributes.5 {{prefix}}/share/man/man5/
+    cp man/man7/git-lfs-* {{prefix}}/share/man/man7/
+    cp -R man/html {{prefix}}/share/doc/git-lfs/html
+  env:
+    GO111MODULE: auto
+    CGO_ENABLED: 1
+    PATH: /usr/local/go/bin:$PATH
+  flags:
+    - -ldflags=-s -w
+    linux:
+      CFLAGS: -fPIC
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+
+test: |
+  git init
+  git lfs track test
+  cp /usr/local/bin/git {{prefix}}/bin/
+  cd ..
+  git-lfs/bin/git-lfs install
+  git-lfs/bin/git-lfs version
+  cd -
+
+provides:
+  - bin/git-lfs
+  - man/man1/git-lfs-*.1
+  - man/man5/gitattributes.5
+  - man/man7/git-lfs-*.7
+  - share/doc/git-lfs/html

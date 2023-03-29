@@ -1,0 +1,47 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/gts/gts/{{version}}/gts-{{version}}.tar.gz
+  strip-components: 1
+
+# no github releases, so we’ll have to manually specify
+versions:
+  name: regex
+  pattern: 'gts-(\d+\.\d+\.\d+)\.tar\.gz'
+  url: https://sourceforge.net/projects/gts/files/gts/
+  filter: 'regex'
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/libtool: '*'
+    tea.xyz/gx/pkg-config: '*'
+    gnugettext.bash: '*'
+  working-directory: .
+  script: |
+    # We regenerate configure to avoid the `-flat_namespace` flag.
+    autoreconf --force --install --verbose
+    ./configure --prefix="{{prefix}}"
+    make --jobs={{ hw.concurrency }}
+    make install
+
+test:
+  script: |
+    (cat <<EOS
+    #include "gts.h"
+    int main() {
+      GtsRange r;
+      gts_range_init(&r);
+      for (int i = 0; i < 10; ++i)
+        gts_range_add_value(&r, i);
+      gts_range_update(&r);
+      if (r.n == 10) return 0;
+      return 1;
+    }
+    EOS
+    ) >gtstest.c
+    cflags="$(pkg-config --cflags --libs gts)"
+    "{{cc}}" gtstest.c -lm $cflags -o gtstest
+    ./gtstest
+
+provides:
+  - bin/gts

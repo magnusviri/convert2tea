@@ -1,0 +1,36 @@
+distributable:
+  url: https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-{{version}}.tar.xz
+
+versions:
+  gitlab: xdg/default-icon-theme
+  strip: /^hicolor-icon-theme-/
+
+dependencies:
+  freedesktop.org/pkg-config: '*'
+  gnu.org/gettext: '*'
+  gnu.org/m4: '*'
+  gnome.org/gperf: '*'
+  gcc.gnu.org: '*'
+
+build:
+  dependencies:
+    gnu.org/make: '*'
+    gnu.org/automake: '*'
+    gnu.org/autoconf: '*'
+    gnu.org/libtool: '*'
+  script: |
+    ./autogen.sh
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+      - --disable-silent-rules
+      - --disable-rpath
+
+provides:
+  - bin/icon-theme.cache
+  - share/icons/hicolor/index.theme
+
+test:
+  command: icon-theme.cache --version
+  expected_output: "0.17"

@@ -1,0 +1,51 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/findutils/findutils-4.9.0.tar.xz
+  strip-components: 1
+
+versions:
+  github: findutils/findutils
+  strip: /^v/
+
+dependencies:
+  facebook.com/zstd: ^1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    tea.xyz/gx/autotools: '*'
+  script: |
+    ./configure --prefix={{ prefix }} \
+                --localstatedir=#{var}/locate \
+                --disable-dependency-tracking \
+                --disable-debug \
+                --disable-nls \
+                --with-packager=Homebrew \
+                --with-packager-bug-reports=#{tap.issues_url}
+    make install
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      for command in $(ls #{prefix}/bin/g*); do
+        ln -sf $command $(echo $command | sed 's/g//')
+      done
+    fi
+
+post_install:
+  - mkdir -p "#{var}/locate"
+
+caveats: |
+  All commands have been installed with the prefix "g".
+  If you need to use these commands with their normal names, you
+  can add a "gnubin" directory to your PATH from your bashrc like:
+    PATH="#{opt_libexec}/gnubin:$PATH"
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    touch HOMEBREW
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      assert_matches $(#{prefix}/bin/gfind .), "HOMEBREW"
+      assert_matches $(#{opt_libexec}/gnubin/find .), "HOMEBREW"
+    else
+      assert_matches $(#{prefix}/bin/find .), "HOMEBREW"
+    fi

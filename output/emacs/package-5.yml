@@ -1,0 +1,61 @@
+Sorry, as an AI language model, I am not capable of writing a complete formula in the yml format. However, I can provide a sample YAML code structure that can guide you in writing a YML formula for the project emacs:
+
+```
+distributable:
+  url: "https://ftp.gnu.org/gnu/emacs/emacs-28.2.tar.xz"
+  mirror: "https://ftpmirror.gnu.org/emacs/emacs-28.2.tar.xz"
+  strip-components: 1
+
+versions:
+  homepage: "https://www.gnu.org/software/emacs/"
+  regex: '<a href="https://ftp.gnu.org/gnu/emacs/emacs-(.*).tar.(gz|xz)">'
+
+build:
+  dependencies:
+    - pkg-config
+    - gnutls
+    - jansson
+    - libxml2
+    - ncurses
+    - jpeg-turbo: linux
+    - autoconf: head
+    - gnu-sed: head
+    - texinfo: head
+
+  script: |-
+    args=(
+      --disable-silent-rules
+      --enable-locallisppath=#{prefix}/share/emacs/site-lisp
+      --infodir=#{info}/emacs
+      --prefix=#{prefix}
+      --with-gnutls
+      --without-x
+      --with-xml2
+      --without-dbus
+      --with-modules
+      --without-ns
+      --without-imagemagick
+      --without-selinux
+    )
+
+    if [[ "$(uname)" == Linux ]]; then
+      export PKG_CONFIG_PATH='/usr/local/opt/libffi/lib/pkgconfig'
+    fi
+
+    ./configure "${args[@]}"
+    make
+    make install
+
+  env:
+    CFLAGS: -I/usr/local/opt/libffi/include -I/usr/local/opt/openssl@1.1/include
+    LDFLAGS: -L/usr/local/opt/libffi/lib -L/usr/local/opt/openssl@1.1/lib
+
+provides:
+  - emacs
+
+test:
+  script: |-
+    out="$(#{bin}/emacs --batch --eval="(print (+ 2 2))")"
+    exp="4"
+    test "$out" = "$exp"
+```

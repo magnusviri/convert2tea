@@ -1,0 +1,57 @@
+distributable:
+  url: https://github.com/Yubico/libfido2/archive/{{version.semantic}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.13.0
+
+dependencies:
+  libcbor: '*'
+  openssl@1.1: '*'
+  systemd: linux
+
+build:
+  dependencies:
+    tea.xyz/gx/cmake: '*'
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/mandoc: linux
+  env:
+    - OPENSSL_ROOT_DIR: "{{pkgPathFor "openssl@1.1"}}"
+  script: |
+    mkdir build
+    cd build
+    cmake \
+      -DCMAKE_INSTALL_PREFIX={{prefix}} \
+      -DBUILD_MAN_PAGES_HTML=ON \
+      -DBUILD_MAN_PAGES=ON \
+      -DUDEV_RULES_DIR=#{lib}/udev/rules.d \
+      ..
+    make
+    make man_symlink_html
+    make man_symlink
+    make install
+
+provides:
+  - libfido2.a
+  - libfido2.so
+  - fido2.h
+
+test:
+  script: |
+    echo '#include <stddef.h>' > test.c
+    echo '#include <stdio.h>' >> test.c
+    echo '#include <fido.h>' >> test.c
+    echo 'int main(void) {' >> test.c
+    echo '  fido_init(FIDO_DEBUG);' >> test.c
+    echo '  size_t max_devices = 5;' >> test.c
+    echo '  fido_dev_info_t *devlist;' >> test.c
+    echo '  if ((devlist = fido_dev_info_new(max_devices)) == NULL)' >> test.c
+    echo '    return 1;' >> test.c
+    echo '  size_t found_devices = 0;' >> test.c
+    echo '  int error;' >> test.c
+    echo '  if ((error = fido_dev_info_manifest(devlist, max_devices, &found_devices)) == FIDO_OK)' >> test.c
+    echo '    printf("FIDO/U2F devices found: %s\\n", found_devices ? "Some" : "None");' >> test.c
+    echo '  fido_dev_info_free(&devlist, max_devices);' >> test.c
+    echo '}' >> test.c
+    cc test.c -I{{include}} -I{{pkgPathFor "openssl@1.1" }}/include -o test -L{{lib}} -lfido2
+    ./test

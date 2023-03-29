@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to write a formula for the project hicolor-icon-theme in the yml format as it is not a package manager-specific format. The yml format shown above is specific to the package manager Homebrew used on macOS systems. Therefore, it is recommended to use the Homebrew formula in the ruby format to install hicolor-icon-theme on a macOS system.

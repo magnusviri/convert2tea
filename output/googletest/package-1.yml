@@ -1,0 +1,30 @@
+distributable:
+  url: https://github.com/google/googletest/archive/v1.13.0.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.13.0
+
+provides:
+  - lib/libgtest.a
+  - lib/libgtest_main.a
+  - include/gtest/
+
+build:
+  dependencies:
+    tea.xyz/gx/cmake: '*'
+    tea.xyz/gx/gcc: '>=5'
+
+  script: |
+    mkdir build
+    cd build
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}}
+    make install
+
+test:
+  script: |
+    mkdir build
+    cd build
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}}
+    make
+    ctest -V

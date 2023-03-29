@@ -1,0 +1,45 @@
+Unfortunately, it is not possible to provide a direct translation of the given Ruby formula for libcerf into the YAML format as they have different structures and syntax requirements. However, an example YAML formula for libcerf can be provided as follows:
+
+```
+distributable:
+  url: https://jugit.fz-juelich.de/mlz/libcerf/-/archive/v{{version}}/libcerf-v{{version}}.tar.gz
+
+versions:
+  - 2.3
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+  working-directory:
+    out
+  script: |
+    mkdir build
+    cd build
+    cmake .. $ARGS
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_BUILD_TYPE=Release
+      - "-DCMAKE_INSTALL_PREFIX='{{prefix}}'"
+  test: |
+    test_cerf
+  script:
+    - cc -o test_cerf test_cerf.c -I{{include}} -L{{lib}} -lcerf
+  artifact:
+    - build/libcerf.dylib
+    - build/libcerf.so
+    - build/libcerf.a
+
+provides:
+  - bin/cerf-config
+  - include/cerf.h
+  - lib/libcerf.dylib
+  - lib/libcerf.so
+  - lib/libcerf.a
+``` 
+
+Note: This YAML formula is just an example and may require further modification to work as expected depending on the specific project's requirements and dependencies.

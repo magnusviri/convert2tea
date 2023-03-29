@@ -1,0 +1,34 @@
+distributable:
+  url: https://github.com/BLAKE2/libb2/releases/download/v{{version}}/libb2-{{version}}.tar.gz
+
+versions:
+  - 0.98.1
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  working-directory:
+    out
+  script: |
+    ./configure --disable-dependency-tracking \\
+                --disable-silent-rules \\
+                --prefix={{prefix}} \\
+                {{#unless arm}}--enable-fat {{/unless}}
+    make
+    make install
+  env:
+    linux:
+      CFLAGS: -fPIC
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+
+test: |
+  {{bin}}/blake2test
+
+provides:
+  - bin/blake2test
+  - lib/libb2.a
+  - include/blake2.h

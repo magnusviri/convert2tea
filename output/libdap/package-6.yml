@@ -1,0 +1,35 @@
+Sorry, as an AI language model, I am not able to write Python or YAML code. However, here is the equivalent YAML code for the provided Ruby formula of Libdap:
+
+```
+distributable:
+  url: https://www.opendap.org/pub/source/libdap-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: OPENDAP/libdap4
+  strip: /^v/
+
+dependencies:
+  libxml2: '*'
+  openssl: 1.1.x
+  bison: '*'
+  pkg-config: '*'
+  curl: '*'
+  
+build:
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+    flex: '*'
+  script: |
+    ./configure --prefix={{ prefix }} --disable-dependency-tracking --disable-debug --with-included-regex
+    make
+    make check
+    make install
+    sed -i '' "s|{{ opt_prefix }}/libxml2/{{ libxml2.version }}/{{ libxml2.version }}/lib|{{ opt_prefix }}/lib|" {{ bin }}/dap-config
+
+test:
+  script: |
+    {{ bin }}/dap-config --version
+```

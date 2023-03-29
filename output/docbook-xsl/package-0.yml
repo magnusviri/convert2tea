@@ -1,0 +1,44 @@
+distributable:
+  url: https://github.com/docbook/xslt10-stylesheets/releases/download/release{{versions.0}}/docbook-xsl-nons-{{versions.0}}.tar.bz2
+  strip-components: 1
+
+versions:
+  - 1.79.2
+
+dependencies:
+  docbook.xml: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/xmlcatalog: '*'
+  script: |
+    export XML_CATALOG_FILES={{etc}}/xml/catalog
+    doc_files=(AUTHORS BUGS COPYING NEWS README RELEASE-NOTES.txt TODO VERSION VERSION.xsl)
+    xsl_files=(assembly catalog.xml common docsrc eclipse epub epub3 extensions
+                       fo highlighting html htmlhelp images javahelp lib log manpages
+                       params profiling roundtrip slides template tests tools webhelp
+                       website xhtml xhtml-1_1 xhtml5)
+    touch log
+    cp -R . $PACKAGEGPT_PREFIX/docbook-xsl-nons-${versions[0]}
+    for xfile in "${xsl_files[@]}"
+    do
+      xmlcatalog --noout --add \"rewriteSystem\" \"https://cdn.docbook.org/release/xsl-nons/${versions[0]}\" \"file://$PACKAGEGPT_PREFIX/docbook-xsl-nons-${versions[0]}\" ${XML_CATALOG_FILES}
+      xmlcatalog --noout --add \"rewriteURI\" \"https://cdn.docbook.org/release/xsl-nons/${versions[0]}\" \"file://$PACKAGEGPT_PREFIX/docbook-xsl-nons-${versions[0]}\" ${XML_CATALOG_FILES}
+      xmlcatalog --noout --add \"rewriteSystem\" \"https://cdn.docbook.org/release/xsl/${versions[0]}\" \"file://$PACKAGEGPT_PREFIX/docbook-xsl-nons-${versions[0]}\" ${XML_CATALOG_FILES}
+      xmlcatalog --noout --add \"rewriteURI\" \"https://cdn.docbook.org/release/xsl/${versions[0]}\" \"file://$PACKAGEGPT_PREFIX/docbook-xsl-nons-${versions[0]}\" ${XML_CATALOG_FILES}
+      xmlcatalog --noout --add \"rewriteURI\" \"http://docbook.sourceforge.net/release/xsl/${versions[0]}\" \"file://$PACKAGEGPT_PREFIX/docbook-xsl-nons-${versions[0]}\" ${XML_CATALOG_FILES}
+    done
+
+provides:
+  - docbook-xsl-nons-${versions[0]}
+
+test:
+  script: |
+    xmlcatalog --noout ${etc}/xml/catalog https://cdn.docbook.org/release/xsl-nons/current/
+    xmlcatalog --noout ${etc}/xml/catalog https://cdn.docbook.org/release/xsl-nons/${versions[0]}/
+    xmlcatalog --noout ${etc}/xml/catalog https://cdn.docbook.org/release/xsl/current/
+    xmlcatalog --noout ${etc}/xml/catalog https://cdn.docbook.org/release/xsl/${versions[0]}/
+    xmlcatalog --noout ${etc}/xml/catalog http://docbook.sourceforge.net/release/xsl/current/
+    xmlcatalog --noout ${etc}/xml/catalog http://docbook.sourceforge.net/release/xsl/${versions[0]}/
+    xmlcatalog --noout ${etc}/xml/catalog http://docbook.sourceforge.net/release/xsl-ns/current/
+    xmlcatalog --noout ${etc}/xml/catalog http://docbook.sourceforge.net/release/xsl-ns/${versions[0]}/

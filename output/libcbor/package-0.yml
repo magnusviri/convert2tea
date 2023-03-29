@@ -1,0 +1,26 @@
+distributable:
+  url: https://github.com/PJK/libcbor/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: PJK/libcbor/releases/tags
+
+provides:
+  - lib/libcbor.dylib
+  - lib/libcbor.a
+
+build:
+  dependencies:
+    cmake: '*'
+  script: |
+    mkdir build
+    cd build
+    cmake .. -DWITH_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON #{std_cmake_args}
+    make
+    make install
+
+test:
+  script: |
+    (echo '#include "cbor.h"'; echo '#include <stdio.h>'; echo 'int main(int argc, char * argv[])'; echo '{'; echo '  printf("Hello from libcbor %s\\n", CBOR_VERSION);'; echo '  printf("Pretty-printer support: %s\\n", CBOR_PRETTY_PRINTER ? "yes" : "no");'; echo '  printf("Buffer growth factor: %f\\n", (float) CBOR_BUFFER_GROWTH);'; echo '}') > example.c
+    #{ENV.cc} -std=c99 example.c -L#{lib} -lcbor -o example
+    ./example

@@ -1,0 +1,56 @@
+distributable:
+  url: https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.12/hdf5-1.12.2/src/hdf5-1.12.2.tar.bz2
+  strip-components: 1
+
+versions:
+  - 1.12.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: gcc
+    tea.xyz/gx/make: '*'
+    gnu.org/autoconf: ^2.69
+    gnu.org/automake: ^1.16
+    gnu.org/libtool: ^2.4.6
+    gnu.org/gcc: ^7
+    hdfgroup.org/libaec: ^1.0.2
+  working-directory: build
+  script: |
+    autoreconf --force --install --verbose
+    args=(
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --enable-build-mode=production
+      --enable-fortran
+      --enable-cxx
+      --prefix={{prefix}}
+      --with-szlib={{dep 'hdfgroup.org/libaec'}}
+    )
+    if [ "$(uname)" = "Darwin" ]
+    then
+      args+=(
+        --with-zlib={{sdkroot}}/usr
+      )
+    fi
+    ./configure "${args[@]}"
+    sed -i'.bak' "s#\$libdir/libhdf5\.settings#{{pkgshare}}/libhdf5.settings#" c++/src/h5c++.in fortran/src/h5fc.in bin/h5cc.in
+    sed -i'.bak' 's#settingsdir=$(libdir)#settingsdir={{pkgshare}}#' src/Makefile.am
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    HOMEBREW_CC: "{{compiler.cc}}"
+    HOMEBREW_CXX: "{{compiler.cxx}}"
+    HOMEBREW_LD: "{{compiler.cc}}"
+
+provides:
+  - bin/h5cc
+  - bin/h5fc
+
+test:
+  script: |
+    printf "#include <stdio.h>\\n#include <hdf5.h>\\nint main(){printf(\\\"%d.\\%d.\\%d\\\\n\\\", H5_VERS_MAJOR, H5_VERS_MINOR, H5_VERS_RELEASE);return 0;}" > test.c
+    {{bin}}/h5cc test.c
+    ./a.out | grep {{version}}
+    printf "program h5f\\n  use hdf5\\n  integer(hid_t) :: f, dspace, dset\\n  integer(hsize_t), dimension(2) :: dims = [2, 2]\\n  integer :: error = 0, major, minor, rel\\n  call h5open_f (error)\\n  if (error /= 0) call abort\\n  call h5fcreate_f (\\\"test.h5\\\", H5F_ACC_TRUNC_F, f, error)\\n  if (error /= 0) call abort\\n  call h5screate_simple_f (2, dims, dspace, error)\\n  if (error /= 0) call abort\\n  call h5dcreate_f (f, \\\"data\\\", H5T_NATIVE_INTEGER, dspace, dset, error)\\n  if (error /= 0) call abort\\n  call h5dclose_f (dset, error)\\n  if (error /= 0) call abort\\n  call h5sclose_f (dspace, error)\\n  if (error /= 0) call abort\\n  call h5fclose_f (f, error)\\n  if (error /= 0) call abort\\n  call h5close_f (error)\\n  if (error /= 0) call abort\\n  CALL h5get_libversion_f (major, minor, rel, error)\\n  if (error /= 0) call abort\\n  write (*,\\\"(I0,'.',I0,'.',I0)\\\") major, minor, rel\\n  end" > test.f90
+    {{bin}}/h5fc test.f90
+    ./a.out | grep {{version}}

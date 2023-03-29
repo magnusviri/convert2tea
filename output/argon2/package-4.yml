@@ -1,0 +1,22 @@
+distributable:
+  url: "https://github.com/P-H-C/phc-winner-argon2/archive/{{version}}.tar.gz"
+  strip-components: 1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  working-directory: src
+  script: |
+    make PREFIX="{{prefix}}" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" install-shared
+  env:
+    CFLAGS: "-I{{include}}"
+    LDFLAGS: "-L{{lib}}"
+
+provides:
+  - bin/argon2
+
+test:
+  script: |
+    output="$(echo -n password | {{bin}}/argon2 somesalt -t 2 -m 16 -p 4)"
+    test "$output" == "c29tZXNhbHQ\$IMit9qkFULCMA/ViizL57cnTLOa5DiVM9eMwpAvPw"

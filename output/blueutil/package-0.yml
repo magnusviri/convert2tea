@@ -1,0 +1,22 @@
+distributable:
+  url: https://github.com/toy/blueutil/archive/{{version}}.tar.gz
+  strip-components: 1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/xcode: '*'
+  working-directory: build
+  script: |
+    xcodebuild -arch {{arch}} -configuration Release -sdk macosx -UseModernBuildSystem=NO SYMROOT=build OBJROOT=build
+    mv "build/Release/blueutil" "{{prefix}}/bin/"
+  env:
+    arch: "{{arch}}"
+
+provides:
+  - bin/bluetooth
+
+test:
+  script: |
+    /usr/bin/ which blueutil || echo "blueutil not found"; exit 1
+    blueutil --version

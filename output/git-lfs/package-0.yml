@@ -1,0 +1,31 @@
+distributable:
+  url: https://github.com/git-lfs/git-lfs/releases/download/v{{version}}/git-lfs-v{{version}}.tar.gz
+
+versions:
+  - 3.3.0
+
+build:
+  dependencies:
+    x86-64:
+      brew:
+        - asciidoctor
+        - go
+        - ronn
+        - ruby
+    working-directory:
+      out
+  script: |
+    make
+    make man RONN={{prefix}}/bin/ronn
+    make install prefix={{prefix}}
+  env:
+    GIT_LFS_SHA: ""
+    VERSION: "{{version}}"
+
+test: |
+  git init
+  git lfs track test
+  test "$(git lfs ls-files test | awk '{ print $3 }')" -eq 5
+
+provides:
+  - bin/git-lfs

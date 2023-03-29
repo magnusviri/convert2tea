@@ -1,0 +1,69 @@
+name: grpc
+
+distributable:
+  url: https://github.com/grpc/grpc/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.53.0
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/cmake: '*'
+    tea.xyz/gx/libtool: '*'
+    tea.xyz/gx/pkg-config: test
+    teak/abseil: '*'
+    teak/c-ares: '*'
+    teak/openssl@1.1: '*'
+    teak/protobuf: '*'
+    teak/re2: '*'
+  script: |
+    export CXXFLAGS="-stdlib=libc++"
+    cmake -B build -DCMAKE_CXX_STANDARD=17 \
+      -DCMAKE_CXX_STANDARD_REQUIRED=TRUE \
+      -DCMAKE_INSTALL_RPATH="{{rpath}}" \
+      -DBUILD_SHARED_LIBS=ON \
+      -DgRPC_BUILD_TESTS=OFF \
+      -DgRPC_INSTALL=ON \
+      -DgRPC_ABSL_PROVIDER=package \
+      -DgRPC_CARES_PROVIDER=package \
+      -DgRPC_PROTOBUF_PROVIDER=package \
+      -DgRPC_SSL_PROVIDER=package \
+      -DgRPC_ZLIB_PROVIDER=package \
+      -DgRPC_RE2_PROVIDER=package \
+      -DOPENSSL_ROOT_DIR="{{teak/openssl@1.1}}" \
+      -DCARES_ROOT_DIR="{{teak/c-ares}}" \
+      -DPROTOBUF_ROOT_DIR="{{teak/protobuf}}" \
+      -DRE2_ROOT_DIR="{{teak/re2}}" \
+      -DgRPC_ABSL_ROOT="{{teak/abseil}}" \
+      ../grpc-{{version}}
+    cmake --build build -- -j{{hw.concurrency}}
+    cmake --install build
+    cmake -B build -DCMAKE_INSTALL_RPATH="{{rpath}}" \
+      -DBUILD_SHARED_LIBS=ON \
+      -DgRPC_BUILD_TESTS=ON \
+      ../grpc-{{version}}
+    cmake --build build --target grpc_cli -- -j{{hw.concurrency}}
+    install -Dm755 build/grpc_cli "{{prefix}}/bin/grpc_cli"
+    cp build/libgrpc++_test_config* "{{prefix}}/lib/"
+    if test "{{hw.platform}}" = "darwin"; then
+      {{teak/machotools}} add_rpath "{{prefix}}/bin/grpc_cli" {{rpath}}
+      {{teak/machotools}} add_rpath "{{prefix}}/lib/libgrpc++_test_config.dylib" {{rpath}}
+    fi
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c++
+  script: |
+    echo cc test.cpp -std=c++17 \
+      -I"{{teak/abseil}}/include" \
+      -I"{{teak/protobuf}}/include" \
+      -L"{{teak/re2}}/lib" -lre2 \
+      -L"{{teak/openssl@1.1}}/lib" -lssl -lcrypto \
+      -L"{{prefix}}/lib" -lgrpc++_unsecure -lgrpc \
+      -L"{{teak/abseil}}/lib" -labsl_base -labsl_synchronization \
+      | sh
+    ./a.out
+    grpc_cli ls localhost:{{free_port}}

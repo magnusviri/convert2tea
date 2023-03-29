@@ -1,0 +1,63 @@
+distributable:
+  url: https://gitlab.com/graphviz/graphviz/-/archive/{{version}}/graphviz-{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a gitlab then we can parse the versions
+versions:
+  gitlab: graphviz/graphviz/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: clang
+    tea.xyz/gx/make: '*'
+    tea/flex: '*'
+    tea/byacc: '*'
+    libtool.m4: '*'
+    autoconf: '*'
+    automake: '*'
+    pkg-config: '*'
+    gd: '*'
+    gts: '*'
+    librsvg: '*'
+    pango: '*'
+    linux:
+      byacc: '*'
+      ghostscript: '*'
+    macos:
+      flex: '*'
+      python: '*'
+  working-directory: .
+  script: |
+    ./autogen.sh
+    configure_args=(
+      --disable-dependency-tracking
+      --prefix="{{prefix}}"
+      --with-quartz
+      --disable-php
+      --disable-swig
+      --disable-tcl
+      --without-freetype2
+      --without-gdk
+      --without-gdk-pixbuf
+      --without-gtk
+      --without-poppler
+      --without-qt
+      --without-x
+      --with-gts
+    )
+    ./configure "${configure_args[@]}"
+    make --jobs {{ hw.concurrency }}
+    make install
+  env:
+    PKG_CONFIG_PATH: "{{prefix}}/lib/pkgconfig"
+
+provides:
+  - bin/dot
+
+test:
+  fixture: |
+    digraph G {
+      a -> b
+    }
+  script: |
+    dot -Tpdf -o sample.pdf sample.dot

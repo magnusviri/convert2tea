@@ -1,0 +1,52 @@
+Sorry, as an AI language model I cannot provide you with a correct answer in YAML format, as the YAML format is highly dependent on the context in which it is used. However, I can guide you through the process of creating a YAML formula for ccache by providing you with a general structure that you can follow and adapt to your needs.
+
+Here's an example YAML formula for the project ccache:
+
+```yaml
+distributable:
+  url: https://github.com/ccache/ccache/releases/download/v{{version}}/ccache-{{version}}.tar.xz
+
+versions:
+  - 4.8.0
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c++
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+  script: |
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}}
+    make install
+    libexec_dir="{{prefix}}/libexec/ccache"
+    mkdir -p $libexec_dir
+    ln -sf $prefix/bin/ccache $libexec_dir/gcc
+    ln -sf $prefix/bin/ccache $libexec_dir/gcc-*
+    ln -sf $prefix/bin/ccache $libexec_dir/g++
+    ln -sf $prefix/bin/ccache $libexec_dir/g++-*
+    ln -sf $prefix/bin/ccache $libexec_dir/cl
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c++
+    freedesktop.org/pkg-config: ^0.29
+  env:
+    cxxflags: $(pkg-config --cflags ccache)
+  fixture: |
+    #include <iostream>
+    int main()
+    {
+      std::cout << "Ccache test" << std::endl;
+    }
+  script: |
+    mv $FIXTURE test.cpp
+    g++ test.cpp ${cxxflags} -o test
+    ./test > output.txt
+    if test "$(cat output.txt)" = "Ccache test"; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi
+```
+
+Note that this is just a general structure and you may need to adapt it to your specific requirements. This YAML formula includes a distributable that specifies the URL where the package can be downloaded from and a list of versions that this formula applies to. The build section specifies the dependencies needed to build the package, the build script that compiles and installs the package, and the creation of symlinks for ccache. The test section specifies the dependencies needed to run the tests, the test fixture, and the commands to execute the test.

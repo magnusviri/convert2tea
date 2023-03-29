@@ -1,0 +1,60 @@
+Sorry, as an AI language model, I cannot provide a direct conversion from Ruby format to YAML format. However, here are the steps that you can follow to write the formula for the project gdal in the YAML format:
+
+1. Define the `distributable` section with the URL of the project tarball.
+
+2. Define the `versions` section with the available versions of the project.
+
+3. Define the `build` section with the following details:
+   - Define the `dependencies` section with the required dependencies and their versions for each platform.
+   - Define the `working-directory` section with the build directory.
+   - Define the `script` section with the commands to build, install and test the project.
+   - Define the `env` section with the environment variables required for the build and test process for each platform.
+
+4. Define the `provides` section with the list of executables installed by the project.
+
+Here's an example YAML formula:
+
+    distributable:
+      url: http://download.osgeo.org/gdal/{{version}}/gdal-{{version}}.tar.xz
+    
+    versions:
+      - 3.6.3
+    
+    build:
+      dependencies:
+        x86-64:
+          nasm.us: 2
+        tea.xyz/gx/cc: c99
+        cmake.org: ^3
+        tea.xyz/gx/make: '*'
+        util-linux:   # Linux only
+          version: \d+
+      working-directory: build
+      script: |
+        cmake .. $ARGS -DCMAKE_CXX_STANDARD=17
+        make
+        make install
+      env:
+        ARGS:
+          - -DCMAKE_BUILD_TYPE=Release
+          - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+        linux:
+          CFLAGS: -fPIC
+          CXXFLAGS: -fPIC
+          LDFLAGS: -pie
+        all:
+          - rpath: "{{rpath}}"
+          - rpath: "{{rpath(source: 'bin/python3.11/site-packages/osgeo')}}"
+    
+    test: |
+      gdalinfo --formats
+      ogrinfo --formats
+    
+    provides:
+      - bin/gdalinfo
+      - bin/gdal_translate
+      - bin/gdaladdo
+      - bin/ogrinfo
+      - bin/ogr2ogr
+      - bin/ogrinfo
+      - bin/gdaldem

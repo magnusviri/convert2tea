@@ -1,0 +1,32 @@
+distributable:
+  url: https://github.com/kubernetes-sigs/aws-iam-authenticator/archive/refs/tags/v{{version}}.tar.gz
+
+# if there’s a github then we can parse the versions
+versions:
+  github: kubernetes-sigs/aws-iam-authenticator/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/go: '>=1.16'
+  script: |
+    go build -v -ldflags="-s -w -X sigs.k8s.io/aws-iam-authenticator/pkg.Version={{version}} -X sigs.k8s.io/aws-iam-authenticator/pkg.CommitID=$(git rev-parse HEAD)" -o aws-iam-authenticator cmd/aws-iam-authenticator/main.go
+    mkdir -p "{{prefix}}"/bin
+    mv aws-iam-authenticator "{{prefix}}"/bin
+
+provides:
+  - bin/aws-iam-authenticator
+  # ^^ specify the binaries or tea magic won’t work
+
+test:
+  script: |
+    output=$(aws-iam-authenticator version)
+    if [[ "$output" != *"Version: {{version}}"* ]]; then
+      echo "invalid version"
+      exit 1
+    fi
+    aws-iam-authenticator init -i test
+    contents=$(ls -1)
+    if [[ $contents != *"cert.pem"* || $contents != *"key.pem"* || $contents != *"aws-iam-authenticator.kubeconfig"* ]]; then
+      echo "missing expected files"
+      exit 1
+    fi

@@ -1,0 +1,35 @@
+Sorry, as an AI language model, I am not able to write code in YAML format. However, here's an example equivalent formula in YAML format for the project Guile:
+
+    distributable:
+      url: https://ftp.gnu.org/gnu/guile/guile-{{version}}.tar.gz
+      strip-components: 1
+
+    versions:
+      ftp: gnu.org/gnu/guile/
+      filter: sed -nE 's/.*href="guile-(\d+\.\d+\.\d+)\.tar.gz".*/\1/p'
+
+    build:
+      dependencies:
+        linux:
+          gnu.org/gcc: '*'
+          gnu.org/gmake: '*'
+          gnu.org/autoconf: '*'
+          gnu.org/automake: '*'
+          gnu.org/gettext: '*'
+          gnu.org/flex: '*'
+        darwin:
+          tea.xyz/gx/cc: c99
+          tea.xyz/gx/make: '*'
+      script: |
+        ./configure --prefix="{{prefix}}"
+        make --jobs {{hw.concurrency}} install
+
+    post_install:
+      - mkdir -p {{ prefix }}/share/guile/site/3.0
+      - mkdir -p {{ prefix }}/lib/guile/3.0/site-ccache
+      - mkdir -p {{ prefix }}/lib/guile/3.0/extensions
+
+    test:
+      script: |
+        echo '(display "Hello World")(newline)' > test.scm
+        guile test.scm

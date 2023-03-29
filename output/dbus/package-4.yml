@@ -1,0 +1,46 @@
+distributable:
+  url: https://dbus.freedesktop.org/releases/dbus/dbus-1.14.6.tar.xz
+  strip-components: 1
+
+versions:
+  github: dbus/dbus.git/refs/tags
+  livecheck: https://dbus.freedesktop.org/releases/dbus/
+  ignore:
+    - /^dbus-1\.\d+\.\d+pre/    # pre-release versions
+    - /dbus-1\.\d+\.\d+rc\d+/   # release candidate versions
+
+dependencies:
+  pkg-config: '*'
+  xmlto: '*'
+  expat: '*'
+
+provides:
+  - bin/dbus-daemon
+  - bin/dbus-send
+
+build:
+  dependencies:
+    autoconf: '*'        # required for the head version
+    autoconf-archive: '*'# required for the head version
+    automake: '*'        # required for the head version
+    libtool: '*'         # required for the head version
+  patch:                  # applies a patch to fix a configuration file
+    url: https://raw.githubusercontent.com/Homebrew/formula-patches/0a8a55872e/d-bus/org.freedesktop.dbus-session.plist.osx.diff
+  script: |
+    ./configure --prefix={{prefix}} --localstatedir={{var}} --sysconfdir={{etc}} \
+                --disable-dependency-tracking \
+                --enable-xml-docs \
+                --disable-doxygen-docs \
+                --without-x \
+                --disable-tests \
+                {% if OS == "mac" %}
+                --enable-launchd \
+                --with-launchd-agent-dir={{prefix}} \
+                {% endif %}
+    make install
+
+post_install:
+  - 'if [ -z "$(ls -A {{var}}/lib/dbus/machine-id 2>/dev/null)" ]; then {{bin}}/dbus-uuidgen --ensure={{var}}/lib/dbus/machine-id; fi'
+
+test:
+  script: '{{bin}}/dbus-daemon --version'

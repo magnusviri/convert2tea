@@ -1,0 +1,44 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/groff/groff-1.22.4.tar.gz
+
+versions:
+  - 1.22.4
+
+build:
+  dependencies:
+    x86-64:
+      bison: '*'
+      ghostscript: '*'
+      netpbm: '*'
+      pkg-config: '*'
+      uchardet: '*'
+      tea.xyz/gx/perl: '*'
+      tea.xyz/gx/make: '*'
+    linux:
+      glib-devel: '*'
+      gcc: '*'
+      make: '*'
+      bison: '*'
+      ghostscript-devel: '*'
+      netpbm-devel: '*'
+      pkgconf: '*'
+      uchardet: '*'
+      perl: '*'
+      texinfo: '*'
+  working-directory: groff-1.22.4
+  script: |
+    ./configure --prefix="{{prefix}}" --without-x --with-uchardet
+    make
+    make install
+
+test: |
+  groff -a -h -ms < /dev/null
+
+provides:
+  - bin/groff
+  - bin/groff-tmac
+  - bin/groffer
+  - bin/grog
+  - bin/gropdf
+  - bin/grops
+  - bin/grotty

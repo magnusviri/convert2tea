@@ -1,0 +1,23 @@
+distributable:
+  url: https://github.com/asciidoc-py/asciidoc-py/archive/refs/tags/{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: asciidoc-py/asciidoc-py
+
+provides:
+  - bin/asciidoc
+
+dependencies:
+  docbook.xml: 5.1_3
+  python.org: 3.11
+  source-highlight.org: 3.1.7
+
+build:
+  script: |
+    {{ bundle | default('pip') }} install --prefix="{{prefix}}" .
+  env:
+    PATH: "{{ builderPATH }}"
+
+test: |
+  asciidoc --version

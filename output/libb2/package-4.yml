@@ -1,0 +1,31 @@
+Sorry, as an AI language model, I cannot generate code in YAML format. However, please find below a possible version of the formula for the project libb2 in YAML format for your reference:
+
+```
+distributable:
+  url: https://github.com/BLAKE2/libb2/releases/download/v{{version}}/libb2-{{version}}.tar.gz
+
+versions:
+  - 0.98.1
+
+build:
+  dependencies:
+    x86-64:
+      - tea.xyz/gx/nasm: 2
+      - tea.xyz/gx/cc: c99
+      - cmake.org: ^3
+      - tea.xyz/gx/make: '*'
+  working-directory: out
+  script:
+    - ./configure --disable-dependency-tracking --disable-silent-rules --prefix="{{prefix}}" {% if Hardware::CPU.arm? %}{% else %}
+      --enable-fat{% endif %}
+    - make install
+  env:
+    linux:
+      CFLAGS: -fPIC
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+test: |
+  b2sum --version
+provides:
+  - bin/b2sum
+```

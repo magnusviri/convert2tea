@@ -1,0 +1,61 @@
+distributable:
+  url: https://github.com/libass/libass/releases/download/0.17.1/libass-0.17.1.tar.xz
+  strip-components: 1
+
+versions:
+  - 0.17.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/autotools: '*'
+    fribidi-dev: '*'
+    freetype-dev: '*'
+    harfbuzz-dev: '*'
+    libunibreak-dev: '*'
+    fontconfig-dev:
+      platform: linux
+    nasm:
+      intel: true
+  script: |
+    autoreconf -i
+    args=(
+      --disable-dependency-tracking
+      --prefix={{ prefix }}
+    )
+    if test {{os}} = "macos"; then
+      args+=(--disable-fontconfig)
+    fi
+    ./configure "${args[@]}"
+    make --jobs {{hw.concurrency}} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cat > test.cpp <<EOF
+      #include "ass/ass.h"
+      int main() {
+        ASS_Library *library;
+        ASS_Renderer *renderer;
+        library = ass_library_init();
+        if (library) {
+          renderer = ass_renderer_init(library);
+          if (renderer) {
+            ass_renderer_done(renderer);
+            ass_library_done(library);
+            return 0;
+          }
+          else {
+            ass_library_done(library);
+            return 1;
+          }
+        }
+        else {
+          return 1;
+        }
+      }
+    EOF
+    cc test.cpp -I{{prefix}}/include -L{{prefix}}/lib -lass -o test
+    ./test

@@ -1,0 +1,55 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/graphicsmagick/graphicsmagick/{{version}}/GraphicsMagick-{{version}}.tar.xz
+
+versions:
+  sourceforge: graphicsmagick/graphicsmagick
+  ignore:
+    - /^1.2\./  # Versions 1.2.x no longer maintained
+    - /^1\.3\.2[01]/  # Segfault during `make check` on these versions
+    - /^1\.4\.0pre/  # These versions are pre-releases
+
+dependencies:
+  pkg-config: '*'
+  freetype: '*'
+  jasper: '*'
+  jpeg-turbo: '*'
+  jpeg-xl: '*'
+  libpng: '*'
+  libtiff: '*'
+  libtool: '*'
+  little-cms2: '*'
+  webp: '*'
+  bzip2: :build
+  libxml2: :build
+  zlib: :build
+
+provides:
+  - bin/gm
+
+build:
+  script: |
+    export CFLAGS="${CFLAGS} -I/usr/local/opt/freetype/include/freetype2"
+    export CPPFLAGS="${CPPFLAGS} -I/usr/local/opt/freetype/include/freetype2"
+    export LDFLAGS="${LDFLAGS} -L/usr/local/opt/freetype/lib"
+
+    ./configure --prefix={{prefix}} \
+                --disable-dependency-tracking \
+                --disable-openmp \
+                --disable-static \
+                --enable-shared \
+                --with-modules \
+                --with-quantum-depth=16 \
+                --without-lzma \
+                --without-x \
+                --without-gslib \
+                --with-gs-font-dir={{HOMEBREW_PREFIX}}/share/ghostscript/fonts \
+                --without-wmf \
+                --with-jxl
+
+    make
+    make install
+
+test:
+  script: |
+    gm version | grep -q GraphicsMagick
+    gm identify {{test_fixtures}}/test.png | grep -q 'PNG 8x8+0+0'

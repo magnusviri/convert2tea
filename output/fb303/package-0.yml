@@ -1,0 +1,73 @@
+distributable:
+  url: https://github.com/facebook/fb303/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2023.03.27.00
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c11
+    cmake.org: '^3'
+    "facebook/zstd": '*'
+    "google/glog": '*'
+    "gflags/gflags": '*'
+    "openssl/openssl@1.1": '*'
+    "fmtlib/fmt": '*'
+    "facebook/folly": '*'
+  script: |
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}}
+    make install
+  after-script:
+    - |
+      for lib in $(ls $PREFIX/lib/libfb303*); do
+        install_name_tool -id $lib $lib
+      done
+    - |
+      for lib in $(ls $PREFIX/lib/libfb303*); do
+        changes=()
+        for dep in $(otool -L $lib | awk '/\t/ {print $1}'); do
+          if echo $dep | grep -qv $PREFIX/lib; then
+            install_name_tool -change $dep @rpath/$(basename $dep) $lib
+          fi
+        done
+      done
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    freedesktop.org/pkg-config: '^0.29'
+    "facebook/fbthrift": '*'
+    "google/glog": '*'
+    "gflags/gflags": '*'
+    "openssl/openssl@1.1": '*'
+    "fmtlib/fmt": '*'
+    "facebook/folly": '*'
+    "google/wangle": '*'
+  fixture: |
+    #include "fb303/thrift/gen-cpp2/BaseService.h"
+    #include <iostream>
+    int main() {
+      auto service = facebook::fb303::cpp2::BaseServiceSvIf();
+      std::cout << service.getGeneratedName() << std::endl;
+      return 0;
+    }
+  script: |
+    mv $FIXTURE test.cpp
+    g++ test.cpp $PKG_CONFIG_PATH/{{prefix}}/lib/pkgconfig/folly.pc $PKG_CONFIG_PATH/{{prefix}}/lib/pkgconfig/folly-json.pc \
+    $PKG_CONFIG_PATH/{{prefix}}/lib/pkgconfig/wangle.pc $PKG_CONFIG_PATH/{{prefix}}/lib/pkgconfig/googletest.pc \
+    $PKG_CONFIG_PATH/{{prefix}}/lib/pkgconfig/fmt.pc $PKG_CONFIG_PATH/{{prefix}}/lib/pkgconfig/openssl.pc \
+    $PKG_CONFIG_PATH/{{prefix}}/lib/pkgconfig/gflags.pc $PKG_CONFIG_PATH/{{prefix}}/lib/pkgconfig/glog.pc \
+    $PKG_CONFIG_PATH/{{prefix}}/lib/pkgconfig/fbthrift.pc \
+    -o test -I{{prefix}}/include -L{{prefix}}/lib \
+    -lfb303_thrift_cpp2 -lthriftcpp2 -lthriftprotocol \
+    -lfolly -lfolly_json -lglog -lgflags -lopenssl -lfmt \
+    -lpthread -ldl
+    ./test > output.txt
+    out=$(./test)
+    if test "$out" = 'BaseService'; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

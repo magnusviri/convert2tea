@@ -1,0 +1,38 @@
+distributable:
+  url: https://files.dyne.org/frei0r/releases/frei0r-plugins-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.8.0
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+  script: |
+    # Disable opportunistic linking against Cairo
+    sed -i 's/find_package (Cairo)//' CMakeLists.txt
+    cmake .. -DWITHOUT_OPENCV=ON -DWITHOUT_GAVL=ON -DCMAKE_INSTALL_PREFIX={{prefix}}
+    make install
+  test:
+    dependencies:
+      tea.xyz/gx/cc: c99
+    env:
+      LD_LIBRARY_PATH: "{{prefix}}/lib"
+    fixture: |
+      #include <frei0r.h>
+      int main()
+      {
+        int mver = FREI0R_MAJOR_VERSION;
+        if (mver != 0) {
+          return 0;
+        } else {
+          return 1;
+        }
+      }
+    script: |
+      mv $FIXTURE test.c
+      gcc -I{{prefix}}/include -L{{prefix}}/lib test.c -o test -lfrei0r-1
+      ./test

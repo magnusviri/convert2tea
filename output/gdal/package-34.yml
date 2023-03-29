@@ -1,0 +1,41 @@
+distributable:
+  url: http://download.osgeo.org/gdal/{{version}}/gdal-{{version}}.tar.xz
+
+versions:
+  - 3.6.3
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    tea.xyz/gx/cc: c99
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake .. $ARGS -DCMAKE_INSTALL_PREFIX="{{prefix}}" -DENABLE_PAM=ON -DBUILD_PYTHON_BINDINGS=ON -DPython_EXECUTABLE={{python3}}
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_CXX_STANDARD=17
+      - -DGDAL_PYTHON_INSTALL_LIB={{prefix}}/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages
+      - -DBUILD_JAVA_BINDINGS=OFF
+      - -DCMAKE_INSTALL_RPATH={{rpath}};{{rpath}}/{{name}}/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/osgeo
+    linux:
+      CFLAGS: -fPIC
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+  working-directory: gdal-{{version}}
+test: |
+  gdalinfo --formats
+  ogrinfo --formats
+  python3 -c "import osgeo.gdal"
+
+provides:
+  - bin/gdalinfo
+  - bin/ogrinfo
+  - bin/gdal_translate
+  - bin/gdalwarp
+  - bin/gdal_grid
+  - lib/libgdal.dylib

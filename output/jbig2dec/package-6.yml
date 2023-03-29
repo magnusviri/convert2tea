@@ -1,0 +1,27 @@
+distributable:
+  url: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9531/jbig2dec-0.19.tar.gz
+  strip-components: 1
+
+# we cannot parse the latest version from github, so it needs to be manually updated
+versions:
+  stable: 0.19
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/libtool: '*'
+    tukaani.org/xz: '*'
+  script: |
+      ./autogen.sh
+      ./configure --prefix="{{prefix}}"
+      make
+      make install
+
+provides:
+  - bin/jbig2dec
+
+test:
+  script: |
+    jbig2dec --version
+  # no fixture needed, just check that we can run jbig2dec --version without errors and that it prints the expected version

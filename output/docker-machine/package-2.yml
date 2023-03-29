@@ -1,0 +1,27 @@
+distributable:
+  url: https://gitlab.com/gitlab-org/ci-cd/docker-machine/-/archive/v{{ version }}-gitlab.{{revision}}/docker-machine-v{{ version }}-gitlab.{{revision}}.tar.gz
+
+versions:
+  - 0.16.2
+
+build:
+  dependencies:
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/go: '*'
+  script: |
+    export GOPATH={{buildpath}}
+    export GO111MODULE=auto
+    mkdir -p $GOPATH/src/gitlab.com/gitlab-org/ci-cd/
+    mv * $GOPATH/src/gitlab.com/gitlab-org/ci-cd/docker-machine
+    cd $GOPATH/src/gitlab.com/gitlab-org/ci-cd/docker-machine
+    make build
+    cp bin/* {{bin}}
+    cp -r contrib/completion/bash/* {{bash_completion}}
+    cp contrib/completion/zsh/_docker-machine {{zsh_completion}}
+    mkdir -p {{prefix}}/meta
+    cp -r * {{prefix}}/meta/
+    
+
+test:
+  script: |
+    {{bin}}/docker-machine --version | grep -qF {{version}}

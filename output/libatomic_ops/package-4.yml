@@ -1,0 +1,33 @@
+distributable:
+  url: https://github.com/ivmai/libatomic_ops/releases/download/v{{version}}/libatomic_ops-{{version}}.tar.gz
+
+# `strategy` tells us how to fetch the most recent version.
+# This is called before building the formula.
+versions:
+  url: https://github.com/ivmai/libatomic_ops/releases
+  regex: /ivmai\/libatomic_ops\/releases\/tag\/v?(\d+(?:\.\d+)+)/
+
+build:
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+    texinfo: '*'
+    gcc: '*'
+    make: '*'
+  working-directory: build
+  script: |
+    autoreconf -fi
+    ./configure --disable-dependency-tracking --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }}
+    make check
+    make install
+
+provides:
+  - bin/atomic_ops-config
+  - include/atomic_ops/*.h
+  - lib/libatomic_ops*.a
+  - lib/libatomic_ops*.dylib
+
+test:
+  enable: false

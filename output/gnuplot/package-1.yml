@@ -1,0 +1,37 @@
+Unfortunately, it is not possible to convert the given Ruby formula for gnuplot directly into a YAML format, as the two formats have fundamentally different structures and syntax. However, one could write a new formula for gnuplot in YAML format following a similar structure and dependencies as the Ruby formula. Here is an example:
+
+    distributable:
+      url: https://downloads.sourceforge.net/project/gnuplot/gnuplot/5.4.6/gnuplot-5.4.6.tar.gz
+      strip-components: 1
+
+    build:
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+        pkg-config: '*'
+        gdlib: '*'
+        libcerf: '*'
+        lua.org: '*'
+        pango.org: '*'
+        qt: ^5
+        readline: '*'
+      script: |
+        export CXXFLAGS="$CXXFLAGS -std=c++11"
+        ./configure --disable-dependency-tracking --disable-silent-rules --prefix="{{prefix}}" --with-readline="{{ readline.prefix }}"
+                    --without-tutorial --disable-wxwidgets --with-qt --without-x --without-latex
+        make -j{{ hw.concurrency }}
+        make install
+      env:
+        CMAKE_PREFIX_PATH: "{{prefix}}"
+
+    provides:
+      - bin/gnuplot
+
+    test:
+      fixture: |
+        set terminal dumb;
+        set output "{{ testpath }}/graph.txt";
+        plot sin(x);
+      script: |
+        gnuplot -e "$FIXTURE"
+        test -f "{{ testpath }}/graph.txt"

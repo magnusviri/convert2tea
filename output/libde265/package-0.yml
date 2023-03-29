@@ -1,0 +1,69 @@
+distributable:
+  url: https://github.com/strukturag/libde265/releases/download/v{{version}}/libde265-{{version}}.tar.gz
+
+versions:
+  - 1.0.11
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+    gnu.org/libtool: '*'
+    gnu.org/pkg-config: '*'
+  script: |
+    ./configure --disable-dependency-tracking \
+                --disable-silent-rules \
+                --disable-sherlock265 \
+                --disable-dec265 \
+                --prefix={{prefix}}
+    make install
+    # Install the test-related executables in libexec.
+    mkdir -p "{{prefix}}/libexec/bin"
+    cp acceleration_speed block-rate-estim tests "{{prefix}}/libexec/bin"
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    gnu.org/pkg-config: '^0.29'
+  fixture: |
+    #include <de265/de265.h>
+    #include <de265/decoder.h>
+    #include <fstream>
+    using namespace std;
+    de265_decoder_context* ctx;
+    int main()
+    {
+      de265_init();
+      ctx = de265_new_decoder();
+      if (ctx==nullptr) {
+        exit(1);
+      }
+
+      char const* filename = "/usr/share/sounds/freedesktop/index.theme";
+      ifstream file(filename, ios::binary);
+      if (!file.good())
+      {
+        exit(1);
+      }
+
+      auto const content = string(istreambuf_iterator<char>{file}, {});
+      de265_push_data(ctx, reinterpret_cast<const uint8_t*>(content.data()), content.size());
+
+      de265_decode(ctx, De265FlushFlag::OUTPUT_PICTURE);
+
+      de265_delete_decoder(ctx);
+      de265_cleanup();
+    }
+  script: |
+    mv $FIXTURE test.cpp
+    g++ -I{{prefix}}/include test.cpp -L{{prefix}}/lib -lde265 -o test
+    ./test > output.txt
+    out=$(./test)
+    if test "$out" != ""; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

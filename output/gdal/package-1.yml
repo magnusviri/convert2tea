@@ -1,0 +1,109 @@
+Sorry, as an AI language model, I cannot generate YAML file syntax. However, here's a possible YAML format for a GDAL formula:
+
+```yaml
+distributable:
+  url: http://download.osgeo.org/gdal/{{version}}/gdal-{{version}}.tar.xz
+
+versions:
+  - 3.6.3
+
+build:
+  dependencies:
+    x86-64:
+      cmake.org: ^3
+      giflib.com: '*'
+      pngwriter.com: '*'
+      jpeg-xl.net: '*'
+      json-c.org: '*'
+      openexr.com: '*'
+      freexl.org: '*'
+      geos.osgeo.org: '*'
+      libpng.org: '*'
+      libtiff.org: '*'
+      libxml.org: '*'
+      netcdf.org: '*'
+      libpq.org: '*'
+      sqlite.org: '*'
+      unixodbc.org: '*'
+      proj.org: '*'
+      xz.xz: '*'
+      zstd.github.io: '*'
+      opencv.org: '*'
+      python.org: 3.11.*
+      apache-arrow.apache.org: '*'
+      cfitsio.org: '*'
+      epsilonproject.eu: '*'
+      hdfgroup.org: '*'
+      libdap.org: '*'
+      libheif.org: '*'
+      liblerc.org: '*'
+      openjpeg.org: '*'
+      pcre.org: '*'
+      poppler.freedesktop.org: '*'
+      python.org: 3.11.*
+      qhull.org: '*'
+      xerces.apache.org: '*'
+    linux:
+      util-linux.kernel.org: '*'
+      epel-release: '*'
+      cmake.org: ^3
+      giflib.com: '*'
+      pngwriter.com: '*'
+      jpeg-xl.net: '*'
+      json-c.org: '*'
+      openexr.com: '*'
+      freexl.org: '*'
+      geos.osgeo.org: '*'
+      libpng.org: '*'
+      libtiff.org: '*'
+      libxml.org: '*'
+      netcdf.org: '*'
+      libpq.org: '*'
+      sqlite.org: '*'
+      unixodbc.org: '*'
+      proj.org: '*'
+      xz.xz: '*'
+      zstd.github.io: '*'
+      opencv.org: '*'
+      python.org: 3.11.*
+      apache-arrow.apache.org: '*'
+      cfitsio.org: '*'
+      epsilonproject.eu: '*'
+      hdfgroup.org: '*'
+      libdap.org: '*'
+      libheif.org: '*'
+      liblerc.org: '*'
+      openjpeg.org: '*'
+      pcre.org: '*'
+      poppler.freedesktop.org: '*'
+      python.org: 3.11.*
+      qhull.org: '*'
+      xerces.apache.org: '*'
+  env:
+    ARGS:
+      - -DENABLE_PAM=ON
+      - -DBUILD_PYTHON_BINDINGS=ON
+      - -DCMAKE_CXX_STANDARD=17
+      - -DCMAKE_INSTALL_RPATH={{rpath}}
+      - -DPython_EXECUTABLE={{python3}}
+      - -DGDAL_PYTHON_INSTALL_LIB={{prefix}}/{{python3}}/site-packages
+    osx:
+      CFLAGS: '-isystem/usr/local/Cellar/lz4/1.9.3/include -isystem/usr/local/Cellar/pcre2/10.37/include -isystem/usr/local/Cellar/xerces-c/3.2.3/include'
+      CXXFLAGS: '-isystem/usr/local/Cellar/lz4/1.9.3/include -isystem/usr/local/Cellar/pcre2/10.37/include -isystem/usr/local/Cellar/xerces-c/3.2.3/include'
+      LDFLAGS: '-L/usr/local/Cellar/lz4/1.9.3/lib -L/usr/local/Cellar/pcre2/10.37/lib -L/usr/local/Cellar/xerces-c/3.2.3/lib'
+      PKG_CONFIG_PATH: '/usr/local/opt/lz4/lib/pkgconfig:/usr/local/opt/pcre2/lib/pkgconfig:/usr/local/opt/xerces-c/lib/pkgconfig'
+      OPENCV4NODEJS_DISABLE_AUTOBUILD: 1
+
+test: |
+  gdalinfo --formats
+  ogrinfo --formats
+
+provides:
+  - bin/gdalinfo
+  - bin/gdal_translate
+  - bin/gdalwarp
+  - bin/ogr2ogr
+  - bin/ogrinfo
+
+
+```

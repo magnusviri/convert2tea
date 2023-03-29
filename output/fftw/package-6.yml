@@ -1,0 +1,94 @@
+distributable:
+  url: https://fftw.org/fftw-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  regex: 'v(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)'
+  url: https://fftw.org
+  sort: version
+  selector:
+    '': select('stable')
+    stable: select('stable')
+    beta: select('beta')
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      linuxbrew/xorg/xorg: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/make: '*'
+      gcc: '*'
+  script: |
+    # note: the available options change depending on whether MPI is enabled or not.
+    # See https://fftw.org/fftw3_doc/Installation-and-Customization.html#Installation-and-Customization
+    args=(
+      --enable-shared
+      --disable-debug
+      --prefix="{{prefix}}"
+      --enable-threads
+      --enable-openmp
+    )
+    if brew config | grep ^wasm$ >/dev/null; then
+      args+=(
+        --enable-sse2
+        --enable-avx
+        --enable-avx2
+        --enable-avx512
+      )
+    fi
+    if [[ "$MPI_ENABLED" == true ]]; then
+      args+=(
+        --enable-mpi
+        --enable-mpi-cxx
+        --enable-mpi-fortran
+      )
+    fi
+    if [[ "$LONG_DOUBLE_ENABLED" == true ]]; then
+      args+=(--enable-long-double)
+    fi
+    if [[ "$DOUBLE_ENABLED" == true ]]; then
+      args+=(--disable-float)
+    fi
+    # build with single precision
+    ./configure --enable-float "${args[@]}"
+    make "$@" -j{{ hw.ncpu }}
+    make -j{{ hw.ncpu }} check
+    [[ "$MPI_ENABLED" != true ]] && make -j{{ hw.ncpu }} install
+    make distclean
+    # build with double precision
+    ./configure "${args[@]}"
+    make "$@" -j{{ hw.ncpu }}
+    [[ "$MPI_ENABLED" != true ]] && make -j{{ hw.ncpu }} check
+    [[ "$DOUBLE_ENABLED" == true ]] && make -j{{ hw.ncpu }} check-nonfloat
+    [[ "$MPI_ENABLED" != true ]] && make -j{{ hw.ncpu }} install
+    make distclean
+    if [[ "$LONG_DOUBLE_ENABLED" == true ]]; then
+      ./configure --enable-long-double "${args[@]}"
+      make "$@" -j{{ hw.ncpu }}
+      [[ "$MPI_ENABLED" != true ]] && make -j{{ hw.ncpu }} check
+      [[ "$MPI_ENABLED" != true ]] && make -j{{ hw.ncpu }} install
+    fi
+
+test:
+  script: |
+    # see https://fftw.org/fftw3_doc/Complex-One_002dDimensional-DFTs.html
+    cat > fftw.c <<EOF
+    #include <fftw3.h>
+    int main(int argc, char* *argv)
+    {
+        fftw_complex *in, *out;
+        fftw_plan p;
+        long N = 1;
+        in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+        out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+        p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+        fftw_execute(p); /* repeat as needed */
+        fftw_destroy_plan(p);
+        fftw_free(in); fftw_free(out);
+        return 0;
+    }
+    EOF
+    cc -o fftw fftw.c -L#{lib} -lfftw3
+    ./fftw

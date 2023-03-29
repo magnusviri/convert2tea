@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/Carthage/Carthage/archive/{{version.code}}.tar.gz
+
+versions:
+  - code: v0.39.0
+    marketing: 0.39.0
+
+dependencies:
+  tea.xyz/xcode: '>=10.0'
+  macos: '>=10.13'
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+    tea.xyz/shell/make: '*'
+  script: |
+    make prefix_install PREFIX={{prefix}}
+    install -Dm644 Source/Scripts/carthage-bash-completion {{prefix}}/share/bash-completion/completions/carthage
+    install -Dm644 Source/Scripts/carthage-zsh-completion {{prefix}}/share/zsh/site-functions/_carthage
+    install -Dm644 Source/Scripts/carthage-fish-completion {{prefix}}/share/fish/vendor_completions.d/carthage.fish
+
+provides:
+  - bin/carthage
+
+test:
+  script: |
+    echo 'github "jspahrsummers/xcconfigs"' > Cartfile
+    carthage update --no-build
+    rm -rf Carthage* Cartfile*

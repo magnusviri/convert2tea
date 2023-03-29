@@ -1,0 +1,26 @@
+There is no direct equivalent of a YAML formula for the project Augeas as it is only available in the Ruby formula format. However, here's an example YAML formula for a hypothetical package:
+
+    distributable:
+      url: https://example.com/package-{{version.marketing}}.tar.gz
+      strip-components: 1
+    
+    versions:
+      - 1.0.0
+    
+    dependencies:
+      - zlib: '*'
+    
+    build:
+      script: |
+        ./configure --prefix={{prefix}}
+        make install
+    
+    provides:
+      - bin/package
+    
+    test:
+      script: |
+        touch test.txt
+        printf 'Hello World!\n' > test.txt
+        package -r test.txt output.txt
+        printf 'Hello World!\n' | diff - output.txt

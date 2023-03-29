@@ -1,0 +1,30 @@
+distributable:
+  url: https://github.com/elixir-lang/elixir/archive/v{{ version }}.tar.gz
+
+versions:
+  github: elixir-lang/elixir
+  strip: /^v/
+
+provides:
+  - bin/elixir
+  - bin/elixirc
+  - bin/iex
+  - bin/mix
+  - lib/elixir
+
+dependencies:
+  erlang.org: ^25
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    make
+    make install DESTDIR="{{pkgroot}}"
+  env:
+    PREFIX: "/usr/local"
+
+test: |
+  elixir -v
+  iex -v
+  mix -v

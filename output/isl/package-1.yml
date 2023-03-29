@@ -1,0 +1,47 @@
+distributable:
+  url: https://libisl.sourceforge.io/isl-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  sourceforge: libisl/isl
+
+dependencies:
+  gmp: '*'
+
+build:
+  patch:
+    - url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff
+      apply: true
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/libtool: '*'
+  script: |
+    ./autogen.sh
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --prefix={{prefix}}
+    - --with-gmp=system
+    - --with-gmp-prefix={{dep "gmp"}}
+  test:
+    script: |
+      cc test.c -L{{lib}} -lisl -o test
+      ./test
+    content: |
+      #include <isl/ctx.h>
+      int main()
+      {
+        isl_ctx* ctx = isl_ctx_alloc();
+        isl_ctx_free(ctx);
+        return 0;
+      }
+    language: c
+
+provides:
+  - bin/*
+  - include/*
+  - lib/*
+  - share/gdb/auto-load/*-gdb.py

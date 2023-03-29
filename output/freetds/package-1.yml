@@ -1,0 +1,48 @@
+distributable:
+  url: https://www.freetds.org/files/stable/freetds-{{version}}.tar.bz2
+
+versions:
+  - 1.3.17
+
+build:
+  dependencies:
+    x86-64:
+      autoconf: '*'
+      automake: '*'
+      gettext: '*'
+      libtool: '*'
+      pkg-config: '*'
+      openssl@1.1: '*'
+    arm64:
+      pkg-config: '*'
+      openssl@1.1: '*'
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    unixodbc.dev: '*'
+    krb5: '*'
+  working-directory:
+    out
+  script: |
+    export LIBRARY_PATH=$LIBRARY_PATH:{{unixodbc.dev}}/lib
+    export CPPFLAGS=$CPPFLAGS:-I{{unixodbc.dev}}/include
+    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:{{openssl@1.1}}/lib/pkgconfig
+    autoreconf -i
+    ./configure --prefix={{prefix}} \
+                --with-tdsver=7.3 \
+                --with-unixodbc={{unixodbc.dev}} \
+                --with-openssl={{openssl@1.1}} \
+                --enable-sybase-compat \
+                --enable-krb5 \
+                --enable-odbc-wide
+    make
+    make check
+    make install
+  env:
+    linux:
+      LDFLAGS: -lcrypt
+
+test: |
+  tsql -C
+
+provides:
+  - bin/tsql

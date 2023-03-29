@@ -1,0 +1,43 @@
+distributable:
+  url: https://www.freetds.org/files/stable/freetds-{{version}}.tar.bz2
+
+versions:
+  - 1.3.17
+
+build:
+  dependencies:
+    x86-64:
+      autoconf: '*'
+      automake: '*'
+      gettext: '*'
+      libtool: '*'
+    tea.xyz/gx/cc: c99
+    cmake.org: '*'
+    tea.xyz/gx/make: '*'
+    pkg-config: '*'
+  working-directory:
+    .
+  script: |
+    ./configure --prefix="{{prefix}}" \
+                --with-tdsver=7.3 \
+                --mandir="{{man}}" \
+                --sysconfdir="{{etc}}" \
+                --with-unixodbc="{{prefix}}" \
+                --with-openssl="{{prefix}}" \
+                --enable-sybase-compat \
+                --enable-krb5 \
+                --enable-odbc-wide
+    make
+    make install
+  env:
+    linux:
+      dependencies:
+        readline: '*'
+    patch:
+      - url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff
+
+test: |
+  tsql -C
+
+provides:
+  - bin/tsql

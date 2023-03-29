@@ -1,0 +1,89 @@
+distributable:
+  url: https://github.com/grpc/grpc/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.53.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: clang10
+    tea.xyz/gx/cmake: '*'
+    tea.xyz/gx/llvm: '*'
+    tea.xyz/gx/libtool: '*'
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/protobuf: '*'
+    tea.xyz/gx/re2: '*'
+    tea.xyz/gx/zlib: '*'
+    tea.xyz/libs/abseil: '*'
+    tea.xyz/libs/c-ares: '*'
+    tea.xyz/libs/openssl@1.1: '*'
+  script: |
+    if [[ "$(uname -s)" == "Linux" ]]; then
+      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{{prefix}}/lib
+    fi
+
+    mkdir -p cmake/build
+    cd cmake/build
+    cmake .. \
+      -DCMAKE_C_COMPILER={{tea.xyz/gx/cc}} \
+      -DCMAKE_CXX_COMPILER={{tea.xyz/gx/cc}}++ \
+      -DCMAKE_CXX_STANDARD=17 \
+      -DCMAKE_INSTALL_RPATH={{rpath}} \
+      -DCMAKE_INSTALL_PREFIX={{prefix}} \
+      -DBUILD_SHARED_LIBS=ON \
+      -DgRPC_BUILD_TESTS=OFF \
+      -DgRPC_INSTALL=ON \
+      -DgRPC_ABSL_PROVIDER=module \
+      -DgRPC_CARES_PROVIDER=module \
+      -DgRPC_PROTOBUF_PROVIDER=module \
+      -DgRPC_SSL_PROVIDER=module \
+      -DgRPC_ZLIB_PROVIDER=module \
+      -DgRPC_RE2_PROVIDER=module \
+      -DgRPC_DISTRIBUTION=NO_TARBALL
+    make -j {{hw.concurrency}}
+    make install
+    rm -rf {{prefix}}/share
+
+    cd ../..
+    cmake .. \
+      -DCMAKE_C_COMPILER={{tea.xyz/gx/cc}} \
+      -DCMAKE_CXX_COMPILER={{tea.xyz/gx/cc}}++ \
+      -DCMAKE_INSTALL_RPATH={{rpath}} \
+      -DCMAKE_INSTALL_PREFIX={{prefix}} \
+      -DBUILD_SHARED_LIBS=ON \
+      -DgRPC_BUILD_TESTS=ON
+    make -j {{hw.concurrency}} grpc_cli
+    cd test/cpp/end2end
+    sed -i.bak 's/127\.0\.0\.1/localhost/g' greeter_client.cc
+    make -j {{hw.concurrency}}
+
+  post_install: |
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+      install_name_tool -change \
+        @rpath/libgrpc++.dylib \
+        @loader_path/../lib/libgrpc++.dylib \
+        #{prefix}/bin/grpc_cli
+      install_name_tool -change \
+        @rpath/libgrpc.dylib \
+        @loader_path/../lib/libgrpc.dylib \
+        #{prefix}/bin/grpc_cli
+    fi
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/libs/openssl@1.1: '*'
+  script: |
+    export DYLD_LIBRARY_PATH=#{prefix}/lib:$DYLD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=#{prefix}/lib:$LD_LIBRARY_PATH
+    export GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=#{Formula["openssl@1.1"].opt_pkgetc}/cert.pem
+    export GRPC_VERBOSITY=DEBUG
+    export GRPC_TRACE=api,channel,client_channel,connectivity_state
+    test/cpp/qps/qps_worker/qps_worker --driver=client --histogram_resolution=10 --num_channels=1 --server_host=localhost --server_port=`cat #{var}/run/grpc_port` --workloads=balanced --out_qps=500 > /dev/null & QPS_WORKER_PID=$!
+    test/cpp/qps/qps_worker/qps_worker --driver=server --histogram_resolution=10 --num_channels=1 > /dev/null & QPS_SERVER_PID=$!
+    sleep 5
+    test/cpp/end2end/end2end_test
+    RET=$?
+    kill -TERM $QPS_WORKER_PID $QPS_SERVER_PID
+    exit $RET

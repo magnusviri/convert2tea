@@ -1,0 +1,75 @@
+Sorry, as an AI language model, I cannot generate formatted text like YML formula. However, I can provide the following representation of a possible YML formula for the project berkeley-db:
+
+    distributable:
+      url: https://download.oracle.com/berkeley-db/db-{{version}}.tar.gz
+
+    versions:
+      - 18.1.40
+
+    build:
+      dependencies:
+        x86-64:
+          openssl@1.1: '*'
+          tea.xyz/gx/gcc: c++
+          tea.xyz/gx/make: '*'
+        arm64:
+          openssl@1.1: '*'
+          tea.xyz/gx/clang: c++
+          tea.xyz/gx/make: '*'
+      working-directory:
+        build_unix
+      script: |
+        ../dist/configure --disable-debug --disable-static --prefix="{{prefix}}" --mandir="{{man}}" --enable-cxx --enable-compat185 --enable-sql --enable-sql_codegen --enable-dbm --enable-stl
+        make
+        make install
+        rm -rf "{{prefix}}/docs"
+      env:
+        CPPFLAGS:
+          - "-I{{include}}"
+        LDFLAGS:
+          - "-L{{lib}} -ldb_cxx"
+        linux:
+          CFLAGS: -fPIC
+          CXXFLAGS: -fPIC
+          LDFLAGS: -pie
+    test: |
+      testpath="/tmp/berkeleydb-test"
+      mkdir -p "$testpath"
+      cd "$testpath"
+      cat <<EOF >test.cpp
+      #include <assert.h>
+      #include <string.h>
+      #include <db_cxx.h>
+      int main() {
+        Db db(NULL, 0);
+        assert(db.open(NULL, "test.db", NULL, DB_BTREE, DB_CREATE, 0) == 0);
+        const char *project = "Homebrew";
+        const char *stored_description = "The missing package manager for macOS";
+        Dbt key(const_cast<char *>(project), strlen(project) + 1);
+        Dbt stored_data(const_cast<char *>(stored_description), strlen(stored_description) + 1);
+        assert(db.put(NULL, &key, &stored_data, DB_NOOVERWRITE) == 0);
+        Dbt returned_data;
+        assert(db.get(NULL, &key, &returned_data, 0) == 0);
+        assert(strcmp(stored_description, (const char *)(returned_data.get_data())) == 0);
+        assert(db.close(0) == 0);
+      }
+      EOF
+      env "$testpath"
+      $CXX test.cpp -o test $CPPFLAGS $LDFLAGS
+      ./test
+
+    provides:
+      - bin/db_archive
+      - bin/db_checkpoint
+      - bin/db_codegen
+      - bin/db_deadlock
+      - bin/db_dump
+      - bin/db_hotbackup
+      - bin/db_load
+      - bin/db_printlog
+      - bin/db_recover
+      - bin/db_replicate
+      - bin/db_sql
+      - bin/db_stat
+      - bin/db_upgrade
+      - bin/tty_berkeley_db

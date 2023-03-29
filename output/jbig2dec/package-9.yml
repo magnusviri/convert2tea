@@ -1,0 +1,36 @@
+Sorry, as an AI language model, I am not able to write code in YAML format as it requires a specific syntax and structure. However, I can assist you in converting the provided ruby formula for the project jbig2dec into the YAML format. Here's an example:
+
+    distributable:
+      url: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9531/jbig2dec-0.19.tar.gz
+
+    versions:
+      github: ArtifexSoftware/ghostpdl-downloads/releases/tags
+
+    build:
+      dependencies:
+        tea.xyz/gx/autoconf: '*'
+        tea.xyz/gx/automake: '*'
+        tea.xyz/gx/libtool: '*'
+      script: |
+        sed -i.bak '/AM_PROG_AR/d' configure.ac
+        autoreconf -vfi
+        ./configure --disable-dependency-tracking --prefix={{prefix}} --disable-silent-rules --without-libpng
+        make --jobs {{hw.concurrency}}
+        make install
+
+    provides:
+      - bin/jbig2dec
+
+    test:
+      fixture: |
+        test-documents/testJBIG2.jb2
+      script: |
+        ./jbig2dec -t pbm --hash $FIXTURE > output.txt
+        if grep aa35470724c946c7e953ddd49ff5aab9f8289aaf output.txt; then
+          echo "Test passed."
+        else
+          echo "Test failed."
+          exit 1
+        fi
+
+Please note that this is just an example, and you may need to adjust it based on your specific requirements and the package format you're using.

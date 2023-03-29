@@ -1,0 +1,32 @@
+distributable:
+          url: https://download.gnome.org/sources/atk/{{version}}/atk-{{version}}.tar.xz
+          strip-components: 1
+
+        versions:
+          - 2.38.0
+
+        dependencies:
+          gettext.net: '*'
+          gobject-introspection.net: '*'
+          meson.net: '*'
+          ninja.net: '*'
+          pkg-config.net: '*'
+          glib.net: '*'
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/meson: '*'
+            tea.xyz/gx/ninja: '*'
+          script: |
+            meson setup build --prefix={{prefix}}
+            ninja -C build
+            ninja -C build install
+
+        provides:
+          - lib/libatk-1.0.dylib
+
+        test:
+          script: |
+            gcc test.c $(pkg-config --cflags --libs atk) -o test
+            ./test

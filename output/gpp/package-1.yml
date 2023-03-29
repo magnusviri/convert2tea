@@ -1,0 +1,23 @@
+distributable:
+  url: https://files.nothingisreal.com/software/gpp/gpp-{{version.marketing}}.tar.bz2
+  strip-components: 1
+
+versions:
+  - 2.27
+
+build:
+  dependencies:
+    tea.xyz/gx/gcc: '*'
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --disable-debug --disable-dependency-tracking --prefix={{prefix}} --mandir={{man}}
+    make
+    make check
+    make install
+
+provides:
+  - bin/gpp
+
+test:
+  script: |
+    gpp --version

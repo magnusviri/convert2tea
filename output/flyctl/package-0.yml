@@ -1,0 +1,21 @@
+distributable:
+  url: https://github.com/superfly/flyctl/releases/download/v{{version}}/flyctl_{{version}}_{{system.platform}}_{{system.arch}}.tar.gz
+
+versions:
+  github: superfly/flyctl
+  filter: /^v\d+(\.\d+)+$/
+
+dependencies:
+  go.dev: ^1
+
+install:
+  executable: flyctl
+  path: bin
+  skip_bins:
+    - flyctl.completion
+    - flyctl.fish
+    - flyctl.zsh
+    - flyctl.bash
+
+test:
+  script: flyctl version

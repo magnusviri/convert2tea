@@ -1,0 +1,32 @@
+distributable:
+  url: https://code.videolan.org/videolan/dav1d/-/archive/{{version}}/dav1d-{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  v1.1.0: {}
+
+dependencies:
+  meson.build: ^0.57.0
+  ninja: ^1.10
+  intel.nasm: ^2.15.05
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/meson: '*'
+    if "{{arch}}" == "intel"
+      - tea.xyz/gx/nasm: '*'
+  script: |
+    meson setup $ARGS build
+    meson compile --jobs {{ hw.concurrency }} -C build
+    meson install -C build
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+
+test:
+  script: |
+    cd test && make
+
+provides:
+  - bin/dav1d

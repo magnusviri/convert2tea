@@ -1,0 +1,29 @@
+distributable:
+          url: https://github.com/jemalloc/jemalloc/releases/download/{{ version }}/jemalloc-{{ version }}.tar.bz2
+
+        versions:
+          - 5.3.0
+
+        build:
+          head:
+            dependencies:
+              tea.xyz/gx/autoconf: '*'
+              tea.xyz/gx/docbook-xsl: '*'
+            script: |
+              ./autogen.sh --disable-debug --prefix={{ prefix }} --with-jemalloc-prefix=
+              make --jobs {{hw.concurrency}}
+              make dist
+          main:
+            script: |
+              ./configure --disable-debug --prefix={{ prefix }} --with-jemalloc-prefix=
+              make --jobs {{hw.concurrency}}
+              make check
+              make install
+          test:
+            dependencies:
+              tea.xyz/gx/cc: c99
+            script: |
+              cc test.c -L{{prefix}}/lib -ljemalloc -o test
+              ./test
+              
+Note: The `testpath` command used in the Ruby formula is not needed in the YAML format, as the working directory is automatically set to the project directory during the build and test stages.

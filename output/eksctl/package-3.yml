@@ -1,0 +1,31 @@
+distributable:
+  url: https://github.com/weaveworks/eksctl/archive/refs/tags/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.135.0
+
+build:
+  dependencies:
+    tea.xyz/gx/go: 1.16.x
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: *
+    aws.iam-authenticator:
+    github.com/maxbrunsfeld/counterfeiter/v6: latest
+    github.com/go-bindata/go-bindata: latest
+    github.com/vektra/mockery/v2: latest
+  working-directory: .
+  script: |
+    make build
+    install -d {{prefix}}/bin
+    install -m 0755 eksctl {{prefix}}/bin/eksctl
+  env: {}
+
+provides:
+  - bin/eksctl
+
+test:
+  script: |
+    assert '{{bin/eksctl}} --help'
+    assert '{{bin/eksctl}} create nodegroup' 1>&2
+  env: {}

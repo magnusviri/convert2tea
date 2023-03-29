@@ -1,0 +1,39 @@
+distributable:
+  url: https://github.com/aws/aws-sdk-cpp/archive/refs/tags/{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: aws/aws-sdk-cpp/releases/tags
+  ignore: /-rc\d/
+
+detect:
+  cmd: aws --version
+  regex: aws-cli\/\d+\.\d+\.\d+
+
+dependencies:
+  tea.xyz/gx/cmake: '*'
+  sourceware.org/curl: '*'
+  linux: tea.xyz/gx/gcc: '*'
+
+provides:
+  - bin/aws-cpp-sdk-core
+  - bin/aws-cpp-sdk-s3
+  - lib/libaws-cpp-sdk-core*.so
+  - lib/libaws-cpp-sdk-s3*.so
+
+build:
+  dependencies:
+    linux: tea.xyz/gx/python: 2.7
+  script: |-
+    mkdir build
+    cd build
+    cmake .. -DCMAKE_PREFIX_PATH=#{prefix}
+             -DBUILD_ONLY='s3' -DBUILD_SHARED_LIBS=ON
+             -DCMAKE_INSTALL_PREFIX=#{prefix} -DCMAKE_CXX_STANDARD=11
+    make --jobs {{ hw.concurrency }} install
+  env:
+    V: 1
+
+test:
+  script:
+    aws --version

@@ -1,0 +1,20 @@
+distributable:
+  url: https://registry.npmjs.org/aws-cdk/-/aws-cdk-{{version}}.tgz
+
+versions:
+  npm: aws-cdk
+
+provides:
+  - bin/cdk
+
+build:
+  dependencies:
+    node: ^14
+    npm: ^6.14
+  script: |
+    npm install
+    npm run build
+    npm run-v pkg -t node14-macos-x64
+
+test:
+  script: npm test

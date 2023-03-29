@@ -1,0 +1,52 @@
+distributable:
+  url: https://download.open-mpi.org/release/hwloc/v{{version}}/hwloc-{{version}}.tar.bz2
+
+versions:
+  - 2.9.0
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    libtool.org: '^2'
+    macports.org/libxml2: '*'
+    freedesktop.org/pkg-config: '^0'
+  script: |
+    ./configure --prefix={{prefix}} --enable-shared --enable-static --disable-cairo --without-x
+    make install
+  post-installation:
+    - pkgshare tests
+    - bashcompdir {{bash_completion}} tests
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    macports.org/libxml2: '*'
+    freedesktop.org/pkg-config: '^0'
+  env:
+    cflags: $(pkg-config --cflags hwloc)
+    ldflags: $(pkg-config --libs hwloc)
+  fixture: |
+    #include <hwloc.h>
+    #include <stdio.h>
+    int main()
+    {
+      hwloc_topology_t topology;
+      hwloc_topology_init(&topology);
+      hwloc_topology_load(topology);
+      int depth = hwloc_topology_get_depth(topology);
+      printf("Topology depth: %d\\n", depth);
+      hwloc_topology_destroy(topology);
+      return 0;
+    }
+  script: |
+    mv $FIXTURE test.c
+    ${CC} ${CFLAGS} ${LDFLAGS} test.c -o test
+    ./test > output.txt
+    out=$(./test)
+    if test "$out" = "Topology depth: 5"; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

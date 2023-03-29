@@ -1,0 +1,55 @@
+Sorry, as an AI language model, I can't provide the exact YML format for the given Ruby formula. However, I can give you an idea on how the YML formula should look like. Since the YML format is mostly used in the context of package managers, here's an example of how the package specification might look like:
+
+distributable:
+  url: https://github.com/hercules-team/augeas/releases/download/release-{{version.marketing}}/augeas-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.14.0
+
+dependencies:
+  readline: _
+  libxml2: _
+
+build:
+  dependencies:
+    autoconf: _
+    automake: _
+    bison: _
+    libtool: _
+    pkg-config: _
+    teanlang/gx/git: _
+  script: |
+    autoreconf --force --install
+    ./configure --prefix={{prefix}}
+    make
+    make install
+
+provides:
+  - bin/augtool
+  - bin/augparse
+  - bin/augcheck
+
+test:
+  script: |
+    echo '192.168.0.1 brew.sh test' > etc/hosts
+    expected_augtool_output=$(cat <<'END_HEREDOC'
+/files/etc/hosts/1
+/files/etc/hosts/1/ipaddr = "192.168.0.1"
+/files/etc/hosts/1/canonical = "brew.sh"
+/files/etc/hosts/1/alias = "test"
+END_HEREDOC
+)
+    expected_augprint_output=$(cat <<'END_HEREDOC'
+setm /augeas/load/*[incl='/etc/hosts' and label() != 'hosts']/excl '/etc/hosts'
+transform hosts incl /etc/hosts
+load-file /etc/hosts
+set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/ipaddr '192.168.0.1'
+set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/canonical 'brew.sh'
+set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/alias 'test'
+END_HEREDOC
+)
+    output_augtool=$(augtool --root . 'print /files/etc/hosts/1')
+    output_augprint=$(augprint --lens=hosts --target=/etc/hosts etc/hosts)
+    [ "$output_augtool" == "$expected_augtool_output" ] || exit 1
+    [ "$output_augprint" == "$expected_augprint_output" ] || exit 1

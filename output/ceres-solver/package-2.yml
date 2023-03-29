@@ -1,0 +1,36 @@
+distributable:
+  url: http://ceres-solver.org/ceres-solver-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: ceres-solver/ceres-solver
+  strip: /^v/
+
+dependencies:
+  eigen: '*'
+  gflags: '*'
+  glog: '*'
+  metis: '*'
+  openblas: '*'
+  suite-sparse: '*'
+  tbb: '*'
+  cmake: '*'
+
+build:
+  script: |
+    mkdir build
+    cd build
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}} \
+            -DBUILD_SHARED_LIBS=ON \
+            -DBUILD_EXAMPLES=OFF \
+            -DLIB_SUFFIX='' \
+            -DCMAKE_CXX_STANDARD=14 \
+            -DGFLAGS_NAMESPACE=google
+    make install
+
+test:
+  script: |
+    cp -r {{pkgshare}}/examples/helloworld.cc .
+    cmake -DCeres_DIR={{pkgshare}}/Ceres .
+    make
+    ./helloworld

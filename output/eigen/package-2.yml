@@ -1,0 +1,39 @@
+distributable:
+  url: https://gitlab.com/libeigen/eigen/-/archive/{{ version }}/eigen-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 3.4.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: cxx17
+    tea.xyz/gx/cmake: '*'
+  script: |
+    mkdir eigen-build
+    cd eigen-build
+    cmake .. -DCMAKE_INSTALL_PREFIX={{ prefix }}
+    make --jobs {{ hw.concurrency }}
+    make install
+  post_install: |
+    cp -R #{prefix}/share/eigen3 #{prefix}/include
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: cxx17
+  script: |
+    (testpath/"test.cpp").write <<~EOS
+      #include <iostream>
+      #include <Eigen/Dense>
+      int main()
+      {
+        Eigen::MatrixXd m(2,2);
+        m(0,0) = 3;
+        m(1,0) = 2.5;
+        m(0,1) = -1;
+        m(1,1) = m(1,0) + m(0,1);
+        std::cout << m << std::endl;
+      }
+    EOS
+    cxx -o test test.cpp -I#{prefix}/include/eigen3
+    ./test

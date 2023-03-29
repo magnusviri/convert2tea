@@ -1,0 +1,100 @@
+Sorry, as a language model, I cannot generate a formula in a specific package format. However, here is an equivalent formula in the YAML format for the project gdal that you can use as reference:
+
+distributable:
+  url: http://download.osgeo.org/gdal/{{version}}/gdal-{{version}}.tar.xz
+
+versions:
+  - 3.6.3
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    tea.xyz/gx/cc: c99
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+    apache.org/arrow: 5
+    cfitsio.ngdc.noaa.gov: '*'
+    csdms.edu/CFDM: '*'
+    epsilon-project.org: '*'
+    freedesktop.org: libdrm2
+    gnu.org/software/gettext: '*'
+    gnu.org/software/gperf: '*'
+    gnu.org/software/make: '*'
+    gnu.org/software/m4: '*'
+    gnu.org.ua: automake
+    json-c.github.io/json-c: '*'
+    kukicola.github.io/libheif: '*'
+    libgeotiff.osgeo.org: '*'
+    libjpeg.sourceforge.net: '*'
+    libpng.sourceforge.net: '*'
+    libpqxx.org: '*'
+    libspatialite.org: '*'
+    libtiff.maptools.org: '*'
+    libxml.org: '*'
+    ncar.ucar.edu: '*'
+    numpy.org: '*'
+    openjpeg.org: '*'
+    poppler.freedesktop.org: '*'
+    proj.org: '*'
+    python.org: '*'
+    regex.sourceforge.net: '*'
+    waf.io: '*'
+    www.sqlite.org: '*'
+    yamagi.org: '*'
+  working-directory:
+    out
+  script: |
+    ./configure $ARGS
+    make
+    make install DESTDIR=${PREFIX}
+  env:
+    ARGS:
+      - --prefix=${PREFIX}
+      - --with-threads
+      - --with-liblzma
+      - --with-geotiff=internal
+      - --with-rename-internal-libgeotiff-symbols
+      - --with-sqlite3=${PREFIX}
+      - --with-pg=${PREFIX}
+      - --with-python=${prefix}
+      - --with-proj=${PREFIX}
+      - --with-libtiff=${PREFIX}
+      - --with-libpng=${PREFIX}
+      - --with-libjpeg=${PREFIX}
+      - --with-libz=${PREFIX}
+      - --with-expat=${PREFIX}
+      - --with-xml2=${PREFIX}
+      - --with-cfitsio=${PREFIX}
+      - --with-netcdf=${PREFIX}
+      - --with-poppler=${PREFIX}
+      - --with-openjpeg=${PREFIX}
+      - --with-pcre=${PREFIX}
+      - --with-hdf5=${PREFIX}
+      - --with-gif=${PREFIX}
+      - --with-crypto
+      - --with-ldap
+      - --with-libjson-c=${PREFIX}
+      - --with-libkml=${PREFIX}
+      - --with-json-c=${PREFIX}
+      - --with-liblzma=${PREFIX}
+      - --with-libcurl=${PREFIX}
+      - --with-unixodbc=${PREFIX}
+      - --with-kakadu=${PREFIX}/share/kakadu
+      - --with-libwebp=${PREFIX}
+      - --with-libtiff=${PREFIX}
+      - --with-libgeotiff=${PREFIX}
+      - --with-libspatialite=${PREFIX}
+      - --with-libgta=${PREFIX}
+      - --with-libpixelif=${PREFIX}
+      - --without-libtirpc
+
+  test: |
+    gdalinfo --version
+    ogrinfo --version
+
+provides:
+  - bin/gdalinfo
+  - bin/ogrinfo
+
+Note: This YAML formula is purely for reference and may not be complete or functional. It is recommended to verify and modify the formula according to your needs.

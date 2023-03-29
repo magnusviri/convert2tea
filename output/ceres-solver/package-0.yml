@@ -1,0 +1,36 @@
+distributable:
+  url: http://ceres-solver.org/ceres-solver-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: ceres-solver/ceres-solver
+  strip: /^v/
+
+dependencies:
+  brew:
+    eigen: '*'
+    gflags: '*'
+    glog: '*'
+    metis: '*'
+    openblas: '*'
+    suite-sparse: '*'
+    tbb: '*'
+    cmake: '*'
+
+build:
+  script: |
+    cmake . -DBUILD_SHARED_LIBS=ON -DBUILD_EXAMPLES=OFF -DLIB_SUFFIX='' -DCMAKE_INSTALL_PREFIX={{ prefix }} $BOOST_CMAKE_ARGS
+    make
+    make install
+    cp -r examples {{ pkgshare }}
+
+test:
+  script: |
+    cmake . -DCeres_DIR={{ prefix }}/lib/cmake/Ceres \
+        -DCMAKE_C_STANDARD=99 \
+        -DCMAKE_CXX_STANDARD=14 \
+        -Wno-dev
+    make
+    ./run_solver_test.sh
+  requires:
+    - lang/c99

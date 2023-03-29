@@ -1,0 +1,91 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/guile/guile-{{ version.raw }}.tar.xz
+  strip-components: 1
+
+versions:
+  ftp:
+    url: https://ftp.gnu.org/gnu/guile/
+    pattern: "href=\"guile-(\\d+\\.\\d+\\.\\d+)\\.tar\\.xz\""
+    version: "{{ match[1] }}"
+  git:
+    url: https://git.savannah.gnu.org/git/guile.git
+    strip: /^v/
+    strategy: git_tags
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gawk: '*'
+      gnu.org/automake: '*'
+      gnu.org/autoconf: '*'
+      gnu.org/gcc: '*'
+      tea.xyz/gx/libtool: '*'
+      tea.xyz/gx/gettext: '*'
+      tea.xyz/gx/make: '*'
+      tea.xyz/gx/gperf: '*'
+    darwin:
+      gnu.org/gawk: '*'
+      gnu.org/automake: '*'
+      gnu.org/autoconf: '*'
+      tea.xyz/gx/cc: clang
+      tea.xyz/gx/make: '*'
+      tea.xyz/gx/gperf: '*'
+      tea.xyz/gx/libtool: '*'
+      tea.xyz/gx/gettext: '*'
+      gnu-sed: '*'
+      xz: '*'
+      gmp: '*'
+      libunistring: '*'
+      pkg-config: '*'
+      readline: '*'
+      bdw-gc: '*'
+
+  script: |
+    export PATH="$PATH:{{buildpath}}/build-aux"
+    if [ "{{target.os}}" == "darwin" ]; then
+      export CPPFLAGS="-D_DARWIN_C_SOURCE $CPPFLAGS"
+      export LDFLAGS="-L{{Formula['gmp'].opt_lib}} $LDFLAGS"
+    else
+      export LDFLAGS="-ltinfo $LDFLAGS"
+    fi
+
+    ./configure --prefix="{{prefix}}" \
+      --disable-dependency-tracking \
+      --disable-error-on-warning \
+      --disable-static \
+      --disable-threads \
+      --disable-bootstrap \
+      --with-libintl-prefix={{Formula['gettext'].opt_prefix}} \
+      --with-libgmp-prefix={{Formula['gmp'].opt_prefix}} \
+      --with-libunistring-prefix={{Formula['libunistring'].opt_prefix}} \
+      --with-bdw-gc={{Formula['bdw-gc'].opt_prefix}} \
+      --with-readline={{Formula['readline'].opt_prefix}} \
+      --with-module=search \
+      --without-emacs \
+      --without-threads \
+      --enable-shared=yes \
+      --enable-ipv6=no \
+      --enable-bignums=yes \
+      --enable-floats=yes \
+      --enable-networking=yes \
+      --enable-ports=yes \
+      --enable-call-with-current-continuation=yes \
+      --enable-poll \
+      --enable-features=m4,srfi-4,ports,regexp,processes
+
+    make --jobs={{hw.concurrency}}
+    make install
+
+test:
+  dependencies:
+    linux:
+      tea.xyz/gx/cc: '*'
+    darwin:
+      # Guile requires c99 but we are setting it up in the build dependencies already.
+      tea.xyz/gx/cc: '*'
+  script: |
+    cat > hello.scm <<EOS
+    (display "Hello World")
+    (newline)
+    EOS
+    guile hello.scm

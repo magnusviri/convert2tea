@@ -1,0 +1,36 @@
+distributable:
+  url: https://github.com/ivmai/bdwgc/releases/download/v{{ version }}/gc-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 8.2.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: gcc
+    tea.xyz/gx/make: '*'
+    tea.xyz/pkg-config: '*'
+    tea.xyz/brew/libatomic_ops: '*'
+  script: |
+    sh autogen.sh
+    ./configure --prefix={{ prefix }} \
+    --disable-debug \
+    --disable-dependency-tracking \
+    --enable-cplusplus \
+    --enable-static \
+    --enable-large-config
+    
+    make --jobs {{hw.concurrency}}
+    make check
+    make install
+  on_linux:
+    dependencies:
+      tea.xyz/brew/gcc: '*'
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: gcc
+    tea.xyz/brew/libatomic_ops: '*'
+  script: |
+    cc test.c -I{{prefix}}/include -L{{prefix}}/lib -lgc -o test
+    ./test

@@ -1,0 +1,21 @@
+distributable:
+  url: https://github.com/postmodern/chruby/archive/v{{ version }}.tar.gz
+
+versions:
+  github: postmodern/chruby
+  strip: /^v/
+
+provides:
+  - bin/chruby
+  - pkgshare/chruby.sh
+  - pkgshare/auto.sh
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    make install PREFIX={{prefix}}
+  target: native
+
+test: |
+  chruby-exec --version

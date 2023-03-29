@@ -1,0 +1,57 @@
+distributable:
+  url: https://github.com/grpc/grpc/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: grpc/grpc/releases/tags
+
+provides:
+  - bin/grpc_cli
+
+build:
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    cmake: '*'
+    libtool: '*'
+    pkg-config: test
+    abseil: '*'
+    c-ares: '*'
+    openssl@1.1: '*'
+    protobuf: '*'
+    re2: '*'
+  script: |
+    mkdir cmake/build
+    cd cmake/build
+    cmake ../.. \
+      -DCMAKE_CXX_STANDARD=17 \
+      -DCMAKE_CXX_STANDARD_REQUIRED=TRUE \
+      -DCMAKE_INSTALL_RPATH={{ rpath }} \
+      -DBUILD_SHARED_LIBS=ON \
+      -DgRPC_BUILD_TESTS=OFF \
+      -DgRPC_INSTALL=ON \
+      -DgRPC_ABSL_PROVIDER=package \
+      -DgRPC_CARES_PROVIDER=package \
+      -DgRPC_PROTOBUF_PROVIDER=package \
+      -DgRPC_SSL_PROVIDER=package \
+      -DgRPC_ZLIB_PROVIDER=package \
+      -DgRPC_RE2_PROVIDER=package \
+      {{ std_cmake_args }}
+    make install
+    cmake ../.. \
+      -DCMAKE_INSTALL_RPATH={{ rpath }} \
+      -DBUILD_SHARED_LIBS=ON \
+      -DgRPC_BUILD_TESTS=ON \
+      {{ std_cmake_args }}
+    make grpc_cli
+    {{ mv bin/grpc_cli bin/ }} # Move the binary to the expected location
+    {{ mv lib/libgrpc++_test_config* lib/ }} # Move the test config library to the expected location
+
+test:
+  test: |
+    {{ testpath }}/test.cpp -o {{ testpath }}/test \
+    -L{{ abseil.lib }} \
+    $(pkg-config --cflags --libs libcares protobuf re2 grpc++)
+  '{{ testpath }}/test' && \
+  '{{ bin }}/grpc_cli ls localhost:{{ free_port }}' | \
+  grep 'Received an error when querying services endpoint.'

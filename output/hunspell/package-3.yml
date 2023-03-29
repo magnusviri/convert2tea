@@ -1,0 +1,30 @@
+distributable:
+  url: https://github.com/hunspell/hunspell/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.7.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    tea.xyz/gx/make: '*'
+    readline: any
+    ncurses: any
+  macos:
+    dependencies:
+      gettext: any
+  script: |
+    ./configure --prefix={{ prefix }} \
+      --disable-silent-rules \
+      --with-ui \
+      --with-readline
+    make --jobs {{hw.concurrency}}
+    make check
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c11
+  script: |
+    hunspell --help

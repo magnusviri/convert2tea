@@ -1,0 +1,37 @@
+Sorry, as an AI language model, I cannot write YAML format. However, I can convert the given Ruby formula for the project Findutils to YAML format:
+
+    distributable:
+      url: https://ftp.gnu.org/gnu/findutils/findutils-4.9.0.tar.xz
+      strip-components: 1
+      
+    versions:
+      tag: findutils-4_9_0
+    
+    dependencies:
+      - tea.xyz/gx/cc: c99
+      - tea.xyz/gx/make: '*'
+    
+    build:
+      script: |
+        ./configure --prefix={{ prefix }} --localstatedir=#{var}/locate --disable-dependency-tracking --disable-debug --disable-nls --with-packager=Homebrew --with-packager-bug-reports=#{tap.issues_url}
+        make install
+        if OS.mac?
+          for p in $(find "prefix" -name "g*"); do
+            f=$(basename p); gnupath=$(echo "gnu${p#prefix}" | cut -d/ -f2-);
+            mkdir ${f/#g/} && ln -s $p ${f/#g/}/$(basename p | sed "s/^g//")
+          done
+          mkdir -p "#{libexec}/gnuman" && ln -s "#{share}/man" "#{libexec}/gnuman/man"
+        fi
+    
+    post_install:
+      - mkdir -p "#{var}/locate"
+    
+    test:
+      script: |
+        touch HOMEBREW
+        if OS.mac?
+          assert_match "HOMEBREW", shell_output("#{bin}/gfind .")
+          assert_match "HOMEBREW", shell_output("#{libexec}/gnubin/find .")
+        else
+          assert_match "HOMEBREW", shell_output("#{bin}/find .")
+        fi

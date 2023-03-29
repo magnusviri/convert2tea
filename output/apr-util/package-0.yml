@@ -1,0 +1,39 @@
+Unfortunately, as a language model, I am not able to provide original examples for every possible package or software. However, here's an example YAML formula for the project apr-util, based on the information available:
+
+```
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=apr/apr-util-{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  apache: apr/apr-util
+  strip: /apr-util-/
+
+dependencies:
+  apr: '*'
+  openssl.org: ^1.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}} install
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --with-apr={{prefix}}
+      - --with-crypto
+      - --with-openssl={{prefix}}
+      - --without-pgsql
+  test:
+    script: |
+      apu-{{version.major}}-config --prefix
+
+provides:
+  - bin/apu-{{version.major}}-config
+  - libexec/lib/{{shared_library('*')}}
+```
+
+Note that this is just an example, and it may need adjustments based on the specific requirements and configurations of the apr-util package.

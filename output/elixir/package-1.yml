@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/elixir-lang/elixir/archive/v{{ version }}.tar.gz
+
+versions:
+  github: elixir-lang/elixir
+  strip: /^v/
+
+provides:
+  - bin/elixir
+  - bin/iex
+  - bin/mix
+
+dependencies:
+  erlang.org: ^21
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/make: '*'
+    freedesktop.org/pkg-config: '*'
+  script: |
+    make 
+    make install PREFIX={{prefix}}
+  env: []
+
+test: |
+  elixir --version
+  elixir -e "IO.puts System.version"
+  mix -e "IO.puts System.version"

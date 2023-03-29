@@ -1,0 +1,35 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/findutils/findutils-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  homepage: https://www.gnu.org/software/findutils/
+  regex: findutils-(\d+\.\d+\.\d+)
+
+dependencies:
+  tea.xyz/gx/cc: c99
+  tea.xyz/gx/make: '*'
+
+build:
+  script: |
+    ./configure --prefix={{ prefix }} \
+      --localstatedir=#{ var }/locate \
+      --disable-dependency-tracking \
+      --disable-debug \
+      --disable-nls \
+      --with-packager=Homebrew \
+      --with-packager-bug-reports={{ tap.issues_url }}
+    make install
+
+post_install:
+  - mkdir -p #{ var }/locate
+
+test:
+  script: |
+    touch HOMEBREW
+    if [ "$(uname)" == "Darwin" ]; then
+      grep HOMEBREW $(brew --prefix)/bin/gfind
+      grep HOMEBREW $(brew --prefix)/libexec/gnubin/find
+    else
+      grep HOMEBREW $(brew --prefix)/bin/find
+    fi

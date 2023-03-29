@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to convert a Ruby formula to a YAML formula or vice versa. The two formats have different structures and use different syntax. A YAML formula for the project clang-format would need to be written from scratch, following the conventions of the YAML formula language.

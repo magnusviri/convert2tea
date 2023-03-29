@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/cask/cask/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: cask/cask/releases/tags
+
+provides:
+  - bin/cask
+  - elisp/cask.el
+  - elisp/cask-bootstrap.el
+
+build:
+  dependencies:
+    coreutils: '*'
+    emacs: '*'
+  script: |
+    mkdir -p {{ prefix }}
+    cp -r bin {{ prefix }}/
+    cp *.el {{ prefix }}/
+    ln -s {{ prefix }}/cask.el {{ prefix }}/elisp/.
+    ln -s {{ prefix }}/cask-bootstrap.el {{ prefix }}/elisp/.
+    touch {{ prefix }}/.no-upgrade
+
+test:
+  script: |
+    echo "(source gnu)\n(depends-on \"chess\")" > Cask
+    cask install
+    test -d .cask

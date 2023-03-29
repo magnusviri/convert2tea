@@ -1,0 +1,36 @@
+The formula for the project guile in yml format is:
+
+    distributable:
+      url: https://ftp.gnu.org/gnu/guile/guile-{{ version }}.tar.xz
+      strip-components: 1
+
+    versions:
+      github: git.savannah.gnu.org/git/guile.git/tags
+      strip: /^v/
+
+    build:
+      dependencies:
+        linux:
+          gnu.org/gcc: '*'
+          gnu.org/make: '*'
+          gnu.org/autoconf: '*'
+          gnu.org/automake: '*'
+          gnu.org/gettext: '*'
+          gnu.org/gperf: '*'
+        darwin:
+          tea.xyz/gx/cc: c99
+          tea.xyz/gx/make: '*'
+      script: |
+        ./autogen.sh
+        ./configure --prefix="{{prefix}}"
+                    --with-libreadline-prefix={{ readline.prefix }}
+                    --with-libgmp-prefix={{ gmp.prefix }}
+                    --disable-nls
+        make --jobs {{ hw.concurrency }} install
+
+    test:
+      dependencies:
+        tea.xyz/gx/cc: c99
+      script: |
+        echo "(display \"Hello World\") (newline)" > hello.scm
+        guile hello.scm

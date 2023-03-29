@@ -1,0 +1,31 @@
+distributable:
+  url: https://mirrors.edge.kernel.org/pub/software/scm/git/git-{{ version.raw }}.tar.xz
+  strip-components: 1
+
+provides:
+  - bin/git-gui
+  - bin/gitk
+
+versions:
+  github: git/git
+  regex: /(?<!-)git[._-]v?(\d+(?:\.\d+)+)$/i
+
+dependencies:
+  tcl-tk: "*"
+
+runtime:
+  env:
+    GIT_EXEC_PATH: ${{prefix}}/libexec/git-core
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: "*"
+  script: |
+    make git-gui gitk prefix=${{prefix}} gitexecdir=${{prefix}}/bin sysconfdir=${{etc}}
+    make install-git-gui install-gitk prefix=${{prefix}} gitexecdir=${{prefix}}/bin sysconfdir=${{etc}}
+
+test:
+  script: |
+    git gui --version | grep 'git-gui version {{version.raw}}'
+    gitk --version | grep 'gitk version {{version.raw}}'

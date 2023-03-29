@@ -1,0 +1,25 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/aspell/aspell-{{version}}.tar.gz
+
+versions:
+  - 0.60.8
+
+build:
+  dependencies:
+    x86-64:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    
+  working-directory:
+    out
+    
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make -j{{jobs}}
+    make install
+
+test: |
+  aspell list -d en_US <<< "misspell worrd"
+
+provides:
+  - bin/aspell

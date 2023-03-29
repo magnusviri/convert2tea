@@ -1,0 +1,57 @@
+distributable:
+      url: https://ftp.gnu.org/gnu/guile/guile-{{ version.raw }}.tar.xz
+
+    versions:
+      github: git.savannah.gnu.org/git/guile.git/tags
+      strip: /^v/
+
+    build:
+      dependencies:
+        linux:
+          gcc: '*'
+          make: '*'
+          autoconf: '*'
+          automake: '*'
+          gettext: '*'
+          flex: '*'
+        darwin:
+          tea.xyz/gx/cc: c99
+          tea.xyz/gx/make: '*'
+          gnu-sed: '*'
+          bdw-gc: '*'
+          gmp: '*'
+          libtool: '*'
+          libunistring: '*'
+          pkg-config: '*'
+          readline: '*'
+          gperf: '*'
+          libxcrypt: '*'
+      script: |
+        if [[ $TARGETPLATFORM == 'linux/amd64' ]]; then 
+          ./configure \
+            --prefix="{{prefix}}" \
+            --with-libreadline-prefix="{{ packages.readline.prefix }}" \
+            --with-libgmp-prefix="{{ packages.gmp.prefix }}" \
+            --disable-nls
+        else
+          ./configure \
+            --prefix="{{prefix}}" \
+            --with-libreadline-prefix="{{ packages.readline.prefix }}" \
+            --with-libgmp-prefix="{{ packages.gmp.prefix }}" \
+            --disable-nls \
+            CC="{{ env.CC }}"
+        fi
+
+        make --jobs {{ hw.concurrency }} install
+
+    test:
+      script: |
+        cat <<EOF > hello.scm
+          (display "Hello World")
+          (newline)
+        EOF
+        if [[ $TARGETPLATFORM == 'linux/amd64' ]]; then 
+          GUILE_AUTO_COMPILE=0 guile hello.scm
+        else
+          GUILE_AUTO_COMPILE=0 {{bin}}/guile hello.scm
+        fi

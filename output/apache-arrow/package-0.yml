@@ -1,0 +1,47 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=arrow/arrow-{{version}}/apache-arrow-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 11.0.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++
+    tea.xyz/gx/make: '*'
+    gnu.org/bison: ^3
+    cmake.org: ^3
+    llvm.org: ^15
+    aws.sdk.cpp: '*'
+    libbrotli: '*'
+    libbz2: '*'
+    google-glog: '*'
+    grpc: '*'
+    lz4: '*'
+    openssl: 1.1.*
+    protobuf: '*'
+    rapidjson: '*'
+    re2: '*'
+    snappy: '*'
+    thrift: '*'
+    utf8proc: '*'
+    z3: '*'
+    zstd: '*'
+    python.org: ^3
+  working-directory: cpp
+  script: |
+    cmake $ARGS -DARROW_WITH_LZ4=ON -DARROW_WITH_SNAPPY=ON ..
+    make --jobs {{ hw.concurrency }} 
+    make install
+  env:
+    ARGS:
+      - '-DCMAKE_BUILD_TYPE=RelWithDebInfo'
+      - '-DARROW_BUILD_SHARED=ON'
+
+provides:
+  - bin/arrow
+
+test:
+  script: |
+    arrow-config --version
+    /usr/bin/llvm-config-{{version.major}}{{version.minor}} --version

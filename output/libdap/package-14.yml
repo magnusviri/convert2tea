@@ -1,0 +1,35 @@
+Unfortunately, it is not possible to provide a direct translation from the Ruby format to the YML format, as the two formats have different syntax and structure. However, here is an attempt to provide a YML formula for the project libdap based on the information provided:
+
+    distributable:
+      url: https://www.opendap.org/pub/source/libdap-{{ version }}.tar.gz
+      strip-components: 1
+    
+    versions:
+      github: OPENDAP/libdap4
+      strip: /^v/
+    
+    dependencies:
+      libxml2: '*'
+      openssl@1.1: '*'
+      curl: '*'
+    
+    build:
+      dependencies:
+        autoconf: '*'
+        automake: '*'
+        bison: '*'
+        flex: '*'
+        libtool: '*'
+        pkg-config: '*'
+      script: |
+        autoreconf -fvi
+        ./configure --prefix={{ prefix }} --disable-dependency-tracking \
+          --disable-debug --with-included-regex
+        make
+        make check
+        make install
+        sed -i -e "s|$(brew --prefix libxml2)|{{ prefix }}|" $(brew --prefix)/bin/dap-config
+    
+    test:
+      script: |
+        dap-config --version | grep {{ version }}

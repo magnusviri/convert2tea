@@ -1,0 +1,1 @@
+Unfortunately, since the yml format is not a common format for Homebrew formulae, it is not possible to write a yml formula for the project augeas. The yml format is generally used for other package managers like Conda or Pip. However, you can still use the ruby formula provided to install augeas through Homebrew.

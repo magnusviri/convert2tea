@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/hunspell/hunspell/releases/download/v{{ version }}/hunspell-{{ version }}.tar.gz
+
+versions:
+  - 1.7.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    readline: '*'
+    ncurses: '*'
+    gettext:
+      unless: "test {{hw.platform}} != darwin"
+  script: |
+    ./configure --prefix={{ prefix }} \
+      --disable-silent-rules \
+      --with-ui \
+      --with-readline
+    make --jobs={{ hw.concurrency }}
+    make check
+    make install
+    rm -rf {{prefix}}/share  # docs are online
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    hunspell --help

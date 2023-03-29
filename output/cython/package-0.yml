@@ -1,0 +1,30 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/dc/f6/e8e302f9942cbebede88b1a0c33d0be3a738c3ac37abae87254d58ffc51c/Cython-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: cython/cython
+  strip: /^v/
+
+dependencies:
+  python@3.11: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    python3.11 setup.py build_ext --inplace --with-cython={{executable}}
+    python3.11 setup.py install --prefix={{prefix}} --with-cython={{executable}}
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    phrase="You are using Homebrew"
+    echo 'print(f"{phrase}")' > package_manager.py
+    echo 'from distutils.core import setup' > setup.py
+    echo 'from Cython.Build import cythonize' >> setup.py
+    echo 'setup(ext_modules=cythonize("package_manager.py"))' >> setup.py
+    python3.11 setup.py build_ext --inplace --with-cython={{executable}}
+    echo "import sys; sys.path.insert(0, '{{prefix}}/lib/python3.11/site-packages'); import package_manager" | python3.11 -`

@@ -1,0 +1,54 @@
+name: libdap
+description: "An implementation of the OPeNDAP protocol"
+
+maintainer:
+  - "username@example.com"
+
+distributable:
+  url: "https://www.opendap.org/pub/source/libdap-{{ version }}.tar.gz"
+  strip-components: 1
+
+versions:
+  homepage: "https://www.opendap.org/"
+  github: "OPENDAP/libdap4"
+  strip: /^v/
+
+dependencies:
+  tea.xyz/gx/cc: "c99"
+  tea.xyz/gx/make: "*"
+  libxml2: "*"
+  openssl: "*"
+  pkg-config: "*"
+  flex:
+    macos: "2.5.39"
+  bison:
+    macos: "3.5.2"
+  curl:
+    macos: "*"
+  util-linux:
+    linux: "*"
+
+build:
+  dependencies:
+    libtool:
+      macos: "*"
+  script: |
+    if [ "$GX_OS_NAME" = "linux" ]
+    then
+      export LD_LIBRARY_PATH="$(brew --prefix)/opt/libxml2/lib:$LD_LIBRARY_PATH"
+    fi
+    ./configure --prefix={{ prefix }} --disable-dependency-tracking --disable-debug --with-included-regex
+    make
+    make check
+    make install
+    # Ensure no Cellar versioning of libxml2 path in dap-config entries
+    xml2_prefix=$(pkg-config --variable=prefix libxml-2.0)
+    xml2_exec_prefix=$(pkg-config --variable=exec_prefix libxml-2.0)
+    xml2_libdir=$(pkg-config --variable=libdir libxml-2.0)
+    sed -i -e "s|${xml2_prefix}/|\${prefix}/|g" -e "s|${xml2_exec_prefix}/|\${prefix}/|g" -e "s|${xml2_libdir}/|\${prefix}/lib/|g" $(brew --prefix)/bin/dap-config
+
+test:
+  script: |
+    c++ example.cpp -ostress-test -I$(#{Formula["libdap"].opt_include}) -L$(#{Formula["libdap"].opt_lib}) -ldap -lcurl -lxml2 -lssl -lcrypto
+    ./stress-test http://oceanwatch.pfeg.noaa.gov/opendap/hyrax/GLOBAL_ANALYSIS_FORECAST_PHYS_001_002/contents.html /tmp/test.das
+    dap-config --version

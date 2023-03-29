@@ -1,0 +1,32 @@
+distributable:
+  url: https://github.com/facebook/fbthrift/archive/v2023.03.27.00.tar.gz
+
+versions:
+  - v2023.03.27.00
+
+provides:
+  - bin/thrift1
+  - lib/libthrift.dylib
+  - lib/libthriftcpp2.dylib
+
+build:
+  dependencies:
+    tea.xyz/gx/cmake: '*'
+    tea.xyz/gx/openssl: 1.1.*
+    tea.xyz/gx/zstd: '*'
+    tea.xyz/gx/fmt: '*'
+    tea.xyz/gx/gflags: '*'
+    tea.xyz/gx/glog: '*'
+    tea.xyz/gx/wangle: '*'
+    tea.xyz/gx/fizz: '*'
+    tea.xyz/gx/folly: '*'
+    tea.xyz/gx/bison: '*'
+    tea.xyz/gx/flex: '*'
+
+  script: |
+    $CMAKE_INSTALL_PREFIX=$PREFIX cmake -S . -B build -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_RPATH=$OS_LD_LIBRARY_PATH
+    cmake --build build
+    cmake --install build
+
+test:
+  script: echo no way to test this

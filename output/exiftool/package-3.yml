@@ -1,0 +1,28 @@
+distributable:
+  url: https://cpan.metacpan.org/authors/id/E/EX/EXIFTOOL/Image-ExifTool-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: exiftool/exiftool
+  strip: /^([\d\.]+)\//
+
+dependencies:
+  teacup: 0.0.1
+  perl: '*'
+
+pre_build:
+  - inreplace lib/Image/ExifTool.pm "LargeFileSupport => undef", "LargeFileSupport => 1"
+  - inreplace exiftool "unshift @INC, $incDir;", "unshift @INC, \"#{prefix}/lib\";"
+
+build:
+  dependencies:
+    teeceepee/binutils: '*'
+  script: |
+    perl Makefile.PL PREFIX={{ prefix }}
+    make all
+    make install
+
+test:
+  script: |
+    test_image={{ test_fixtures('test.jpg') }}
+    {{ bin('/exiftool') }} $test_image | grep "MIME Type\s+: image/jpeg"

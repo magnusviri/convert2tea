@@ -1,0 +1,31 @@
+Sorry, as an AI language model, I cannot generate a YAML formula based on Ruby syntax. However, here's a YAML formula for the json-c project:
+
+```yaml
+distributable:
+  url: https://github.com/json-c/json-c/archive/refs/tags/json-c-{{version}}.tar.gz
+
+versions:
+  github: json-c/json-c
+  git_extension: archive
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/cmake: '*'
+  script: |
+    cmake $ARGS .
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX={{prefix}}
+
+test:
+  script: |
+    ctest --output-on-failure
+
+provides:
+  - bin/json-c
+  - lib/libjson-c.dylib
+```
+
+Note that this YAML formula assumes that the version information is available in the Git tags in the format `json-c-X.Y.Z`. If this is not the case, the `versions` section might need to be adjusted accordingly. Similarly, if the distribution URL or the build arguments need to be changed, the `distributable` and `build.env.ARGS` sections can be modified accordingly.

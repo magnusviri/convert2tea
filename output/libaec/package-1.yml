@@ -1,0 +1,26 @@
+distributable:
+  url: https://gitlab.dkrz.de/k202009/libaec/-/archive/v{{version}}/libaec-v{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  gitlab: k202009/libaec/-/tags
+
+provides:
+  - bin/aec
+
+build:
+  dependencies:
+    cmake: '*'
+  script: |
+    mkdir build
+    cd build
+    cmake -DCMAKE_INSTALL_PREFIX="{{ prefix }}" -DBUILD_TESTING=ON ..
+    make
+    make test
+    make install
+
+test:
+  script: |
+    aec -v
+    c++ -o test test.cpp -I{{ include }} -L{{ lib }} -laec
+    ./test

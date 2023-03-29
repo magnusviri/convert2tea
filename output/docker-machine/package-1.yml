@@ -1,0 +1,24 @@
+distributable:
+  url: https://gitlab.com/gitlab-org/ci-cd/docker-machine.git
+  subdirectory: src/github.com/docker/machine
+  tag: v0.16.2-gitlab.20
+
+versions:
+  - 0.16.2-gitlab.20
+
+build:
+  dependencies:
+    tea.xyz/gx/go: '*'
+  script: |
+    export GOPATH=$(pwd)
+    cd src/github.com/docker/machine
+    make build
+    mkdir -p {{bin}}
+    cp bin/* {{bin}}
+
+test:
+  dependencies:
+    tea.xyz/gx/bash: '*'
+    tea.xyz/gx/coreutils: '*'
+  script: |
+    {{bin}}/docker-machine --version

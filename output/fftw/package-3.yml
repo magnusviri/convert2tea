@@ -1,0 +1,29 @@
+distributable:
+  url: https://fftw.org/fftw-3.3.10.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: https://fftw.org
+  regex: Latest FFTW release: <b>v?(\d+(?:\.\d+)+)</b>
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      open-mpi: '*'
+    darwin:
+      tea.xyz/gx/cc: '*'
+      gcc: '*'
+      open-mpi: '*'
+  script: |
+    export CFLAGS="-fPIC"
+    ./configure --enable-shared --enable-threads --enable-mpi --enable-openmp --disable-debug --prefix="{{prefix}}"
+    make -j {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    open-mpi: '*'
+  script: |
+    cc fixture.c -I{{include}} -L{{lib}} -lfftw3_mpi -lfftw3 -lm
+    mpirun -np 4 ./a.out

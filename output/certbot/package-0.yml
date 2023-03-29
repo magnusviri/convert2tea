@@ -1,0 +1,33 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/96/41/dffce7ba281a21edd231ad7e7c7cb363c8aecb53ca4b8fee7e7ec24ea1f2/certbot-{{version.marketing}}.tar.gz
+
+versions:
+  - 2.4.0
+
+dependencies:
+  rust.net: '*'
+  augeas.net: '*'
+  dialog.net: '*'
+  openssl.net: 1.1
+  python.net: 3.11
+  six.net: '*'
+  libffi.net: '*'
+
+build:
+  dependencies:
+    pkg-config.net: '*' # for Linux only
+  script: |
+    python3.11 -m virtualenv -p python3.11 {{prefix}}
+    {{prefix}}/bin/pip install --no-binary cryptography cryptography
+    {{prefix}}/bin/python3.11 setup.py install --prefix={{prefix}}
+
+provides:
+  - bin/certbot
+
+test:
+  script: |
+    assert {{bin/certbot}} --version | grep {{version.marketing}}
+    # This throws a bad exit code but we can check it actually is failing
+    # for the right reasons by asserting. --version never fails even if
+    # resources are missing or outdated/too new/etc.
+    {{bin/certbot}} || true # expected to fail for non-root user

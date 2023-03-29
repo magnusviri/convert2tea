@@ -1,0 +1,41 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=apr/apr-util-1.6.3.tar.bz2
+  strip-components: 1
+
+versions:
+  apache: apr/apr-util
+  version:
+    regex: \d+\.\d+\.\d+
+    url: https://www.apache.org/dist/{{ apache }}/apr-util-{{ version }}.tar.bz2
+
+provides:
+  - bin/apu-1-config
+  - bin/apu-1-util
+
+dependencies:
+  openssl.org: ^1
+  apr.apache.org: ^1
+  expat.github.io: '*'
+  sqlite.org: ^3
+  libxcrypt: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    freedesktop.org/pkg-config: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --with-apr="{{Formula['apr'].opt_prefix}}"
+      - --with-openssl="{{Formula['openssl@1.1'].opt_prefix}}"
+      - --with-crypto
+      - --without-pgsql
+
+test: |
+  apu-1-config --prefix
+  apu-1-util --version

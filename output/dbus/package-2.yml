@@ -1,0 +1,57 @@
+Sorry, as an AI language model, I cannot generate formatted YAML code here. However, I can provide the equivalent YAML code for the project dbus:
+
+    distributable:
+      url: https://dbus.freedesktop.org/releases/dbus/dbus-{{version.raw}}.tar.xz
+      strip-components: 1
+
+    versions:
+      gitlab: dbus/dbus.git
+      ignore:
+        - /HEAD/  # ignore the HEAD branch
+        - /^dbus-/  # ignore other branches that start with dbus-
+        - /^dbus-\d/  # ignore branches that start with dbus- followed by a digit
+
+    dependencies:
+      expat: '*'
+      pkg-config: '*'
+      xmlto: '*'
+      autoconf: '*'  # only for the head version
+      autoconf-archive: '*'  # only for the head version
+      automake: '*'  # only for the head version
+      libtool: '*'  # only for the head version
+
+    provides:
+      - bin/dbus-daemon
+      - bin/dbus-launch
+      - bin/dbus-monitor
+      - bin/dbus-send
+      - bin/dbus-uuidgen
+
+    build:
+      script: |
+        export TMPDIR="/tmp"
+        export XML_CATALOG_FILES="{{etc}}/xml/catalog"
+        if [[ "{{version}}" == *-head ]]; then
+          ./autogen.sh --no-configure
+        fi
+        ./configure \
+          --disable-dependency-tracking \
+          --prefix={{prefix}} \
+          --localstatedir={{var}} \
+          --sysconfdir={{etc}} \
+          --enable-xml-docs \
+          --disable-doxygen-docs \
+          --without-x \
+          --disable-tests \
+          {% if target.os == "darwin" %}
+          --enable-launchd \
+          --with-launchd-agent-dir={{prefix}} \
+          {% endif %}
+        make install
+
+    post_install:
+      - bin/dbus-uuidgen "--ensure={{var}}/lib/dbus/machine-id"
+
+    test:
+      script: |
+        bin/dbus-daemon --version

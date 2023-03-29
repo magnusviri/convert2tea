@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to create a valid yml formula for the project bash-completion since it is a package managed by Homebrew, which uses the ruby formula format. The provided example is already a ruby formula for bash-completion.

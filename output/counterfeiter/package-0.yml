@@ -1,0 +1,30 @@
+distributable:
+  url: https://github.com/maxbrunsfeld/counterfeiter/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 6.6.1
+
+build:
+  dependencies:
+    golang.org/go: '*'
+  working-directory: counterfeiter
+  script:
+    - export GOPATH=$PWD
+    - go build -o counterfeiter main.go
+    - mv counterfeiter {{prefix}}/bin
+  env:
+    GOROOT: '{{deps.golang.org/go}}'
+
+provides:
+  - bin/counterfeiter
+
+test:
+  script: |
+    export GOPATH=$PWD
+    output=$(counterfeiter -p os 2>&1)
+    echo "$output"
+    if [[ ! -f osshim/os.go ]]; then
+      echo "osshim/os.go not generated"
+      exit 1
+    fi

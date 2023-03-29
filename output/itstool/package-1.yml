@@ -1,0 +1,36 @@
+distributable:
+  url: http://files.itstool.org/itstool/itstool-{{ version }}.tar.bz2
+
+versions:
+  github: itstool/itstool/tags
+  strip: v
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/autoconf: '*'
+      tea.xyz/gx/automake: '*'
+    windows:
+      chocolatey/gcc: msvc140
+      chocolatey/autoconf: '2.69.1'
+      chocolatey/automake: '1.16.3'
+  script: |
+    PYTHON=python3
+    if [[ $OS == Windows_NT ]]; then
+      PATH+=":/usr/bin:/usr/sbin"
+      PYTHON=$(command -v $PYTHON)
+      CC=gcc
+    fi
+    $PYTHON -m ensurepip --user --default-pip
+    $PYTHON -m pip install setuptools
+    $PYTHON -m pip install lxml
+    $PYTHON setup.py install --prefix="{{ prefix }}"
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    (echo "<tag>Homebrew</tag>" > test.xml && "$PREFIX/bin/itstool" -o test.pot test.xml && grep "Homebrew" test.pot) || exit 1

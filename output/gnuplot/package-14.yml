@@ -1,0 +1,49 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/gnuplot/gnuplot/{{version}}/gnuplot-{{version}}.tar.gz
+  strip-components: 1
+
+# versions can be parsed from the website
+versions:
+  sourceforge: gnuplot/gnuplot/{{version}}
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    pkg-config.org: '*'
+    freetype.org: '*'
+    fontconfig.org: '*'
+    gd.org: '*'
+    qt.io: ^5
+  script: |
+    # configure gnuplot
+    env PKG_CONFIG_PATH="$(pkg-config-printenv)" CPPFLAGS="-I{{brew_prefix}}/opt/freetype/include -I{{brew_prefix}}/opt/fontconfig/include" LDFLAGS="-L{{brew_prefix}}/opt/freetype/lib -L{{brew_prefix}}/opt/fontconfig/lib" \
+      ./configure \
+        --disable-dependency-tracking \
+        --disable-silent-rules \
+        --prefix="{{prefix}}" \
+        --with-readline="{{brew_prefix}}" \
+        --without-tutorial \
+        --disable-wxwidgets \
+        --with-qt \
+        --without-x \
+        --without-latex \
+        --without-lua \
+        --with-gd \
+        --with-qt=5 \
+        --with-pdf=#{which 'pdflatex'}
+    make
+    make install
+
+provides:
+  - bin/gnuplot
+  - bin/gnuplot5
+
+test:
+  fixture: |
+    set terminal dumb;
+    set output "{{prefix}}"/graph.txt;
+    plot sin(x);
+  script: |
+    gnuplot < $FIXTURE
+    test -f "{{prefix}}"/graph.txt

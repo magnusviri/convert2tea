@@ -1,0 +1,38 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=apr/apr-util-{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  strip: /^apr-util-/
+
+dependencies:
+  openssl.org: ^1.1
+  apr-util: "*"
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --with-apr-util={{Formula["apr-util"].opt_prefix}}
+      - --with-crypto
+      - --with-openssl
+  test:
+    make test
+
+test:
+  script: |
+    echo "No tests available for apr-util"
+
+# TODO need to fix the .la file
+
+provides:
+  - libexec/lib/libaprutil-1.dylib
+  - libexec/lib/libaprutil-1.la
+  - libexec/lib/libaprutil-1.so
+  - libexec/lib/pkgconfig/apr-util-1.pc

@@ -1,0 +1,57 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/groff/groff-1.22.4.tar.gz
+
+versions:
+  - 1.22.4
+
+build:
+  dependencies:
+    x86-64:
+      bison.us: '*'
+      gcc.us: '*'
+      make.us: '*'
+      pkg-config.us: '*'
+    darwin:
+      bison.us: '*'
+      gcc.us: '*'
+      make.us: '*'
+      pkg-config.us: '*'
+    linux:
+      bison.us: '*'
+      gcc.us: '*'
+      make.us: '*'
+      pkgconfig: '*'
+      python3: '*'
+      texinfo.us: '*'
+    # not sure about the version required here, assuming that any version supported by groff would work
+    netpbm:
+      libnetpbm.: '*'
+  # requires patching on macOS 11
+  patch: >-
+    #!/bin/bash
+    curl https://raw.githubusercontent.com/Homebrew/formula-patches/8059b3027a4aa68d8f42e1281cc3a81449ca0010/groff/1.22.4.patch |
+    patch -p1
+    aclocal -I m4
+    sed -e 's|/usr/share/fonts|/System/Library/Fonts|g' -i '' src/drivers/gxditview/fontmap/devutf8/fontmap.in
+    sed -e 's|/usr/share/wallpapers|/Library/Desktop Pictures|' -i '' doc/groff.texi
+    sed -E -e 's|@groff_version_major@.\+alpha@groff_version_minor@|1.22.4|g' -i '' src/preproc/{Makefile.in,version.c}
+  working-directory: groff-1.22.4
+  script:
+    - ./configure --prefix=%PREFIX% --without-x --with-uchardet
+    - make
+    - make install
+  env:
+    PREFIX: "{{prefix}}"
+test: |
+  groff -h
+
+provides:
+  - bin/groff
+  - bin/grohtml
+  - bin/gxditview
+  - bin/gxps
+  - bin/gxpdf
+  - bin/gximg
+  - bin/grops
+  - bin/grotty
+  - bin/gdiffmk

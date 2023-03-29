@@ -1,0 +1,47 @@
+distributable:
+  url: https://github.com/strukturag/libde265/releases/download/v{{version}}/libde265-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.0.11
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/make: '*'
+    autotools.com: '*'
+  script: |
+    ./configure --disable-dependency-tracking \\
+                --disable-silent-rules \\
+                --disable-sherlock265 \\
+                --disable-dec265 \\
+                --prefix={{prefix}}
+
+    make install
+
+    # Install the test-related executables in libexec.
+    mkdir -p {{libexec}}/bin
+    cp acceleration_speed block-rate-estim tests {{libexec}}/bin
+
+    # Rename libde265.pc to libde265-lib.pc to avoid conflict with libde265-devel.pc from openhevc-1.6.0.
+    mv {{prefix}}/lib/pkgconfig/libde265.pc {{prefix}}/lib/pkgconfig/libde265-lib.pc
+
+  test:
+    dependencies:
+      tea.xyz/gx/cc: '*'
+    env:
+      PKG_CONFIG_PATH: {{prefix}}/lib/pkgconfig
+    fixture: |
+      #include <de265.h>
+      #include <assert.h>
+      int main() {
+        de265_decoder_parameters* p = de265_new_decoder_parameters();
+        assert(p != NULL);
+        de265_free_decoder_parameters(p);
+        return 0;
+      }
+    script: |
+      echo "$FIXTURE" > test.c
+      gcc test.c -o test `pkg-config --cflags --libs de265`
+      ./test

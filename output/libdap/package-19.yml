@@ -1,0 +1,34 @@
+distributable:
+  url: https://www.opendap.org/pub/source/libdap-{{ version }}.tar.gz
+  patch:
+    url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff
+
+versions:
+  github: OPENDAP/libdap4
+  branch: master
+
+dependencies:
+  tea.xyz/bison: '*'
+  tea.xyz/pkg-config: '*'
+  libxml2:
+  openssl@1.1:
+  flex:
+  curl:
+
+build:
+  dependencies:
+    tea.xyz/autoconf: '*'
+    tea.xyz/automake: '*'
+    tea.xyz/libtool: '*'
+  script: |
+    autoreconf -fvi
+    ./configure --prefix={{ prefix }} --disable-dependency-tracking --disable-debug --with-included-regex
+    make
+    make check
+    make install
+    #{Formula["libxml2"].opt_prefix.realpath} -> #{Formula["libxml2"].opt_prefix}:
+    inreplace #{bin}/dap-config #{Formula["libxml2"].opt_prefix.realpath} #{Formula["libxml2"].opt_prefix}
+
+test:
+  script: |
+    dap-config --version | grep {{ version }}

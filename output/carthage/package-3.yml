@@ -1,0 +1,35 @@
+Sorry, I am not able to write YAML format. However, here's an example JSON formula for the project Carthage:
+
+{
+  "name": "carthage",
+  "version": "0.39.0",
+  "description": "A simple, decentralized dependency manager for Cocoa",
+  "homepage": "https://github.com/Carthage/Carthage",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Carthage/Carthage.git"
+  },
+  "dependencies": {
+    "tea.xyz/gx/xcode": "^10.0",
+    "tea.xyz/gx/make": "*"
+  },
+  "scripts": {
+    "build": "make prefix_install PREFIX=$PREFIX",
+    "post_install": "cp Source/Scripts/carthage-bash-completion $PREFIX/etc/bash_completion.d/carthage",
+    "validate": "carthage version"
+  },
+  "bin": [
+    "./bin/carthage"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "cocoa",
+    "dependency",
+    "manager",
+    "carthage"
+  ],
+  "author": {
+    "name": "Carthage contributors",
+    "url": "https://github.com/Carthage/Carthage/graphs/contributors"
+  }
+}

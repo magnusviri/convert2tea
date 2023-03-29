@@ -1,0 +1,46 @@
+distributable:
+  url: https://github.com/facebookexperimental/edencommon/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: facebookexperimental/edencommon/releases/tags
+
+provides:
+  - bin/test
+
+build:
+  dependencies:
+    cmake: '*'
+    googletest: '*'
+    folly: '*'
+    gflags: '*'
+    glog: '*'
+  script: |
+    cmake -S . -B _build -DBUILD_SHARED_LIBS=ON {{ std_cmake_args }}
+    cmake --build _build
+    cmake --install _build
+
+test:
+  script: |
+    (cat <<EOF
+      #include <eden/common/utils/ProcessNameCache.h>
+      #include <cstdlib>
+      #include <iostream>
+      using namespace facebook::eden;
+      ProcessNameCache& getProcessNameCache() {
+        static auto* pnc = new ProcessNameCache;
+        return *pnc;
+      }
+      ProcessNameHandle lookupProcessName(pid_t pid) {
+        return getProcessNameCache().lookup(pid);
+      }
+      int main(int argc, char **argv) {
+        if (argc <= 1) return 1;
+        int pid = std::atoi(argv[1]);
+        std::cout << lookupProcessName(pid).get() << std::endl;
+        return 0;
+      }
+    EOF
+    ) > test.cc
+    {{ env['CXX'] }} -std=c++17 -I{{ include }} test.cc -L{{ lib }} -L{{ googletest.lib }} -L{{ folly.lib }} -L{{ glog.lib }} -ledencommon_utils -lgtest -lgtest_main -lgmock -lgmock_main -lfolly -lfollybenchmark -lboost_context -lglog -o test
+    ./test $(pidof test)

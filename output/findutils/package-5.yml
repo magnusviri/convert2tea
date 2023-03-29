@@ -1,0 +1,25 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/findutils/findutils-4.9.0.tar.xz
+  strip-components: 1
+
+versions:
+  github: ""
+
+dependencies:
+  ""
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure
+    make
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    touch HOMEBREW
+    find . -name "HOMEBREW"

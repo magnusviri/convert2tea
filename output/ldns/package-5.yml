@@ -1,0 +1,53 @@
+distributable:
+  url: https://nlnetlabs.nl/downloads/ldns/ldns-{{version}}.tar.gz
+
+versions:
+  - 1.8.3
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    swig: '*'
+    openssl.org: 1.1
+    python.org: 3.11
+  script: |
+    export PYTHON=$(which python3.11)
+    export PYTHON_SITE_PKG={{prefix}}/{{PYTHON.site_packages}}
+    ./configure \
+      --prefix={{prefix}} \
+      --with-drill \
+      --with-examples \
+      --with-ssl={{openssl.org.opt_prefix}} \
+      --with-pyldns \
+      --disable-dane-verify \
+      --without-xcode-sdk
+      
+    if [[ $(uname -s) == Darwin ]]; then
+      sed -i '' "s#\$(PYTHON_CFLAGS) -no-undefined#\$(PYTHON_CFLAGS)#" ./Makefile
+      sed -i '' "s#\$(PYTHON_LIBS) -undefined dynamic_lookup#-undefined dynamic_lookup#" ./Makefile
+    fi
+    
+    make
+    make install
+    make install-pyldns
+    cp packaging/libldns.pc {{lib.pkgconfig}}
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: ^0.29
+  fixture: |
+    powerdns.com.   10773 IN  DNSKEY  256 3 8  AwEAAbQOlJUPNWM8DQown5y/wFgDVt7jskfEQcd4pbLV/1osuBfBNDZX powerdns.com.   10773 IN  DNSKEY  257 3 8  AwEAAb/+pXOZWYQ8mv9WM5dFva8WU9jcIUdDuEjldbyfnkQ/xlrJC5zA EfhYhrea3SmIPmMTDimLqbh3/4SMTNPTUF+9+U1vpNfIRTFadqsmuU9F ddz3JqCcYwEpWbReg6DJOeyu+9oBoIQkPxFyLtIXEPGlQzrynKubn04C x83I6NfzDTraJT3jLHKeW5PVc1ifqKzHz5TXdHHTA7NkJAa0sPcZCoNE 1LpnJI/wcUpRUiuQhoLFeT1E432GuPuZ7y+agElGj0NnBxEgnHrhrnZW UbULpRa/il+Cr5Taj988HqX9Xdm6FjcP4Lbuds/44U7U8du224Q8jTrZ 57Yvj4VDQKc=
+  env:
+    cxxflags: $(pkg-config --cflags ldns)
+  script: |
+    echo $FIXTURE > powerdns.com.dnskey
+    ldns-key2ds powerdns.com.dnskey > output.txt
+    out=$(ldns-key2ds powerdns.com.dnskey)
+    if test "$out" = "d4c3d5552b8679faeebc317e5f048b614b2e5f607dc57f1553182d49ab2179f7"; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

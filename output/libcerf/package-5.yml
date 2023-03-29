@@ -1,0 +1,32 @@
+distributable:
+  url: https://jugit.fz-juelich.de/mlz/libcerf/-/archive/v{{version}}/libcerf-v{{version}}.tar.gz
+
+versions:
+  - 2.3
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    tea.xyz/gx/cc: c99
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+  working-directory:
+    build
+  script: |
+    cmake .. $ARGS
+    make
+    make install
+  env:
+    linux:
+      LDFLAGS: -Wl,-z,relro,-z,now -Wl,--as-needed
+      CXXFLAGS: -fPIC
+      CFLAGS: -fPIC
+      CPPFLAGS: -fPIC
+      ARGS:
+        - -DCMAKE_BUILD_TYPE=Release
+        - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+test: |
+  cerf
+provides:
+  - bin/cerf

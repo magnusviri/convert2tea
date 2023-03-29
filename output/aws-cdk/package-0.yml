@@ -1,0 +1,28 @@
+distributable:
+  url: https://registry.npmjs.org/aws-cdk/-/aws-cdk-{{version.marketing}}.tgz
+  strip-components: 1
+
+versions:
+  - "2.70.0"
+
+dependencies:
+  node: "*"
+
+build:
+  dependencies:
+    tea.xyz/gx/node: "*"
+    tea.xyz/gx/npm: "*"
+  script: |
+    npm install -g aws-cdk
+    mkdir -p {{prefix}}/bin
+    ln -sf $(which cdk) {{prefix}}/bin
+
+provides:
+  - bin/cdk
+
+test:
+  script: |
+    mkdir testapp
+    cd testapp
+    cdk init app --language=typescript
+    cdk ls

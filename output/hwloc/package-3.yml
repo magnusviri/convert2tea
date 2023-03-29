@@ -1,0 +1,54 @@
+distributable:
+  url: https://download.open-mpi.org/release/hwloc/v{{version}}/hwloc-{{version}}.tar.bz2
+
+versions:
+  - 2.9.0
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: clang
+    tea.xyz/gx/make: '*'
+    autotools: '*'
+    pkg-config: '*'
+  script: |
+    autoreconf -i ..
+    ./configure --prefix={{prefix}} \
+      --enable-shared \
+      --enable-static \
+      --disable-cairo \
+      --without-x
+    make install
+  env:
+    CFLAGS: -I{{prefix}}/include
+    LDFLAGS: -L{{prefix}}/lib
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: clang
+    freedesktop.org/pkg-config: ^0.29
+  env:
+    CFLAGS: -I{{prefix}}/include
+    LDFLAGS: -L{{prefix}}/lib
+    PKG_CONFIG_PATH: {{prefix}}/lib/pkgconfig
+  fixture: |
+    #include "hwloc.h"
+    #include <assert.h>
+    int main()
+    {
+      hwloc_topology_t topology;
+      hwloc_topology_init(&topology);
+      hwloc_topology_load(topology);
+      hwloc_topology_check(topology);
+      hwloc_topology_destroy(topology);
+      return 0;
+    }
+  script: |
+    mv $FIXTURE test.c
+    $CC test.c $CFLAGS $LDFLAGS -lhwloc -o test
+    ./test > output.txt
+    if fgrep --quiet "Assertion `!err' failed" output.txt; then
+      echo "FAIL"
+    else
+      echo "PASS"
+    fi

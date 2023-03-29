@@ -1,0 +1,33 @@
+distributable:
+  url: https://dev-www.libreoffice.org/src/cppunit-{{version}}.tar.gz
+  archive_type: gz
+
+versions:
+  web:
+    url: https://dev-www.libreoffice.org/src/
+    regex: href=["']?cppunit[._-]v?(\d+(?:\.\d+)+)\.t
+
+provides:
+  - bin/DllPlugInTester
+
+dependencies:
+  zlib.net: '*'
+
+build:
+  dependencies:
+    - tea.xyz/gx/make: '*'
+    - tea.xyz/gx/cc: c99
+    - ftp.gnu.org/automake: 1.16.3
+    - ftp.gnu.org/autoconf: 2.69
+  script: |
+    ./autogen.sh
+    ./configure $ARGS
+    make
+    make install
+  env:
+    ARGS:
+      - --disable-dependency-tracking
+      - --prefix="{{prefix}}"
+
+test: |
+  DllPlugInTester -h

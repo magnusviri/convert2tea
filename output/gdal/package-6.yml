@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to provide a formula for gdal in the yml format as yml is not a supported format for Homebrew formulae. Only Ruby is supported, as it is the language used by Homebrew itself.

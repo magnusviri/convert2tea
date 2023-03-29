@@ -1,0 +1,44 @@
+Sorry, as an AI language model, I cannot produce high-quality YML format formula for the given project without any reference. However, below is an example formula in the YML format based on my understanding of the project:
+
+    distributable:
+      url: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9531/jbig2dec-0.19.tar.gz
+      strip-components: 1
+    
+    versions:
+      github: ArtifexSoftware/ghostpdl-downloads/releases/tags
+
+    build:
+      dependencies:
+        - tea.xyz/gx/cc: c99
+        - tea.xyz/gx/make: '*'
+        - gnu.org/autoconf: '2.69'
+        - gnu.org/automake: '1.16.1'
+        - gnu.org/libtool: '2.4.6'
+      working-directory: .
+      script: |
+        ./autogen.sh
+        ./configure --prefix="{{prefix}}" --without-libpng
+        make --jobs {{hw.concurrency}}
+        make install
+      env:
+        ARGS:
+          - CFLAGS=-fPIC
+          - CPPFLAGS=-I/usr/local/opt/libpng/include
+          - LDFLAGS=-L/usr/local/opt/libpng/lib
+    
+    provides:
+      - bin/jbig2dec
+      - bin/jbgtopbm
+      - bin/jbgtopbm-custom
+    
+    test:
+      script: |
+        curl "https://github.com/apache/tika/raw/master/tika-parsers/src/test/resources/test-documents/testJBIG2.jb2" -o testJBIG2.jb2
+        out=$(jbig2dec -t pbm --hash testJBIG2.jb2)
+        exp=$(cat <<EOS
+        aa35470724c946c7e953ddd49ff5aab9f8289aaf
+        EOS
+        )
+        
+        test "$out" = "$exp"
+      timeout: 240  # in seconds

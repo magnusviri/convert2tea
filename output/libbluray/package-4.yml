@@ -1,0 +1,29 @@
+distribution:
+  url: https://download.videolan.org/videolan/libbluray/{{ version }}/libbluray-{{ version }}.tar.bz2
+
+versions:
+  url: https://download.videolan.org/pub/videolan/libbluray/
+  regex: href=["']?v?(\d+(?:\.\d+)+)/?["' >]
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/autoconf: *
+    tea.xyz/gx/automake: *
+    tea.xyz/gx/libtool: *
+  script: |
+    args = %W[--prefix={{ prefix }} --disable-dependency-tracking --disable-silent-rules --disable-bdjava-jar]
+    ./bootstrap if [{{ version.raw }}] == "HEAD"
+    ./configure *args
+    make
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -I{{ include }} -L{{ lib }} -lbluray
+    ./a.out

@@ -1,0 +1,24 @@
+distributable:
+  url: https://download.gnome.org/sources/atk/2.38/atk-2.38.0.tar.xz
+  strip-components: 1
+
+versions:
+  - 2.38.0
+
+provides:
+  - lib/libatk-1.0.dylib
+  - include/atk-1.0/
+
+build:
+  dependencies:
+    tea.xyz/gx/meson: '*'
+    tea.xyz/gx/ninja: '*'
+
+  script: |
+    meson setup builddir --prefix={{prefix}}
+    ninja -C builddir
+    ninja -C builddir install
+
+test:
+  commands:
+    - echo "No way to test this"

@@ -1,0 +1,46 @@
+distributable:
+  url: https://libisl.sourceforge.io/isl-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  github: gcc-mirror/isl
+  strip: /^isl-/
+
+dependencies:
+  gmp: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |
+    ./autogen.sh
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --prefix={{prefix}}
+    - --with-gmp=system
+    - --with-gmp-prefix={{Formua["gmp"].opt_prefix}}
+
+test:
+  script: |
+    ./test.c
+  test.c:
+    write: |
+      #include <isl/ctx.h>
+      int main()
+      {
+        isl_ctx* ctx = isl_ctx_alloc();
+        isl_ctx_free(ctx);
+        return 0;
+      }
+
+provides:
+  - bin/isl
+  - bin/isl-config
+  - man/man3/isl.3
+  - share/gdb/auto-load/{{version}}/{{arch}}-unknown-linux-gnu/libisl-gdb.py

@@ -1,0 +1,28 @@
+Unfortunately, it is not possible to convert the Ruby formula for bash-completion to a YAML formula as they are two different package formats and have different syntax and structure. However, a new YAML formula can be created based on the information provided in the Ruby formula. Here's an example YAML formula:
+
+```
+distributable:
+  url: https://src.fedoraproject.org/repo/pkgs/bash-completion/bash-completion-1.3.tar.bz2/a1262659b4bbf44dc9e59d034de505ec/bash-completion-1.3.tar.bz2
+  strip-components: 1
+
+build:
+  dependencies:
+    - tea.xyz/gx/cc: c99
+    - tea.xyz/gx/make: '*'
+  working-directory: build
+  script: |
+    ./configure --prefix="{{ prefix }}"
+    make install
+  env:
+    PATH: "{{ env.PATH }}:{{ prefix }}/bin"
+
+provides:
+  - bin/bash-completion
+
+test:
+  script: |
+    source "{{ etc }}/profile.d/bash_completion.sh"
+    bash -c "complete -p | grep -qE 'man\s*$'"
+```
+
+Note that this YAML formula is a simplified version of the Ruby formula and might not include all the necessary dependencies and settings required for a successful installation.

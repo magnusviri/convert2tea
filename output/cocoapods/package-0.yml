@@ -1,0 +1,51 @@
+distributable:
+  url: https://github.com/CocoaPods/CocoaPods/archive/{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: CocoaPods/CocoaPods/tags
+
+build:
+  dependencies:
+    # macOS comes with ruby preinstalled so we don't need to install it
+    coffee-script.org: '*'
+    sass-lang.com/dart-sass: '*'
+    bourbon.io/bourbon: '*'
+    thoughtbot/neat: '*'
+  working-directory: .
+  script: |
+    if [[ "$(uname -sp)" == "Darwin x86_64" ]]; then
+      # For macOS we have to check if we are using XCode 10 or lower
+      if clang -v 2>&1 | grep -q 'Appleclang version 1'; then
+        export AR=/usr/bin/ar
+      else
+        export AR=/usr/bin/llvm-ar
+      fi
+    fi
+
+    # install cocoapods dependencies
+    bundle install
+
+    # build cocoapods
+    rake build
+
+    # install cocoapods to the prefix
+    rake install prefix="{{prefix}}"
+
+    # remove duplicate executables
+    rm -f "{{prefix}}"/bin/rake
+
+provides:
+  - bin/pod
+
+test:
+  fixture: |
+    platform :ios, '13.0'
+    target 'MyApp' do
+      # Here we are using a common pod spec
+      pod 'Alamofire', '~> 5.3'
+    end
+  script: |
+    pod install --no-repo-update
+    pod list | grep Alamofire | grep -q '5.3'

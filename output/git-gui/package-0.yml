@@ -1,0 +1,47 @@
+distributable:
+  url: https://mirrors.edge.kernel.org/pub/software/scm/git/git-{{ version }}.tar.xz
+
+provides:
+  - bin/git-gui
+  - bin/gitk
+
+dependencies:
+  tcltk.xyz/tcl-tk: '*'
+
+versions:
+  url: https://mirrors.edge.kernel.org/pub/software/scm/git/
+  regex: git-(\d+\.\d+\.\d+)\.tar\.xz
+
+build:
+  script: |
+    # build verbosely
+    export V=1
+    tcl_bin=$(brew --prefix tcl-tk)/bin
+    args=(
+      prefix={{prefix}}
+      gitexecdir={{bin}}
+      sysconfdir={{etc}}
+      CC=#{ENV.cc}
+      CFLAGS=#{ENV.cflags}
+      LDFLAGS=#{ENV.ldflags}
+      TCL_PATH=${tcl_bin}/tclsh
+      TCLTK_PATH=${tcl_bin}/wish
+    )
+
+    # By setting TKFRAMEWORK to a non-existent directory we ensure that
+    # the git makefiles don't install a .app for git-gui
+    unset TKFRAMEWORK
+    make -C git-gui "${args[@]}"
+    make -C gitk-git "${args[@]}"
+    make -C Documentation all
+
+runtime:
+  env:
+    GIT_TEMPLATE_DIR: {{homebrew_prefix}}/share/git-core/templates
+    GITGUI_BUGREPORT: "https://github.com/git/git/issues/new"
+
+test:
+  script: |
+    bin/git-gui --version
+    bin/gitk --version
+  skip: "Not implemented yet."

@@ -1,0 +1,74 @@
+distributable:
+  url: https://github.com/grpc/grpc/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.53.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++17
+    tea.xyz/gx/cmake: '*'
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/abseil: '*'
+    tea.xyz/gx/c-ares: '*'
+    tea.xyz/gx/open-ssl: '*'
+    tea.xyz/gx/protobuf: '*'
+    tea.xyz/gx/re2: '*'
+    tea.xyz/gx/zlib: {platform: darwin, version: '#system'}
+  script: |
+    cmake -B build \
+    -D CMAKE_BUILD_TYPE=Release \
+    -D CMAKE_CXX_STANDARD=17 \
+    -D CMAKE_CXX_STANDARD_REQUIRED=TRUE \
+    -D CMAKE_INSTALL_PREFIX={{ prefix }} \
+    -D CMAKE_INSTALL_RPATH=#{rpath} \
+    -D gRPC_BUILD_TESTS=OFF \
+    -D gRPC_INSTALL=ON \
+    -D gRPC_ABSL_PROVIDER=package \
+    -D gRPC_CARES_PROVIDER=package \
+    -D gRPC_SSL_PROVIDER=package \
+    -D gRPC_PROTOBUF_PROVIDER=package \
+    -D gRPC_RE2_PROVIDER=package \
+    -D gRPC_ZLIB_PROVIDER={{ 'package' if hw.platform == 'darwin' else 'system' }} \
+    -D OPENSSL_ROOT_DIR={{ tea.xyz/gx/open-ssl.prefix }} \
+    -D OPENSSL_INCLUDE_DIR={{ tea.xyz/gx/open-ssl.include }} \
+    -D ZLIB_ROOT={{ tea.xyz/gx/zlib.prefix }}/lib/cmake/zlib \
+    -D Protobuf_PROTOC_EXECUTABLE={{ tea.xyz/gx/protobuf.bin }}/protoc \
+    -D Protobuf_INCLUDE_DIR={{ tea.xyz/gx/protobuf.prefix }}/include \
+    -D Protobuf_LIBRARY={{ tea.xyz/gx/protobuf.prefix }}/lib/libprotobuf.dylib \
+    -D Protobuf_PROTOC_LIBRARY={{ tea.xyz/gx/protobuf.prefix }}/lib/libprotoc.dylib \
+    ./
+
+    cmake --build build --config Release --target install
+
+    mkdir -p build/grpc_cli
+    cd build/grpc_cli
+    cmake -D CMAKE_INSTALL_PREFIX="{{ prefix }}" \
+    -D CMAKE_INSTALL_RPATH=#{rpath} \
+    -D gRPC_BUILD_TESTS=ON \
+    ../../third_party/grpc/tools/grpc_cli
+
+    cmake --build . --target grpc_cli --config Release
+
+    if test {{hw.platform}} = darwin; then
+      install_name_tool -change \
+        @rpath/libgrpc++.4.dylib \
+        @loader_path/libgrpc++.4.dylib \
+        {{prefix}}/bin/grpc_cli
+    fi
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c++17
+  script: |
+    cc test.cpp -lgrpc++ \
+    {{ tea.xyz/gx/c-ares.lib }} \
+    {{ tea.xyz/gx/open-ssl.lib }} \
+    {{ tea.xyz/gx/protobuf.lib }} \
+    {{ tea.xyz/zlib.lib }} \
+    {{ tea.xyz/gx/abseil.lib }} \
+    {{ tea.xyz/gx/re2.lib }} \
+    -o test
+
+    ./test

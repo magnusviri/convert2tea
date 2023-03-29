@@ -1,0 +1,112 @@
+project:
+      name: httpd
+      homepage: https://httpd.apache.org/
+      versions:
+        github: apache/httpd/releases
+      build:
+        dependencies:
+          brotli: '*'
+          libnghttp2: '*'
+          openssl@1.1: '*'
+          pcre2: '*'
+          apr: '*'
+          apr-util: '*'
+          zlib: '*'
+          libxml2: '*' if OS.linux?
+        script: |
+          # fixup prefix references in favour of opt_prefix references
+          sed -i.bak 's|#@@ServerRoot@@#$(prefix)#|#@@ServerRoot@@'"##{opt_prefix}#|g" Makefile.in
+          sed -i.bak 's|@exp_iconsdir@|"#{opt_pkgshare}/icons"|' docs/conf/extra/httpd-autoindex.conf.in
+          sed -i.bak 's|@exp_errordir@|"#{opt_pkgshare}/error"|' docs/conf/extra/httpd-multilang-errordoc.conf.in
+          sed -i.bak 's|^(User|Group) daemon|\1 _www|g' docs/conf/httpd.conf.in
+          sed -i.bak 's|${datadir}/htdocs|${datadir}|g; s|${htdocsdir}/manual|"#{pkgshare}/manual"|g; s|${datadir}/error|"#{pkgshare}/error"|g; s|${datadir}/icons|"#{pkgshare}/icons"|g' config.layout
+
+          sqlite3=""
+          if [ "$(command -v sqlite3)" ]; then
+            sqlite3="$(command -v sqlite3)"
+          else
+            sqlite3_hack_hp() {
+              ln -s "/usr/lib/hpux64/libsqlite3.sl" "$(brew --cellar sqlite)"'/3.36.0_2/lib/libsqlite3.sl'
+            }
+            trap 'echo "cannot install sqlite3"; sqlite3_hack_hp' ERR
+            brew install sqlite
+            trap - ERR
+            sqlite3="$(command -v sqlite3)"
+          fi
+
+          local libxml2="$(brew --prefix libxml2)"
+          local zlib="$(brew --prefix zlib)"
+          case "$OSTYPE" in
+            darwin*)
+              libxml2="$SDKROOT/usr"
+              ;;
+          esac
+
+          local apr="$(brew --prefix apr)"
+          local apr_util="$(brew --prefix apr-util)"
+          local brotli="$(brew --prefix brotli)"
+          local nghttp2="$(brew --prefix libnghttp2)"
+          local openssl="$(brew --prefix openssl@1.1)"
+          local pcre2="$(brew --prefix pcre2)"
+
+          ./configure --enable-layout=Slackware-FHS \
+                      --prefix=#{prefix} \
+                      --sbindir=#{bin} \
+                      --mandir=#{man} \
+                      --sysconfdir=#{etc}/httpd \
+                      --datadir=#{var}/www \
+                      --localstatedir=#{var} \
+                      --enable-mpms-shared=all \
+                      --enable-mods-shared=all \
+                      --enable-authnz-fcgi \
+                      --enable-cgi \
+                      --enable-pie \
+                      --enable-suexec \
+                      --with-suexec-bin=#{opt_bin}/suexec \
+                      --with-suexec-caller=_www \
+                      --with-port=8080 \
+                      --with-sslport=8443 \
+                      --with-apr=$apr/bin/apr-1-config \
+                      --with-apr-util=$apr_util/bin/apu-1-config \
+                      --with-brotli=$brotli \
+                      --with-libxml2=$libxml2 \
+                      --with-mpm=prefork \
+                      --with-nghttp2=$nghttp2 \
+                      --with-ssl=$openssl \
+                      --with-pcre=$pcre2/bin/pcre2-config \
+                      --with-z=$zlib \
+                      --with-crypto \
+                      --with-included-apr \
+                      --disable-lua \
+                      --disable-luajit \
+                      SQLITE_NM_LIBS="-L$(brew --cellar sqlite)/${sqlite3##*/}/lib -lsqlite3 -ldl"
+
+          make
+          make install
+
+          # suexec does not install without root
+          cp support/suexec "#{bin}/suexec"
+
+          # avoid using Cellar paths
+          find "#{include}/httpd/" "#{lib}/httpd/" -type f -exec sed -i.bak -e "s|#{HOMEBREW_CELLAR}/\(apr.*\)/\(.*\)|#{Formula["apr"].opt_prefix}/\2|g; s|#{HOMEBREW_CELLAR}/zlib/\(.*\)|#{Formula["zlib"].opt_prefix}/\1|g" {} +
+          sed -i.bak -e "s|#{prefix}|#{opt_prefix}|g" \
+              -e "s|#{HOMEBREW_CELLAR}/apr[^/]*/[^/]*/include|#{Formula["apr"].opt_include}|g" \
+              -e "s|#{HOMEBREW_CELLAR}/openssl\@1.1[^/]*/[^/]*/include|#{Formula["openssl@1.1"].opt_include}|g" \
+              -e "s|#{HOMEBREW_CELLAR}/libxml2[^/]*/[^/]*/include|#{Formula["libxml2"].opt_include}|g" \
+              "#{bin}/apachectl" "#{bin}/apxs" "#{include}/httpd/"* "#{lib}/httpd/build/"*
+          sed -i.bak \
+              -e "s|^AP_LDFLAGS='$|& -L#{Formula["pcre2"].opt_prefix}/lib|" \
+              -e "s|^CFLAGS='\(.*\)'|CFLAGS='\1 -I#{Formula["pcre2"].opt_prefix}/include'|g" "#{lib}/httpd/build/config_vars.mk"
+        preserve_etc: true
+        preserve_var: true
+        preserve_logs: true
+      provides:
+        - bin/apachectl
+        - bin/apxs
+        - bin/suexec
+      test:
+        script: |
+          out="$(#{bin}/apachectl -t)"
+          exp="Syntax OK"
+          test "$out" = "$exp"
+        skip_test_on_macos: true

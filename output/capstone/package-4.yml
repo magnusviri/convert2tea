@@ -1,0 +1,30 @@
+distributable:
+  url: https://github.com/capstone-engine/capstone/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: capstone-engine/capstone/releases
+
+dependencies:
+  cmake.org: '*'
+  llvm.org: '*'
+
+provides:
+  - lib/libcapstone.dylib
+  - lib/libcapstone.a
+  - include/capstone/capstone.h
+  - bin/cstool
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake . -DCMAKE_INSTALL_PREFIX={{prefix}} -DCMAKE_BUILD_TYPE=Release
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script:
+    gcc -o test test.c -lcapstone
+    ./test

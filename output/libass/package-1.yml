@@ -1,0 +1,63 @@
+distributable:
+  url: https://github.com/libass/libass/releases/download/{{ version }}/libass-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  - 0.17.1
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'  # build head
+    tea.xyz/gx/automake: '*'  # build head
+    tea.xyz/gx/libtool: '*'  # build head
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/freetype: '*'
+    tea.xyz/gx/fribidi: '*'
+    tea.xyz/gx/harfbuzz: '*'
+    tea.xyz/gx/libunibreak: '*'
+    tea.xyz/gx/nasm: '*'  # build on Intel
+    tea.xyz/gx/fontconfig-linux: '*'  # build on Linux
+  script: |
+    if test -n "{{ head }}"; then
+      autoreconf -i
+    fi
+
+    args=(
+      --disable-dependency-tracking
+      --prefix={{ prefix }}
+    )
+    if test "{{ os }}" = "mac"; then
+      args+=(--disable-fontconfig)
+    fi
+    ./configure "${args[@]}"
+    make --jobs {{hw.concurrency}} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cat >test.cpp <<EOF
+    #include "ass/ass.h"
+    int main() {
+      ASS_Library *library;
+      ASS_Renderer *renderer;
+      library = ass_library_init();
+      if (library) {
+        renderer = ass_renderer_init(library);
+        if (renderer) {
+          ass_renderer_done(renderer);
+          ass_library_done(library);
+          return 0;
+        }
+        else {
+          ass_library_done(library);
+          return 1;
+        }
+      }
+      else {
+        return 1;
+      }
+    }
+    EOF
+    cc test.cpp -I{{ include }} -L{{ lib }} -lass -o test
+    ./test

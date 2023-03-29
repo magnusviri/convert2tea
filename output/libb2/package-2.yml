@@ -1,0 +1,37 @@
+distributable:
+  url: https://github.com/BLAKE2/libb2/releases/download/v{{version}}/libb2-{{version}}.tar.gz
+
+versions:
+  - 0.98.1
+
+build:
+  dependencies:
+    x86-64:
+      tea.xyz/gx/cc: c99
+      cmake.org: '*'
+      tea.xyz/gx/make: '*'
+  working-directory:
+    out
+  script: |
+    ./configure --disable-dependency-tracking \\
+                --disable-silent-rules \\
+                --prefix={{prefix}} \\
+                {{#if arm}}
+                --disable-asm
+                {{else}}
+                --enable-fat
+                {{/if}}
+    make install
+  env:
+    linux:
+      CFLAGS: -fPIC
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+  patches:
+    - url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff
+
+test: |
+  b2sum --version
+
+provides:
+  - bin/b2sum

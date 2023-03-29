@@ -1,0 +1,33 @@
+unsupported_configuration: &unsupported_configuration
+  on_mac_os: cause_error
+  on_linux: cause_error
+
+distributable:
+  url: https://ftp.gnu.org/gnu/emacs/emacs-{{version}}.tar.xz
+  archive_root: emacs-{{version}}
+  file_type: tar_xz
+  strip-components: 1
+
+build:
+  dependencies:
+    - pkg-config
+    - gnutls
+    - jansson
+    - libxml2
+  working-directory: .
+  script: |
+    ./configure
+    make
+    make install
+
+provides:
+  - bin/emacs
+
+test:
+  fixture: |
+    (print (+ 2 2))
+  script: |
+    out="$(emacs -batch --eval=\"$FIXTURE\")"
+    exp='4'
+
+    test "$out" = "$exp" || $unsupported_configuration

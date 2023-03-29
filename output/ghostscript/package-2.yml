@@ -1,0 +1,79 @@
+distributable:
+  url: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs{{ version }}/ghostpdl-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  - 10.01.1
+
+build:
+  dependencies:
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/jbig2dec: '*'
+    tea.xyz/gx/jpeg-turbo: '*'
+    tea.xyz/gx/libidn: '*'
+    tea.xyz/gx/freetype: '*'
+    tea.xyz/gx/libtiff: '*'
+    tea.xyz/gx/libpng: '*'
+    tea.xyz/gx/little-cms2: '*'
+    tea.xyz/gx/openjpeg: '*'
+    tea.xyz/gx/fontconfig: '*'
+  script: |
+    if test {{hw.platform}} = darwin; then
+      brew install autoconf automake libtool
+    fi
+      
+    # Delete local vendored sources so build uses system dependencies
+    libs=(expat freetype jbig2dec jpeg lcms2mt libpng openjpeg tiff zlib)
+    for l in "${libs[@]}"; do
+      rm -rf "$l"
+    done
+    
+    if test {{hw.platform}} = darwin; then
+      DYNAMIC_LDFLAGS="-dynamiclib -install_name {{prefix}}/lib/$lib.dylib"
+    elif test {{hw.platform}} = linux; then
+      DYNAMIC_LDFLAGS="-shared -Wl,-soname,{{prefix}}/lib/$lib.so"
+    fi
+    
+    ./configure --prefix={{prefix}} \
+      --disable-compile-inits \
+      --disable-cups \
+      --disable-gtk \
+      --with-system-libtiff \
+      --without-x \
+      PKG_CONFIG_PATH="{{prefix}}/lib/pkgconfig" \
+      JBIG2DEC_CFLAGS="-I{{prefix}}/include" JBIG2DEC_LIBS="-L{{prefix}}/lib -ljbig2dec" \
+      JPEG_CFLAGS="-I{{prefix}}/include" JPEG_LIBS="-L{{prefix}}/lib -ljpeg" \
+      FONTCONFIG_CFLAGS="-I{{prefix}}/include/freetype2" FONTCONFIG_LIBS="-L{{prefix}}/lib -lfontconfig" \
+      FREETYPE_CFLAGS="-I{{prefix}}/include/freetype2" FREETYPE_LIBS="-L{{prefix}}/lib -lfreetype" \
+      LIBIDN_CFLAGS="-I{{prefix}}/include" LIBIDN_LIBS="-L{{prefix}}/lib -lidn" \
+      PNG_CFLAGS="-I{{prefix}}/include" PNG_LIBS="-L{{prefix}}/lib -lpng16" \
+      TIFF_CFLAGS="-I{{prefix}}/include" TIFF_LIBS="-L{{prefix}}/lib -ltiff" \
+      LCMS_CFLAGS="-I{{prefix}}/include" LCMS_LIBS="-L{{prefix}}/lib -llcms2" \
+      OPENJPEG_CFLAGS="-I{{prefix}}/include" OPENJPEG_LIBS="-L{{prefix}}/lib -lopenjp2"
+    
+    make --jobs {{hw.concurrency}}
+    make install-lib install-so # Install binaries and libraries
+    rm -rf {{prefix}}/share # Docs are online
+    (cd {{prefix}}/lib && for lib in libgs libgs-cjk libgs-gdu libgs-psi libgsbdf libgsidf libgsmaks tdglla2k40; do
+      if test {{hw.platform}} = darwin; then
+        install_name_tool -change \
+          @rpath/lib$lib.10.dylib \
+          @loader_path/lib$lib.10.dylib \
+          lib$lib.10.dylib
+      fi
+    done)
+    
+test:
+  script: |
+    if test {{hw.platform}} = darwin; then
+      brew install pkg-config
+    fi
+    echo "GS_VER={{version}}" > settings
+    cc test.c $(pkg-config --cflags --libs libpng) -o test -lgs
+    ./test
+
+resources:
+  fonts:
+    url: https://sourceforge.net/projects/gs-fonts/files/latest/download
+    archive: fontpack101_201112.zip
+    sha256: 73d7a5318f851fb83f7c2e2f2991c5de519d5a7dd5c5ea60412e223df8c70336

@@ -1,0 +1,42 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/gnuplot/gnuplot/5.4.6/gnuplot-5.4.6.tar.gz
+  strip-components: 1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: "*"
+    pkg-config.org: "*"
+    libpng.org: "*"
+    freetype.org: "*"
+    glib.org: "*"
+    fontconfig.org: "*"
+    font-util.org: "*"
+    qt.io@5: "*"
+    readline.org: "*"
+    gd.net: "*"
+    lua.org: "*"
+    pango.org: "*"
+    libcerf.org: "*"
+  env:
+    args:
+      - --disable-dependency-tracking
+      - --disable-silent-rules
+      - --prefix={{prefix}}
+      - --with-readline={{prefix}}
+      - --without-tutorial
+      - --disable-wxwidgets
+      - --with-qt
+      - --without-x
+      - --without-latex
+  working-directory: gnuplot-5.4.6
+  script:
+    - ./prepare
+    - ./configure $args
+    - make
+    - make install
+
+test:
+  script: |
+    gnuplot -e "set terminal dumb;set output '{{prefix}}/test.txt';plot sin(x);"
+    if [ ! -f "{{prefix}}/test.txt" ]; then exit 1; fi

@@ -1,0 +1,26 @@
+distributable:
+  url: https://github.com/elixir-lang/elixir/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: elixir-lang/elixir
+
+provides:
+  - bin/elixir
+  - bin/mix
+
+dependencies:
+  erlang.org: ^22
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make
+    make install PREFIX="{{prefix}}"
+  env: {}
+
+test: |
+  assert_match(/compiled with/ + Regexp.quote("Erlang/OTP"), shell_output("#{bin}/elixir -v"))
+  system "#{bin}/elixir", "-e", "'IO.puts(\"hello world\")'"

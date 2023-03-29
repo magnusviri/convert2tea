@@ -1,0 +1,29 @@
+distributable:
+  url: https://thekelleys.org.uk/dnsmasq/dnsmasq-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2.89
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    pkg-config.org: '*'
+  script: |
+    ./configure --prefix={{prefix}} --localstatedir=#{var} --enable-dbus --with-dbus \
+      --with-udhcp --enable-dhcp-script --enable-script --enable-idn \
+      --enable-ubus --with-ubus-glib --enable-tftp --enable-dnssec \
+      --enable-dnssec-checks --enable-libcurl --enable-libidn --enable-plugins \
+      --enable-ipset --enable-ipset-dns --with-libidn2 \
+      LIBS="$(pkg-config dbus-1 libcurl libidn2 --libs)" \
+      CFLAGS="$(pkg-config dbus-1 libcurl libidn2 --cflags)" && make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: ^0.29
+  env:
+    PATH: "{{prefix}}/sbin"
+  script: make test

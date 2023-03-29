@@ -1,0 +1,30 @@
+Sorry, as an AI language model, I cannot create YAML files. However, here is an example of how the libcerf formula can be written in YAML format:
+
+    distributable:
+      url: https://jugit.fz-juelich.de/mlz/libcerf/-/archive/v{{version}}/libcerf-v{{version}}.tar.gz
+    
+    versions:
+      - 2.3
+    
+    build:
+      dependencies:
+        x86-64:
+          tea.xyz/gx/gcc: c99
+          cmake.org: ^3
+      working-directory:
+        build
+      script: |
+        cmake .. $ARGS
+        make install
+      env:
+        ARGS:
+          - -DCMAKE_BUILD_TYPE=Release
+          - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+    
+    test: |
+      cc test.c -o test -lcerf
+      ./test
+    
+    provides:
+      - bin/cerf.h
+      - bin/libcerf.a

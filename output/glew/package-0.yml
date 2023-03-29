@@ -1,0 +1,47 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/glew/glew/{{ version }}/glew-{{ version }}.tgz
+
+provides:
+  - bin/glewinfo
+  - bin/visualinfo
+  - lib/libGLEW.{{ version }}.dylib
+  - lib/libGLEW.{{ version }}.so
+  - lib/libGLEW.{{ version }}.so.2.2
+  - lib/libGLEW.a
+  - lib/libGLEW.dylib
+  - include/GL/glew.h
+  - include/GL/glxew.h
+  - include/GL/wglew.h
+
+versions:
+  sourceforge: glew/glew
+
+dependencies:
+  cmake.org/cmake: '*'
+  macports.org/freeglut: '*'
+  unixODBC: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: clang
+    tea.xyz/gx/make: make
+  script: |
+    cmake -S . -B build -DCMAKE_INSTALL_NAME_DIR=#{rpath} -DCMAKE_INSTALL_PREFIX=#{prefix}
+    cmake --build build
+    cmake --install build
+  env:
+    MACOSX_DEPLOYMENT_TARGET: #{MacOS.version}
+    CMAKE_C_COMPILER: #{ENV.cc}
+    CMAKE_CXX_COMPILER: #{ENV.cxx}
+    CFLAGS: "-O3"
+    CXXFLAGS: "-O3"
+
+test:
+  script: |
+    echo "#define GLEW_STATIC" > test.c
+    echo "#include <GL/glew.h>" >> test.c
+    echo "int main() { glewInit(); }" >> test.c
+    #{ENV.cc} test.c -o test -L#{lib} -lGLEW && ./test
+  after_script:
+    - rm -f test.c test
+    - find . -name glew\* -delete

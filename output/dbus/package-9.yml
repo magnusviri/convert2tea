@@ -1,0 +1,46 @@
+distributable:
+  url: https://dbus.freedesktop.org/releases/dbus/dbus-{{version.raw}}.tar.xz
+  strip-components: 1
+
+versions:
+  gitlab: dbus/dbus.git
+  regex: v(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)
+  ignore:
+    - /^1\.1[35]\./ # unstable versions
+
+dependencies:
+  - pkg-config
+  - xmlto
+  - expat
+
+build:
+  dependencies:
+    - autoconf
+    - autoconf-archive
+    - automake
+    - libtool
+  script: |
+    ./autogen.sh --no-configure
+    ./configure --disable-dependency-tracking \\
+                --prefix={{prefix}} \\
+                --localstatedir=#{var} \\
+                --sysconfdir=#{etc} \\
+                --enable-xml-docs \\
+                --disable-doxygen-docs \\
+                --without-x \\
+                --disable-tests \\
+                {% if os == 'linux' %}
+                --enable-systemd
+                {% else %}
+                --enable-launchd \\
+                --with-launchd-agent-dir={{prefix}}
+                {% endif %}
+    make install
+
+post_install:
+  script: |
+    #{bin}/dbus-uuidgen --ensure=#{var}/lib/dbus/machine-id
+
+test:
+  script: |
+    #{bin}/dbus-daemon --version

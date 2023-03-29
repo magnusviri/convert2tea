@@ -1,0 +1,96 @@
+There you go:
+
+    distributable:
+      url: https://thekelleys.org.uk/dnsmasq/dnsmasq-{{version}}.tar.gz
+      license: any_of(['GPL-2.0-only', 'GPL-3.0-only'])
+    
+    versions:
+      - 2.89
+    
+    build:
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+        freedesktop.org/pkg-config: '*'
+      script: |
+        PREFIX="{{prefix}}" make install \
+          CFLAGS="{{CFLAGS}} -D__APPLE_USE_RFC_3542" \
+          LDFLAGS="{{LDFLAGS}}"
+        
+        # Fix etc location
+        etcdir="{{prefix}}/etc"
+        [ -e "${etcdir}/dnsmasq.conf.example" ] && \
+          mv "${etcdir}/dnsmasq.conf.example" "${etcdir}/dnsmasq.conf"
+        VAR_PREFIX="{{prefix}}/var"
+        mkdir -p "${VAR_PREFIX}/lib/misc/dnsmasq"
+        touch "${etcdir}/dnsmasq.d/ppp/.keepme"
+        touch "${etcdir}/dnsmasq.d/dhcpc/.keepme"
+        mkdir -p "${etcdir}/dnsmasq.d/ppp"
+        mkdir -p "${etcdir}/dnsmasq.d/dhcpc"
+        [ -e "${VAR_PREFIX}/lib/misc/dnsmasq/dnsmasq.leases" ] && \
+          mv "${VAR_PREFIX}/lib/misc/dnsmasq/dnsmasq.leases" \
+             "${VAR_PREFIX}/lib/misc/dnsmasq/dnsmasq/dnsmasq.leases"
+        [ -e "${etcdir}/dnsmasq.conf" ] && sed -i \
+          -e "s:/var/lib/misc/dnsmasq.leases:${VAR_PREFIX}/lib/misc/dnsmasq/dnsmasq.leases:g" \
+          -e "s:/etc/dnsmasq.conf:${etcdir}/dnsmasq.conf:g" \
+          -e "s:/var/run/dnsmasq.pid:${VAR_PREFIX}/run/dnsmasq/dnsmasq.pid:g" \
+          -e "s:/etc/dnsmasq.d:${etcdir}/dnsmasq.d:g" \
+          -e "s:/etc/ppp/resolv.conf:${etcdir}/dnsmasq.d/ppp/resolv.conf:g" \
+          -e "s:/etc/dhcpc/resolv.conf:${etcdir}/dnsmasq.d/dhcpc/resolv.conf:g" \
+          -e "s:/usr/sbin/dnsmasq:{{prefix}}/sbin/dnsmasq:g" \
+          ${etcdir}/dnsmasq.conf
+    
+      service:
+        file_name: dnsmasq
+        command: "{{prefix}}/sbin/dnsmasq --keep-in-foreground -C {{prefix}}/etc/dnsmasq.conf -7 {{prefix}}/etc/dnsmasq.d,*.conf"
+        keep_alive: true
+        require_root: true
+    
+      test:
+        fixture: |
+          #include <assert.h>
+          #include <stdio.h>
+          #include <string.h>
+          #include <arpa/inet.h>
+          #include <netinet/in.h>
+          #include <netdb.h>
+          #include <unistd.h>
+          #define NAME "test.domain"
+          int main() {
+            char addrstr[INET_ADDRSTRLEN];
+            char *const argp[] = {"/usr/sbin/dnsmasq", "-C", "{{prefix}}/etc/dnsmasq.conf", NULL};
+            struct sockaddr_in server, client = {0};
+            int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+            assert(sockfd >= 0);
+            server.sin_family = AF_INET;
+            server.sin_addr.s_addr = htonl(INADDR_ANY);
+            server.sin_port = htons(0);
+            assert(bind(sockfd, (struct sockaddr *)&server, sizeof(server)) >= 0);
+            const char lookup[] = {0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04};
+            const char response[] = {0x00, 0x00, 0x81, 0x80, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x04};
+            memcpy(response + 12, &(client.sin_addr), 4);
+            assert(system("echo nameserver 127.0.0.1 >{{prefix}}/etc/resolv.conf") == 0);
+            pid_t dnsmasq = fork();
+            assert(dnsmasq >= 0);
+            if (dnsmasq == 0) {
+              assert(execve("/usr/sbin/dnsmasq", argp, NULL) >= 0);
+            }
+            inet_pton(AF_INET, "127.0.0.1", &(client.sin_addr));
+            client.sin_port = htons(53);
+            assert(sendto(sockfd, lookup, sizeof(lookup), 0, (struct sockaddr *)&client, sizeof(client)) == sizeof(lookup));
+            sleep(1);
+            socklen_t len = sizeof(client);
+            assert(recvfrom(sockfd, addrstr, sizeof(addrstr), MSG_WAITALL, (struct sockaddr *)&client, &len) == sizeof(response));
+            assert(memcmp(addrstr, response, sizeof(response)) == 0);
+            assert(system("killall dnsmasq") == 0);
+            return 0;
+          }
+        dependencies:
+          tea.xyz/gx/cc: c99
+          tea.xyz/gx/make: '*'
+        script: |
+          cp test.c $FIXTURE
+          export CFLAGS="$(pkg-config --cflags glib-2.0)"
+          export LDFLAGS="$(pkg-config --libs glib-2.0)"
+          gcc $FIXTURE -o test -I{{prefix}}/include -L{{prefix}}/lib $CFLAGS $LDFLAGS
+          $FIXTURE > /dev/null

@@ -1,0 +1,39 @@
+distributable:
+  url: https://github.com/aws/aws-sdk-cpp/archive/{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: aws/aws-sdk-cpp
+  strip: /^v/
+
+provides:
+  - bin/aws-cpp-sdk-core-config
+  - bin/aws-cpp-sdk-eventstream-config
+  - bin/aws-cpp-sdk-s3-config
+  - bin/aws-cpp-sdk-transfer-config
+
+dependencies:
+  openssl.org: ^1
+  curl.haxx.se: '*'
+  json.org: 3.*
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++
+    tea.xyz/gx/cmake: ^3.13
+  script: |
+    cmake $ARGS
+    cmake --build .
+    cmake --install .
+  env:
+    ARGS:
+      - "-DCMAKE_BUILD_TYPE=Release"
+      - "-DBUILD_ONLY=s3"
+      - "-DSTATIC_LINKING=1"
+      - "-DCMAKE_INSTALL_PREFIX={{prefix}}"
+      - "-DSTATICLIB_CRT=OFF"
+      - "-DENABLE_TESTING=OFF"
+
+test: |
+  aws-cpp-sdk-core-config --version
+  aws-cpp-sdk-s3-config --version

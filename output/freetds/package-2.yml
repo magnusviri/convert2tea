@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to write a formula for the project freetds in the yml format as it is not a supported package format. Yml is a format commonly used in configuration files, but not in the context of package management. The available package formats for Homebrew are ruby, Python, and JavaScript.

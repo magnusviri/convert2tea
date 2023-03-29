@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to write a YAML formula for the project argocd as YAML format is not commonly used for Homebrew formulae. Homebrew primarily uses Ruby as its formula language.

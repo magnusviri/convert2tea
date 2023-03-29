@@ -1,0 +1,61 @@
+distributable:
+  url: "https://nlnetlabs.nl/downloads/ldns/ldns-{{version}}.tar.gz"
+  strip-components: 1
+
+versions:
+  - 1.8.3
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    swig.org: '*'
+    openssl.org: 1.1
+    python.org: '3.11.*'
+  script: |
+    PYTHON3={{system-which python3}}
+    CMAKE_INSTALL_PREFIX={{prefix}}
+    SED=/usr/bin/sed
+    
+    cd $SOURCE_DIR
+    ./configure      
+    --disable-dane-verify
+    --with-drill
+    --with-examples
+    --with-ssl="{{openssl}}"
+    --with-pyldns
+    --without-xcode-sdk
+    PYTHON_SITE_PKG=$CMAKE_INSTALL_PREFIX/Lib/site-packages
+    PYTHON=$PYTHON3
+
+    if [ $OS == "macos" ]; then
+      # Fix error: 'ldns.h' file not found
+      $SED -i -e 's/#include "ldns.h"/#include <ldns\/ldns.h>/' ./contrib/python/ldns.i
+      # Work around linker issues
+      $SED -i -e 's/(\$\(PYTHON_CFLAGS\).*) -no-undefined/\\1/' Makefile
+      $SED -i -e 's/\$\(PYTHON_LIBS\)/-undefined dynamic_lookup/' Makefile        
+    fi
+    
+    make
+    make install
+    make install-pyldns
+    mkdir -p {{lib}}/pkgconfig
+    cp packaging/libldns.pc {{lib}}/pkgconfig
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: '^0.29'
+  fixture: |
+    powerdns.com.   10773 IN  DNSKEY  256 3 8  AwEAAbQOlJUPNWM8DQown5y/wFgDVt7jskfEQcd4pbLV/1osuBfBNDZX powerdns.com.   10773 IN  DNSKEY  257 3 8  AwEAAb/+pXOZWYQ8mv9WM5dFva8WU9jcIUdDuEjldbyfnkQ/xlrJC5zA EfhYhrea3SmIPmMTDimLqbh3/4SMTNPTUF+9+U1vpNfIRTFadqsmuU9F ddz3JqCcYwEpWbReg6DJOeyu+9oBoIQkPxFyLtIXEPGlQzrynKubn04C x83I6NfzDTraJT3jLHKeW5PVc1ifqKzHz5TXdHHTA7NkJAa0sPcZCoNE 1LpnJI/wcUpRUiuQhoLFeT1E432GuPuZ7y+agElGj0NnBxEgnHrhrnZW UbULpRa/il+Cr5Taj988HqX9Xdm6FjcP4Lbuds/44U7U8du224Q8jTrZ 57Yvj4VDQKc=
+  env:
+    cxxflags: $(pkg-config --cflags ldns)
+  script: |
+      echo "$FIXTURE" > powerdns.com.dnskey    
+      #{system-tool make} -f /usr/local/share/doc/ldns/examples/Makefile dnskey2ds dnskey=powerdns.com.dnskey
+      if [ "$(cat Kpowerdns.com*.ds | cut -f2 | tr -d ' ' | openssl sha256 | awk '{print $NF}')" == "d4c3d5552b8679faeebc317e5f048b614b2e5f607dc57f1553182d49ab2179f7" ]; then
+        echo "PASS"
+      else
+        echo "FAIL"
+      fi

@@ -1,0 +1,49 @@
+distributable:
+  url: https://packages.groonga.org/source/groonga/groonga-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: groonga/groonga
+  strip: /^groonga-/
+
+dependencies:
+  mecab.org: latest
+  msgpack.org: latest
+  openssl.org: 1.1.*
+  pcre.org: latest
+  lua.org: 5.3.*
+  libstemmer: '*'
+  glib: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{ prefix }} \\
+      --disable-zeromq \\
+      --disable-apache-arrow \\
+      --enable-mruby \\
+      --with-luajit=no \\
+      --with-ssl \\
+      --with-zlib \\
+      --with-mecab \\
+      --with-msgpack=#{msgpack.org.prefix} \\
+      --with-openssl=#{openssl.org.prefix} \\
+      --with-pcre=#{pcre.org.prefix} \\
+      --with-libstemmer=#{libstemmer.prefix} \\
+      --with-glib=#{glib.prefix} \\
+      LUA_LIBS=-llua \\
+      LUA_CFLAGS="-I#{lua.org.include}" \\
+      LDFLAGS="-L#{lua.org.lib} -L#{libstemmer.lib} -L#{glib.lib}" \\
+      CPPFLAGS="-I#{lua.org.include} -I#{libstemmer.include} -I#{glib.include}"
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    echo 'assert("2.2.2" >= groonga.version)' | groonga --query -
+    groonga -n #{tmpdir}/test.db < #{home}/share/doc/groonga/samples/db/create-tables.sql
+    groonga -n #{tmpdir}/test-normalizer-mysql.db < #{home}/share/doc/groonga-normalizer-mysql/samples/normalizer-create.sql
+    groonga -n #{tmpdir}/test.db < #{home}/share/doc/groonga-normalizer-mysql/samples/filter.sql

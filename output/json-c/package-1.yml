@@ -1,0 +1,29 @@
+distributable:
+  url: "https://github.com/json-c/json-c/archive/refs/tags/json-c-{{version}}.tar.gz"
+  strip-components: 1
+
+versions:
+  github: json-c/json-c
+  strip: /^json-c-/
+
+dependencies:
+  cmake.org: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake $ARGS .
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - "-DCMAKE_INSTALL_PREFIX={{prefix}}"
+
+test:
+  script: |
+    echo "No tests provided for json-c"
+
+provides:
+  - lib/libjson-c.dylib
+  - lib/pkgconfig/json-c.pc

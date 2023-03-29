@@ -1,0 +1,62 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/emacs/emacs-{{version}}.tar.xz
+
+versions:
+  homepage: https://www.gnu.org/software/emacs/
+  sourceforge: emacs
+
+build:
+  dependencies:
+    dnf: '*'
+    pkg-config.org: '*'
+    gnutls.org: '*'
+    jansson: '*'
+    libxml2: '*'
+    ncurses: '*'
+    jpeg.org: linux
+    autoconf: head
+    gnu-sed: head
+    texinfo: head
+  script: |
+    # fix for Mojave Catalina SDK issues
+    [ "$(uname)" = 'Darwin' ] && \
+      [ $(sw_vers -productVersion | cut -d '.' -f 2) -ge 14 ] && \
+      ARGS+=(--with-mac-metal=no)
+
+    if ! [[ -x "$(command -v makeinfo)" ]]; then
+      echo "Install texinfo to rebuild the Emacs info files."
+      exit 1
+    fi
+
+    # Fix the Docbook error
+    sed -i.bak 's/\\/+/+/' ${PREFIX}/share/emacs/${version}/lisp/docbook.el
+
+    ./autogen.sh || true
+    ./configure --prefix=${PREFIX} \
+      --infodir=${PREFIX}/share/info \
+      --with-gnutls \
+      --with-xml2 \
+      --without-dbus \
+      --without-imagemagick \
+      --without-ns \
+      --without-dbus \
+      --without-selinux \
+      --without-x \
+      --with-modules \
+      --enable-locallisppath="${PREFIX}/share/emacs/site-lisp"
+
+    make -j$(nproc) bootstrap
+    make install
+  env:
+    PATH:
+      - /usr/local/opt/gnu-sed/libexec/gnubin:$PATH
+
+provides:
+  - bin/emacs
+  - bin/ctags
+
+test:
+  script: |
+    echo '(setq enable-local-variables :all)' >> ${PREFIX}/share/emacs/${version}/site-lisp/site-start.el
+    echo '(provide '\''s)' >> ${PREFIX}/share/emacs/${version}/site-lisp/site-start.el
+    ${PREFIX}/bin/emacs --batch --eval="(print (+ 2 2))" | grep '4'

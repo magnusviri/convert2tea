@@ -1,0 +1,45 @@
+distributable:
+  url: https://packages.groonga.org/source/groonga/groonga-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: groonga/groonga
+  strip: /^v/
+
+dependencies:
+  - facebook.com/zlib: '*'
+  - tea.xyz/mecab: '*'
+  - tea.xyz/msgpack: '*'
+  - tea.xyz/pcre: '*'
+  - tea.xyz/openssl@1.1: '*'
+
+build:
+  dependencies:
+    - tea.xyz/autoconf: '*'
+    - tea.xyz/automake: '*'
+    - tea.xyz/libtool: '*'
+    - tea.xyz/pkg-config: '*'
+  script: |
+    ./configure --prefix={{ prefix }} \
+              --disable-zeromq \
+              --disable-apache-arrow \
+              --enable-mruby \
+              --with-luajit=no \
+              --with-ssl \
+              --with-zlib \
+              --without-libstemmer \
+              --with-mecab
+    make install
+    RESOURCE_PATH=$(brew --prefix)/Cellar/groonga/{{ version }}/share/doc/groonga-normalizer-mysql
+    mkdir -p $RESOURCE_PATH
+    cp -a data/mysql/. $RESOURCE_PATH/
+    sed -i -e "s|__RESOURCE_PATH__|$RESOURCE_PATH|g" data/mysql/*.sql
+    for SCRIPT in data/mysql/*.sql; do mysql -uroot < $SCRIPT; done
+
+test:
+  dependencies:
+    - tea.xyz/mysql-client: '*'
+    - tea.xyz/groonga-client: '*'
+  script: |
+    groonga -n ${PWD}/test.db < /dev/null
+    groonga -n ${PWD}/test-normalizer-mysql.db < /dev/null

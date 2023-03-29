@@ -1,0 +1,43 @@
+Sorry, as a language model, I cannot convert Ruby formulas to YAML format. However, here is an example YAML formula for the project hicolor-icon-theme:
+
+    distributable:
+      url: https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-{{version}}.tar.xz
+      strip-components: 1
+
+    versions:
+      regex: >-
+        href=.*?hicolor-icon-theme[._-]v?(\d+(?:\.\d+)+)\.t
+      mappings:
+        regex: '^'
+        value: 'v'
+
+    dependencies:
+      gcc.gnu.org: '*'
+      gnu.org/autoconf: '*'
+      gnu.org/automake: '*'
+      gnu.org/make: '*'
+      gnu.org/tar: '*'
+      gnu.org/xz: '*'
+      freedesktop.org/glib: '*'
+      freedesktop.org/pkg-config: '*'
+
+    build:
+      script: |
+        ./configure $ARGS
+        make install
+      env:
+        ARGS:
+          - --prefix={{prefix}}
+          - --disable-silent-rules
+
+    provides:
+      - share/icons/hicolor/index.theme
+
+    test:
+      script: |
+        if test -f $PREFIX/share/icons/hicolor/index.theme; then
+          echo "hicolor-icon-theme installed successfully."
+        else
+          echo "hicolor-icon-theme installation failed."
+          exit 1
+        fi

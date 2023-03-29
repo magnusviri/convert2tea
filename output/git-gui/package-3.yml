@@ -1,0 +1,44 @@
+distributable:
+  url: https://mirrors.edge.kernel.org/pub/software/scm/git/git-{{ version.raw }}.tar.xz
+  strip-components: 1
+
+provides:
+  - bin/git-gui
+  - bin/gitk
+
+interprets:
+  extensions: ''
+  args: ''
+
+versions:
+  github: git/git
+  strip: '^(?:.*[._-])?v?(.*?)(?:[._-]rc.*)?$'
+
+dependencies:
+  tcl-tk: '*'
+
+build:
+  dependencies:
+    - tea.xyz/gx/make: '*'
+    - tea.xyz/gx/cc: c99
+  script: |
+    # build verbosely
+    export V=1
+    export TCL_PATH=$(dirname `which tclsh`)
+    export TCLTK_PATH=$(dirname `which wish`)
+    export TKFRAMEWORK=/dev/null
+    export prefix=${{prefix}}
+    export gitexecdir=${{prefix}}/bin
+    export sysconfdir=${{prefix}}/etc
+    export CC=${{cc}}
+    export CFLAGS=${{cflags}}
+    export LDFLAGS=${{ldflags}}
+    make -C git-gui
+    make -C gitk-git
+    make -C contrib/git-jump
+    install -d ${{prefix}}/bin
+    install -m 0755 git-gui/git-gui ${{prefix}}/bin
+    install -m 0755 gitk-git/gitk ${{prefix}}/bin
+    install -m 0755 contrib/git-jump/git-jump ${{prefix}}/bin
+test:
+  script: ${{prefix}}/bin/git-gui --version

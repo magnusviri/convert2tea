@@ -1,0 +1,46 @@
+distributable:
+  url: https://thekelleys.org.uk/dnsmasq/dnsmasq-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2.89
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    pkg-config.org: '*'
+  env:
+    CFLAGS: -D__APPLE_USE_RFC_3542
+  script: |
+    inreplace dnsmasq.conf.example src/config.h man/dnsmasq.8
+      man/es/dnsmasq.8 man/fr/dnsmasq.8 <<-"EOF"
+      /var/lib/misc/dnsmasq.leases {{var}}/lib/misc/dnsmasq/dnsmasq.leases                
+      /etc/dnsmasq.conf {{prefix}}/etc/dnsmasq.conf                                           
+      /var/run/dnsmasq.pid {{var}}/run/dnsmasq/dnsmasq.pid                                     
+      /etc/dnsmasq.d {{prefix}}/etc/dnsmasq.d                                                
+      /etc/ppp/resolv.conf {{prefix}}/etc/dnsmasq.d/ppp/resolv.conf                               
+      /etc/dhcpc/resolv.conf {{prefix}}/etc/dnsmasq.d/dhcpc/resolv.conf                         
+      /usr/sbin/dnsmasq {{prefix}}/sbin/dnsmasq                                               
+      EOF
+    
+    make
+    make install PREFIX={{prefix}}
+    install dnsmasq.conf.example {{prefix}}/etc/dnsmasq.conf
+    mkdir -p {{var}}/lib/misc/dnsmasq {{var}}/run/dnsmasq {{prefix}}/etc/dnsmasq.d/ppp {{prefix}}/etc/dnsmasq.d/dhcpc
+    touch {{prefix}}/etc/dnsmasq.d/ppp/.keepme {{prefix}}/etc/dnsmasq.d/dhcpc/.keepme
+
+service:
+  command: "{{prefix}}/sbin/dnsmasq --keep-in-foreground -C {{prefix}}/etc/dnsmasq.conf -7 {{prefix}}/etc/dnsmasq.d,*.conf"
+  keep_alive: true
+  require_root: true
+  
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    pkg-config.org: '*'
+  env:
+    cflags: $(pkg-config --cflags libmnl)
+  fixture: ""
+  script: "{{prefix}}/sbin/dnsmasq --test"

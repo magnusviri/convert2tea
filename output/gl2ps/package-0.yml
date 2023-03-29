@@ -1,0 +1,28 @@
+distributable:
+  url: https://geuz.org/gl2ps/src/gl2ps-{{ version }}.tgz
+  strip-components: 1
+
+versions:
+  - 1.4.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/cmake: '*'
+  script: |
+    mkdir build
+    cd build
+    cmake .. -DCMAKE_INSTALL_PREFIX={{ prefix }} \
+             -DGLUT_glut_LIBRARY={{ prefix }}/lib/libglut.a \
+             -DGLUT_INCLUDE_DIR={{ prefix }}/include \
+             -DPNG_PNG_INCLUDE_DIR={{ prefix }}/include \
+             -DPNG_LIBRARY={{ prefix }}/lib/libpng.a
+    make --jobs {{hw.concurrency}} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -o test -L{{prefix}}/lib -lgl2ps -lglut -lpng -lz -lm
+    ./test
+    test -s test.eps

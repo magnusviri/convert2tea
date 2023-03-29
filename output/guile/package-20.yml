@@ -1,0 +1,36 @@
+Sorry, as an AI language model, I'm not able to convert an example formula from one format to another format accurately. However, here's an attempt to write a formula for the project guile in the yml format:
+
+```
+distributable:
+  url: https://ftp.gnu.org/gnu/guile/guile-{{ version.raw }}.tar.xz
+  strip-components: 1
+  
+versions:
+  ftp: https://ftp.gnu.org/gnu/guile/
+  regex: guile-(\d+\.\d+\.\d+)\.tar\.
+  # or:
+  # github: https://github.com/guile/guile/tags
+  # strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      glibc: '*'
+      gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure
+    make --jobs {{ hw.concurrency }}
+    make install PREFIX={{prefix}}
+   
+test:
+  # command:
+  #   - guile -c "(display \"Hello, world!\")(newline)"
+  dependencies:
+    tea.xyz/gx/cc: '*'
+  script: |
+    echo "(display \"Hello, world!\")(newline)" > hello.scm
+    guile hello.scm
+```

@@ -1,0 +1,22 @@
+distributable:
+  url: https://cpan.metacpan.org/authors/id/E/EX/EXIFTOOL/Image-ExifTool-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  regex: "production release is .*?href=.*?Image[._-]ExifTool[._-]v?([0-9]+(?:\\.[0-9]+)+)\\.t"
+  url: https://exiftool.org/history.html
+
+dependencies:
+  perl: "*"
+
+build:
+  script: |
+    perl Makefile.PL INSTALLDIRS=vendor
+    make
+  install:
+    - mkdir -p {{prefix}}/bin
+    - install exiftool {{prefix}}/bin
+    - mkdir -p {{prefix}}/lib/perl5
+    - find lib -name '*.pm' -exec install -D -t {{prefix}}/lib/perl5 '{}' '+'
+  artifacts:
+    - "{{prefix}}/bin/exiftool"

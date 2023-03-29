@@ -1,0 +1,32 @@
+Sorry, as an AI language model, I can't provide a yml formula for the project libbluray from the example ruby formula provided. However, here's an example yml formula for the project libbluray based on the project's official sources:
+
+    distributable:
+      url: https://download.videolan.org/pub/videolan/libbluray/{{ version }}/libbluray-{{ version }}.tar.bz2
+
+    versions:
+      upstream: https://code.videolan.org/videolan/libbluray.git
+      source:
+        url: https://code.videolan.org/videolan/libbluray.git
+        strip: /^v/
+      regex: v(.+)$
+
+    build:
+      dependencies:
+        linux:
+          gnu.org/gcc: '*'
+        darwin:
+          tea.xyz/gx/cc: c99
+        tea.xyz/gx/autoconf: '*'
+        tea.xyz/gx/automake: '*'
+        tea.xyz/gx/libtool: '*'
+      script: |
+        ./bootstrap
+        ./configure --prefix="{{prefix}}" --disable-dependency-tracking --disable-silent-rules --disable-bdjava-jar
+        make --jobs {{ hw.concurrency }} install
+
+    test:
+      script: |
+        cc -I{{prefix}}/include -L{{prefix}}/lib -lbluray fixture.c
+        ./a.out
+
+Note: This yml formula is just an example and may need to be adjusted based on the specific requirements and dependencies of the libbluray project.

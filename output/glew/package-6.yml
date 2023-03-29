@@ -1,0 +1,45 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/glew/glew/{{ version }}/glew-{{ version }}.tgz
+  strip-components: 1
+
+provides:
+  - lib/libGLEW.{{ version }}.dylib
+  - lib/libGLEW.{{ version }}.a
+  - include/GL/glew.h
+  - include/GL/glxew.h
+  - include/GL/wglew.h
+
+versions:
+  sourceforge: glew/glew
+
+dependencies:
+  cmake.org: '*'
+
+build:
+  pre_script: |
+    mkdir build
+  script: |
+    cmake -G "Unix Makefiles" . "#{std_cmake_args * ' '}"
+    make install
+  env:
+    MACOSX_DEPLOYMENT_TARGET: 10.9
+
+test:
+  script: |
+    "GLUT" = if "#{os}" = "mac" then "GLUT" else "GL" end
+    cc -Wl,-search_paths_first -L#{lib} -lGLEW -l#{GLUT} test.c -o test
+    ./test
+  fixture: |
+    #include <GL/glew.h>
+    #include <#{GLUT}/glut.h>
+    int main(int argc, char** argv) {
+      glutInit(&argc, argv);
+      glutCreateWindow("GLEW Test");
+      GLenum err = glewInit();
+      if (GLEW_OK != err) {
+        return 1;
+      }
+      return 0;
+    }
+  env:
+    HOMEBREW_NO_AUTO_UPDATE: 1

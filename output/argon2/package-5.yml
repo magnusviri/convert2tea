@@ -1,0 +1,27 @@
+distributable:
+  url: https://github.com/P-H-C/phc-winner-argon2/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 20190702
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/make: '*'
+  working-directory: src
+  make-targets:
+    - libargon2.a
+    - argon2
+    - argon2_test
+  env:
+    CFLAGS: "-fPIC"
+
+provides:
+  - bin/argon2
+  - include/argon2.h
+  - lib/libargon2.a
+
+test:
+  script: |
+    ./argon2_test -t

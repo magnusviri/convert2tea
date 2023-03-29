@@ -1,0 +1,48 @@
+# This is an example of jbig2dec formula in the yml format
+distributable:
+  url: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9531/jbig2dec-0.19.tar.gz
+  strip-components: 1
+
+# The project doesn't have a formal release on GitHub, so using the homepage URL for version parsing.
+versions:
+  homepage: http://www.cl.cam.ac.uk/~mgk25/jbigkit/
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/libtool: '*'
+  script: |
+    ./autogen.sh --disable-dependency-tracking --prefix="{{prefix}}" --disable-silent-rules --without-libpng
+    make --jobs {{ hw.concurrency }}
+    make install
+  env:
+    # Not explicitly disabling PDF support here since that's how jbig2dec is built by default.
+    # If libpng is installed, configure will use it.
+    ARGS:
+      - --enable-static
+      - --disable-shared
+      - --disable-dependency-tracking
+      - --prefix="{{prefix}}"
+
+provides:
+  - bin/jbig2dec
+  - bin/jbgtopbm
+  - bin/jbgtopbm85
+  - bin/jbgtopbm-bin
+
+test:
+  # The tika test document requires a PNG header, but otherwise it is a jbig2 document.
+  # The generated PBM is compared byte-for-byte with a known-good one, which is how the hash is calculated.
+  fixture: |
+    #!/bin/sh
+    exec jbgtopbm --gray-color=2 /dev/stdin "${PREFIX}/test.pbm"
+  script: |
+    set -eu
+    HASH="675a685c08b0e6bdd94a6a15025fcda119e0f339"
+    OUTPUT=$(dd if=/dev/zero bs=32768 count=1 2>/dev/null | ${PREFIX}/bin/jbig2dec -t png /dev/stdin | md5sum | awk '{print $1}')
+    if [ "$HASH" != "$OUTPUT" ];
+    then
+      echo "Expected hash to be $HASH, but found $OUTPUT"
+      exit 1
+    fi

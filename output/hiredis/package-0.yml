@@ -1,0 +1,21 @@
+distributable:
+  url: https://github.com/redis/hiredis/archive/v{{ version }}.tar.gz
+
+versions:
+  github: redis/hiredis
+  strip: /^v/
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make PREFIX={{ prefix }}
+    make install PREFIX={{ prefix }}
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc -o test -I#{include}/hiredis -L#{lib} -lhiredis examples/example.c
+    ./test

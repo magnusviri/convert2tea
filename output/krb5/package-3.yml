@@ -1,0 +1,33 @@
+distributable:
+  url: https://kerberos.org/dist/krb5/{{version}}/krb5-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.20.1
+
+build:
+  working-directory: src
+  dependencies:
+    tea.xyz/gx/cc: clang
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{prefix}} --disable-nls --disable-silent-rules --without-system-verto --without-keyutils --with-openssl=/usr/local/opt/openssl@1.1
+    make
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: clang
+  fixture: |
+    #include <krb5.h>
+    int main()
+    {
+      krb5_context context;
+      krb5_init_context(&context);
+      krb5_free_context(context);
+      return 0;
+    }
+  script: |
+    mv $FIXTURE test.c
+    clang -I{{prefix}}/include test.c -L{{prefix}}/lib -lkrb5 -o test
+    ./test

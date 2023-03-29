@@ -1,0 +1,74 @@
+There are a few different ways you could write a formula for graphicsmagick in the yml format, but here's one example:
+
+```
+distributable:
+  url: https://downloads.sourceforge.net/project/graphicsmagick/graphicsmagick/{{version}}/GraphicsMagick-{{version}}.tar.xz
+  sha256: 4bddf2e651cafcea079bc6e1137b8aee6ffb2937fa04c4e538a7c4e027ffd28f
+
+versions:
+  github: GraphicsMagick/GraphicsMagick/tags
+  ignore:
+    # Ignore alpha and beta releases
+    - /^1\.[3-9]\.\d+-alpha$/
+    - /^1\.[3-9]\.\d+-beta$/
+
+dependencies:
+  pkgconfig: '*'
+  freetype: '*'
+  jasper: '*'
+  jpeg-turbo: '*'
+  jpeg-xl: '*'
+  libpng: '*'
+  libtiff: '*'
+  libtool: '*'
+  little-cms2: '*'
+  webp: '*'
+  bzip2: { platform: 'mac' }
+  libxml2: { platform: 'mac' }
+  zlib: { platform: 'mac' }
+
+provides:
+  - bin/gm
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{prefix}} \
+      --disable-dependency-tracking \
+      --disable-openmp \
+      --disable-static \
+      --enable-shared \
+      --with-modules \
+      --with-quantum-depth=16 \
+      --without-lzma \
+      --without-x \
+      --without-gslib \
+      --with-gs-font-dir={{prefix}}/share/ghostscript/fonts \
+      --without-wmf \
+      --with-jxl
+    make install
+
+    # Strip shared library symbols
+    strip {{prefix}}/lib/*.dylib
+
+    # Replace references to the build directory with the actual prefix
+    find {{prefix}} -type f -print0 | xargs -0 sed -i '' "s|{{build.directory}}|{{prefix}}|g"
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    gm convert -size 8x8 xc:white test.png
+    gm identify test.png
+``` 
+
+This formula follows a similar structure to the cpanminus example, with sections for the distributable archive, versions, dependencies, build steps, and tests. Some highlights of this formula include:
+
+- The distributable URL and SHA256 checksum are specified directly in the formula (you could also use `url_template` and `sha256_template` to use variables).
+- The `versions` section specifies a GitHub repository to check for tags, and filters out alpha and beta releases using regular expressions.
+- Dependencies are specified using the package name and a wildcard version constraint (e.g. `pkgconfig: '*'`), with some platform-specific constraints.
+- The `provides` section specifies that `bin/gm` is provided by this package, so Homebrew won't complain about missing executables.
+- The `build` script uses `configure` and `make install` to build and install the software, with options and flags to match the Ruby formula.
+- After the build step, the script strips shared library symbols and replaces references to the build directory (which is not known until build time) with the actual prefix.
+- The `test` script uses the `gm convert` and `gm identify` commands to create and verify a simple image file.

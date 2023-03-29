@@ -1,0 +1,151 @@
+distributable:
+  url: https://dlcdn.apache.org/httpd/httpd-{{version}}.tar.bz2
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: apache/httpd/releases/tags
+
+build:
+  dependencies:
+    apr.apache.org: '*'
+    apr-util.apache.org: '*'
+    google/brotli: '*'
+    nghttp2.org: '*'
+    openssl.org: ^1.1
+    pcre.org: ^10
+  working-directory: .
+  script: |
+    # fixup prefix references in favour of opt_prefix references
+    sed -i.bak 's/#@@ServerRoot@@#$(prefix)#/#@@ServerRoot@@'"##{opt_prefix}#"/ Makefile.in
+    sed -i.bak s/\"@exp_iconsdir@\"/\"#{opt_pkgshare}\/icons\"/ docs/conf/extra/httpd-autoindex.conf.in
+    sed -i.bak s/\"@exp_errordir@\"/\"#{opt_pkgshare}\/error\"/ docs/conf/extra/httpd-multilang-errordoc.conf.in
+
+    # fix default user/group when running as root
+    sed -i.bak s/^\(User\|Group\) daemon/\\1 _www/ docs/conf/httpd.conf.in
+
+    # use Slackware-FHS layout as it's closest to what we want.
+    # these values cannot be passed directly to configure, unfortunately.
+    sed -i.bak 's#${datadir}/htdocs#${datadir}#' config.layout
+    sed -i.bak 's#${htdocsdir}/manual=#{pkgshare}\/manual#' config.layout
+    sed -i.bak 's#${datadir}/error=#{pkgshare}\/error#' config.layout
+    sed -i.bak 's#${datadir}/icons=#{pkgshare}\/icons#' config.layout
+
+    if [[ "$(uname)" == "Darwin" ]]; then
+      libxml2="$(xcrun --show-sdk-path)/usr"
+      zlib="$(xcrun --show-sdk-path)/usr"
+    else
+      libxml2="{{prefix}}"/opt/libxml2
+      zlib="{{prefix}}"/opt/zlib
+    fi
+
+    ./configure --enable-layout=Slackware-FHS \
+                --prefix="{{prefix}}" \
+                --sbindir="{{bin}}" \
+                --mandir="{{man}}" \
+                --sysconfdir="{{etc}}/httpd" \
+                --datadir="{{var}}/www" \
+                --localstatedir="{{var}}" \
+                --enable-mpms-shared=all \
+                --enable-mods-shared=all \
+                --enable-authnz-fcgi \
+                --enable-cgi \
+                --enable-pie \
+                --enable-suexec \
+                --with-suexec-bin="{{opt_bin}}/suexec" \
+                --with-suexec-caller=_www \
+                --with-port=8080 \
+                --with-sslport=8443 \
+                --with-apr={{Formulary.factory("apr").opt_prefix}} \
+                --with-apr-util={{Formulary.factory("apr-util").opt_prefix}} \
+                --with-brotli={{Formulary.factory("brotli").opt_prefix}} \
+                --with-libxml2="$libxml2" \
+                --with-mpm=prefork \
+                --with-nghttp2={{Formulary.factory("nghttp2").opt_prefix}} \
+                --with-ssl={{Formulary.factory("openssl@1.1").opt_prefix}} \
+                --with-pcre={{Formulary.factory("pcre2").opt_prefix}}/bin/pcre2-config \
+                --with-z="$zlib" \
+                --disable-lua \
+                --disable-luajit
+    make
+    if [ "$(uname)" == "Linux" ]; then
+      make -C docs/manual install-man
+    fi
+    make install
+
+    # suexec does not install without root
+    "{{opt_bin}}"/suexec -V &>/dev/null && cp {{opt_bin}}/suexec "{{bin}}/"
+
+    # remove non-executable files in bin dir (for brew audit)
+    rm "{{bin}}/envvars"
+    rm "{{bin}}/envvars-std"
+
+    # avoid using Cellar paths
+    sed -i.bak "s#{{prefix}}#$(brew --prefix)\/opt\/httpd#" \
+      {{include}}/httpd/ap_config_layout.h \
+      {{lib}}/httpd/build/config_vars.mk
+
+    sed -i.bak "s#{{prefix}}#$(brew --prefix)\/opt\/httpd#" \
+      {{bin}}/apachectl \
+      {{bin}}/apxs \
+      {{include}}/httpd/ap_config_auto.h \
+      {{include}}/httpd/ap_config_layout.h \
+      {{lib}}/httpd/build/config_vars.mk \
+      {{lib}}/httpd/build/config.nice
+
+    sed -i.bak \
+      -e "s#$((Formulary.factory("pcre2").prefix.realpath}}#{{Formulary.factory("pcre2").opt_prefix}}#" \
+      -e "s#${prefix}/lib/httpd/modules#$(brew --prefix)/opt/httpd/lib/httpd/modules#" \
+      -e "s#$(brew --prefix)/Homebrew/shims##g" \
+      {{lib}}/httpd/build/config_vars.mk
+
+  env:
+    CPPFLAGS: -I{{Formulary.factory("apr-util").opt_include}}
+    LDFLAGS: -L{{Formulary.factory("apr").opt_lib}} \
+             -L{{Formulary.factory("apr-util").opt_lib}} \
+             -L{{Formulary.factory("openssl@1.1").opt_lib}}
+    PATH: "/usr/local/opt/gettext/bin:{{PATH}}"
+
+provides:
+  - bin/apachectl
+  - bin/apxs
+  - bin/ab
+  - bin/check_forensic
+  - bin/rotatelogs
+  - bin/split-logfile
+  - bin/httxt2dbm
+  - bin/htdbm
+  - bin/htpasswd
+  - {{lib}}/httpd/*.so
+  - {{include}}/httpd/*.h
+  - {{man}}/man1/apxs.1
+  - {{man}}/man8/*.8
+
+test:
+  fixture: 'Hello world!'
+  script: |
+    port="{{free_port}}"
+
+    cat <<EOS > httpd.conf
+    Listen $port
+    ServerName localhost:$port
+    DocumentRoot "{{dir}}"
+    LoadModule authz_core_module {{lib}}/httpd/modules/mod_authz_core.so
+    LoadModule unixd_module {{lib}}/httpd/modules/mod_unixd.so
+    LoadModule dir_module {{lib}}/httpd/modules/mod_dir.so
+    LoadModule mpm_prefork_module {{lib}}/httpd/modules/mod_mpm_prefork.so
+    EOS
+
+    trap "kill ${!}; true" EXIT
+    "{{bin}}/httpd" -X -d "{{dir}}" -f httpd.conf &
+
+    if ! curl -s "http://localhost:$port/" | grep -qF "Hello world!"; then
+      echo "Homebrew Apache HTTPD test: failed"
+      exit 1
+    fi
+
+    if [ "$(uname)" == "Darwin" ]; then
+      "{{bin}}/httpd" -V | grep -Fq "Built with OpenSSL version: 'OpenSSL 1.1"
+    else
+      "{{bin}}/httpd" -V | grep -Fq "Built with OpenSSL version: 'OpenSSL 1.1"
+      "{{bin}}/httpd" -V | grep -Fq "Deflate (Zlib) support: enabled"

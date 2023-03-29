@@ -1,0 +1,34 @@
+distributable:
+  url: https://geuz.org/gl2ps/src/gl2ps-{{ version }}.tgz
+  strip-components: 1
+
+versions:
+  - 1.4.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/cmake: '*'
+    libpng: '*'
+  on_linux:
+    dependencies:
+      - freeglut
+      - libx11-dev
+      - mesa-common-dev
+  script: |
+    cmake . -DCMAKE_INSTALL_PREFIX={{ prefix }}
+    make --jobs {{hw.concurrency}} VERBOSE=1
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  on_linux:
+    dependencies:
+      - freeglut
+      - libx11-dev
+      - mesa-common-dev
+  script: |
+    cc -L{{prefix}}/lib -lgl2ps test.c -I{{prefix}}/include -DGL_GLEXT_PROTOTYPES -l{{glu}} -lGL -lm -o test
+    ./test
+    test -f test.eps && test -s test.eps

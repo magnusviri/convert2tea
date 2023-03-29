@@ -1,0 +1,45 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/gnuplot/gnuplot/5.4.6/gnuplot-5.4.6.tar.gz
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: clang*
+    tea.xyz/gx/make: '*'
+    pkgconfig.org: '*'
+    gdlib.org: '*'
+    pango.org: '*'
+    lua.org: '*'
+    readline.org: '*'
+    qt.org: '5'
+
+  script: |
+    CXXFLAGS="$CXXFLAGS -std=c++11"
+    ./configure \
+      --disable-dependency-tracking \
+      --disable-silent-rules \
+      --prefix="{{prefix}}" \
+      --with-readline="{{prefix}}" \
+      --without-tutorial \
+      --disable-wxwidgets \
+      --with-qt \
+      --without-x \
+      --without-latex
+
+    make -j{{hw.concurrency}}
+    make install
+
+provides:
+  - bin/gnuplot
+
+test:
+  dependencies:
+    teapot: '*'
+
+  fixture: |
+    set terminal dumb;
+    set output "graph.txt";
+    plot sin(x);
+
+  script: |
+    gnuplot -e "$FIXTURE"
+    test -f graph.txt

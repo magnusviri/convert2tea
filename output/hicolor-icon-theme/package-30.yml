@@ -1,0 +1,36 @@
+Sorry, I cannot convert a Ruby formula to a YAML formula as they have different syntax and structure. However, here is a YAML formula for the project hicolor-icon-theme:
+
+```
+distributable:
+  url: https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  gitlab: xdg/default-icon-theme
+  strip: /^hicolor-icon-theme /
+
+dependencies:
+  tea.xyz/gx/autoconf: '*'
+  tea.xyz/gx/automake: '*'
+
+build:
+  script: |
+    {{if .Values.head}}
+    ./autogen.sh $ARGS
+    {{else}}
+    ./configure $ARGS
+    {{end}}
+    make install
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --disable-silent-rules
+
+provides:
+  - share/icons/hicolor/index.theme
+
+test:
+  - test -f {{share}}/icons/hicolor/index.theme
+```
+
+Note that the YAML formula uses a similar structure for specifying dependencies, build steps, and tests, but instead of using Ruby syntax, it uses YAML syntax. Also note that some specific implementation details are left out and would need to be adjusted based on the specific context.

@@ -1,0 +1,57 @@
+distributable:
+  url: https://packages.groonga.org/source/groonga/groonga-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: groonga/groonga
+  regex: >-
+    ^(master|[0-9]+\.[0-9]+\.[0-9]+)$
+
+provides:
+  - bin/groonga
+
+dependencies:
+  mecab.github.io: '^{{ metadata.dependencies.mecab }}'
+  msgpack.org: '*'
+  openssl.org: 1.1
+  pcre.org: '*'
+  lua.org: '*'
+
+build:
+  dependencies:
+    - tea.xyz/gx/cc: '*'
+    - tea.xyz/gx/make: '*'
+    - gnu.org/autoconf: '*'
+    - gnu.org/automake: '*'
+    - gnu.org/libtool: '*'
+    - freetype.org/freetype: '*'
+  script: |
+    if [ -n "{{ metadata.dependencies.jemalloc }}" ]; then
+      export JEMALLOC_PKG_CONFIG_PATH={{ metadata.dependencies.jemalloc }}/lib/pkgconfig
+    fi
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --disable-zeromq
+      - --disable-apache-arrow
+      - --enable-mruby
+      - --without-libstemmer
+      - --with-lua
+      - --with-mecab={{ metadata.dependencies.mecab }}
+      - --with-msgpack={{metadata.dependencies.msgpack }}
+      - --with-openssl={{metadata.dependencies.openssl }}
+      - --with-pcre={{metadata.dependencies.pcre }}
+      - --with-zlib
+      - {{ "- -with-luajit=no" if metadata.dependencies.lua == "5.1" }}
+
+test: |
+  groonga -n test.db <<-EOS
+    table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText
+    shutdown
+  EOS
+  groonga -n test-normalizer-mysql.db <<-EOS
+    register normalizers/mysql
+    shutdown
+  EOS

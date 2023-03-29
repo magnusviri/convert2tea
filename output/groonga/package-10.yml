@@ -1,0 +1,59 @@
+Here is an example YML formula for the project groonga:
+
+```
+distributable:
+  url: https://packages.groonga.org/source/groonga/groonga-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: groonga/groonga
+  strip: /^groonga-/
+
+dependencies:
+  facebook.com/msgpack: '*'
+  facebook.com/mecab: '*'
+  facebook.com/mecab-ipadic: '*'
+  tea.xyz/gx/pcre: '*'
+  security.framework: '*'
+  libxcrypt: '*'
+  {% if target.os == 'linux' %}
+  tea.xyz/gx/glib: '*'
+  {% endif %}
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/libtool: '*'
+    tea.xyz/gx/pkg-config: '*'
+    {% if target.os == 'linux' %}
+    tea.xyz/gx/gcc: c++
+    {% endif %}
+  script: |
+    ./configure --prefix={{prefix}} \
+                --disable-zeromq \
+                --disable-apache-arrow \
+                --enable-mruby \
+                --with-luajit=no \
+                --with-ssl \
+                --with-zlib \
+                --without-libstemmer \
+                --with-mecab \
+                --with-message-pack={{ dependencies['facebook.com/msgpack'].prefix }} \
+                {% if target.os == 'linux' %}--with-glib \
+                {% endif %}
+    make install
+
+test:
+  script: |
+    {{bin}}/groonga -n {{temp_dir}}/test.db << EOS
+      table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText
+      shutdown
+    EOS
+    {{bin}}/groonga -n {{temp_dir}}/test-normalizer-mysql.db << EOS
+      register normalizers/mysql
+      shutdown
+    EOS
+```
+
+This formula uses the `distributable` section to specify the source distribution, and `versions` to specify the versioning scheme. It also takes advantage of `dependencies` to declare external dependencies, and `build` to specify the build process. Finally, it defines a `test` section to run unit tests.

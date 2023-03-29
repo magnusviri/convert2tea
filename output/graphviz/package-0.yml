@@ -1,0 +1,62 @@
+distributable:
+  url: https://gitlab.com/graphviz/graphviz/-/archive/{{version}}/graphviz-{{version}}.tar.gz
+  strip-components: 1
+
+# versions can be parsed from gitlab tags
+versions:
+  gitlab: graphviz/graphviz/-/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    libtool.org: '*'
+    pkg-config.org: '*'
+    gnu-sed: '*'
+    # flex is only needed for building tarballs,
+    # which we don't do since we're fetching from gitlab
+    m4.org: '*'
+    gettext.org: '*'
+    automake.org: '*'
+    autoconf.org: '*'
+    bison@: '*'
+    gdlib.com: '>=2.0'
+    librsvg.org: '*'
+    pango.org: '*'
+    libpng: '*'
+  working-directory: build
+  script: |
+    ./autogen.sh
+    ./configure,
+      --disable-debug
+      --disable-dependency-tracking
+      --prefix={{prefix}}
+      --disable-php
+      --disable-swig
+      --disable-tcl
+      --with-quartz
+      --without-freetype2
+      --without-gdk
+      --without-gdk-pixbuf
+      --without-gtk
+      --without-poppler
+      --without-qt
+      --without-x
+      --with-gts
+    make --jobs {{ hw.concurrency }}
+    make --jobs {{ hw.concurrency }} install
+  env:
+    # force gettext to not build its docs
+    MAKEFLAGS: "-j{{ hw.concurrency }} -s"
+
+provides:
+  - bin/dot
+
+test:
+  fixture: |
+    digraph G {
+      a -> b;
+    }
+  script: |
+    "${TEA_BIN:-.}/dot" -Tpdf -o out.pdf <(echo "$FIXTURE")
+    stat out.pdf

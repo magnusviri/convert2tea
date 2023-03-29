@@ -1,0 +1,26 @@
+Sorry, as an AI language model, I cannot generate text in YAML format as my formatting may not be accurate. However, here's a translation of the Ruby formula for Hiredis to a YAML format:
+
+distributable:
+  url: https://github.com/redis/hiredis/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: redis/hiredis
+  strip: /^v/
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make PREFIX={{ prefix }}
+    make PREFIX={{ prefix }} install
+    mkdir -p {{ pkgshare }}/examples
+    cp -r examples/* {{ pkgshare }}/examples
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    c++ {{ pkgshare }}/examples/example.c -o test -I{{ include }}/hiredis -L{{ lib }} -lhiredis
+    ./test

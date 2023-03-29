@@ -1,0 +1,38 @@
+distributable:
+  url: https://github.com/CGAL/cgal/releases/download/v{{version}}/CGAL-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  github: CGAL/cgal
+  strip: /^CGAL-/
+
+dependencies:
+  boostorg: ^1.67
+  eigen: ^3.3
+  gmp: ^6.1
+  mpfr: ^4.0
+
+build:
+  dependencies:
+    gnu-sed: '*'
+  script: |
+    cmake $ARGS .
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - "-DCMAKE_BUILD_TYPE=Release"
+      - "-DCMAKE_CXX_STANDARD=14"
+      - "-DWITH_CGAL_Qt5=ON"
+      - "-DCMAKE_INSTALL_PREFIX={{prefix}}"
+      - "-DBUILD_SHARED_LIBS=ON"
+    PKG_CONFIG_PATH: "{{pkgConfigPaths \"+\", [\"boostorg\", \"eigen\", \"gmp\", \"mpfr\"]}}"
+    CPATH: "{{includePaths \"+\", [\"boostorg\", \"gmp\", \"mpfr\"]}}"
+    LDFLAGS: "{{linkerFlags \"+\", [\"boostorg\", \"gmp\", \"mpfr\"]}}"
+
+test:
+  script: |
+    {{binPathFor \"cgal_create_cmake_script\"}} {{prefix}}/example/CMakeLists.txt
+    cmake -DCMAKE_BUILD_TYPE=Release {{prefix}}/example
+    cmake --build .
+    ctest --output-on-failure .

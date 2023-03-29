@@ -1,0 +1,82 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=arrow/arrow-{{ version }}/apache-arrow-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: apache/arrow/tags
+
+detect:
+  cmd: arrow-flight-benchmark --version
+  regex: Arrow Flight Benchmark \(\S+\) - Arrow \(\S+\)
+
+dependencies:
+  "cmake": "3.18.0-rc3"
+  "boost": "*"
+  "llvm": "11"
+  "aws-sdk-cpp": "*"
+  "brotli": "*"
+  "bzip2": "*"
+  "glog": "*"
+  "grpc": "*"
+  "lz4": "*"
+  "openssl": "1.1"
+  "protobuf": "*"
+  "rapidjson": "*"
+  "re2": "*"
+  "snappy": "*"
+  "thrift": "*"
+  "utf8proc": "*"
+  "z3": "*"
+  "zstd": "*"
+
+provides:
+  - bin/arrow-flight-benchmark
+  - bin/arrow-flight-perf
+  - bin/arrow-flight-server
+  - bin/arrow-flight-test-server
+  - bin/arrow-json
+  - bin/arrow-org
+  - bin/arrow-parquet-to-json
+  - bin/arrow-python
+  - bin/arrow-to-parquet
+  - bin/parquet-to-arrow
+
+build:
+  dependencies:
+    "macos-sdk": "*"
+  script: |-
+    cmake -S cpp -B build \
+    -DCMAKE_INSTALL_RPATH=#{rpath} \
+    -DARROW_COMPUTE=ON \
+    -DARROW_CSV=ON \
+    -DARROW_DATASET=ON \
+    -DARROW_FILESYSTEM=ON \
+    -DARROW_FLIGHT=ON \
+    -DARROW_FLIGHT_SQL=ON \
+    -DARROW_GANDIVA=ON \
+    -DARROW_HDFS=ON \
+    -DARROW_JSON=ON \
+    -DARROW_ORC=ON \
+    -DARROW_PARQUET=ON \
+    -DARROW_PLASMA=ON \
+    -DARROW_PROTOBUF_USE_SHARED=ON \
+    -DARROW_S3=ON \
+    -DARROW_WITH_BZ2=ON \
+    -DARROW_WITH_ZLIB=ON \
+    -DARROW_WITH_ZSTD=ON \
+    -DARROW_WITH_LZ4=ON \
+    -DARROW_WITH_SNAPPY=ON \
+    -DARROW_WITH_BROTLI=ON \
+    -DARROW_WITH_UTF8PROC=ON \
+    -DARROW_INSTALL_NAME_RPATH=OFF \
+    {% if false == hw.is_arm %}
+    -DARROW_MIMALLOC=ON \
+    {% endif %}
+    {{ cmake_args | join(' ') }} \
+    {{ std_cmake_args | join(' ') }}
+    cmake --build build --parallel={{ hw.logical_cores }}
+    cmake --install build
+
+test:
+  script:
+    arrow-flight-benchmark --help

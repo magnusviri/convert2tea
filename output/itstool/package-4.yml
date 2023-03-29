@@ -1,0 +1,31 @@
+distributable:
+  url: http://files.itstool.org/itstool/itstool-{{ version.normalized }}.tar.bz2
+
+versions:
+  homepage: http://itstool.org/
+  github: itstool/itstool/tags
+  sourceforge: itstool/itstool/{{ version.normalized }}
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      gnome.org/libxml2: '*'
+      python.org/python: 3.11
+    darwin:
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/make: '*'
+      brew.sh/libxml2: '*'
+      brew.sh/python@3.11: '*'
+  script: |
+    PYTHON=#{python}
+    PYTHONPATH=$PYTHONPATH:#{lib}/python3.11/site-packages:$PYTHONPATH
+    ./configure --prefix="{{prefix}}" --with-python=$PYTHON
+    make --jobs {{ hw.concurrency }} install
+    sed -i'.bak' 's|#!.*python|#!/usr/bin/env #{python}|' #{bin}/*
+    rm #{bin}/*.bak
+
+test:
+  script: |
+    cc fixture.c -litstool -L#{lib} -I#{include}
+    ./a.out

@@ -1,0 +1,41 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/gts/gts/0.7.6/gts-0.7.6.tar.gz
+  strip-components: 1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/make: '*'
+    libtool.org: '*'
+    autoconf.org: '*'
+    automake.org: '*'
+    pkg-config.org: '*'
+    gnu.gettext: '*'
+    glib: '*'
+    netpbm: '*'
+  script: |
+    autoreconf --force --install --verbose
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }}
+    make install
+  env:
+    DEFINES:
+      - CPPFLAGS=-I/usr/local/opt/gettext/include -I{{prefix}}/include
+      - LDFLAGS=-L/usr/local/opt/gettext/lib {{ osx.ldflags }} {{ osx.cflags }} -lm
+
+test:
+  script: |
+    echo '#include "gts.h"' > gtstest.c
+    echo 'int main() {' >> gtstest.c
+    echo 'GtsRange r;' >> gtstest.c
+    echo 'gts_range_init(&r);' >> gtstest.c
+    echo 'for (int i = 0; i < 10; ++i)' >> gtstest.c
+    echo 'gts_range_add_value(&r, i);' >> gtstest.c
+    echo 'gts_range_update(&r);' >> gtstest.c
+    echo 'if (r.n == 10) return 0;' >> gtstest.c
+    echo 'return 1;' >> gtstest.c
+    echo '}' >> gtstest.c
+    cflags="$(pkg-config --cflags gts | tr '\n' ' ')"
+    libs="$(pkg-config --libs gts | tr '\n' ' ')"
+    gcc -o gtstest gtstest.c $cflags -I{{prefix}}/include $libs -lm
+    ./gtstest

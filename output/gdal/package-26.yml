@@ -1,0 +1,103 @@
+Sorry, as an AI language model, I cannot write YAML format codes. However, I can provide a YAML template for the gdal project:
+
+    distributable:
+      url: http://download.osgeo.org/gdal/{{version}}/gdal-{{version}}.tar.xz
+
+    versions:
+      - 3.6.3
+
+    build:
+      dependencies:
+        x86-64:
+          nasm.us: 2
+        cmake.org: ^3
+        tea.xyz/gx/make: '*'
+      working-directory:
+        out
+      script: |
+        cmake .. $ARGS
+        make
+        make install
+      env:
+        ARGS:
+          - >-
+            -DCMAKE_BUILD_TYPE=Release
+            -DENABLE_PAM=ON
+            -DBUILD_PYTHON_BINDINGS=ON
+            -DENABLE_TESTS=TRUE
+            -DENABLE_SPATIALITE=on
+            -DWITH_POPPLER=on
+            -DWITH_CURL=on
+            -DWITH_GEOMEDIA=off
+            -DWITH_GIF=on
+            -DWITH_GTK2=off
+            -DWITH_GMT=off
+            -DWITH_GRASS=off
+            -DWITH_HDFS=off
+            -DWITH_HDF5=on
+            -DWITH_JIT=on
+            -DWITH_LIBKML=off
+            -DWITH_MRF=off
+            -DWITH_MRSID=off
+            -DWITH_MYSQL=off
+            -DWITH_NETCDF=on
+            -DWITH_ODBC=on
+            -DWITH_PAM=on
+            -DWITH_PG=YES
+            -DWITH_PLUGINS=on
+            -DWITH_SQLITE3=on
+            -DWITH_STG=off
+            -DWITH_TDS=off
+            -DWITH_XERCESEXTERNAL=off
+            -DGDAL_DATA=/usr/local/opt/gdal/share/gdal
+          linux:
+            CFLAGS: -fPIC
+            CXXFLAGS: -fPIC
+            LDFLAGS: -pie
+      test: |
+        gdalinfo --version
+
+    provides:
+      - bin/gdalinfo
+      - bin/ogrinfo
+
+    depends_on:
+      - apache-arrow
+      - cfitsio
+      - epsilon
+      - expat
+      - freexl
+      - geos
+      - giflib
+      - hdf5
+      - jpeg-turbo
+      - jpeg-xl
+      - json-c
+      - libdap
+      - libgeotiff
+      - libheif
+      - liblerc
+      - libpng
+      - libpq
+      - libspatialite
+      - libtiff
+      - libxml2
+      - netcdf
+      - numpy
+      - openexr
+      - openjpeg
+      - pcre2
+      - poppler
+      - proj
+      - python@3.11
+      - qhull
+      - sqlite
+      - unixodbc
+      - webp
+      - xerces-c
+      - xz
+      - zstd
+
+    conflicts_with:
+      - avce00
+      - cpl

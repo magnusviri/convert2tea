@@ -1,0 +1,39 @@
+distributable:
+  url: https://github.com/weaveworks/eksctl/archive/refs/tags/{{version.tag}}.tar.gz
+  strip-components: 1
+
+versions:
+  - tag: "0.135.0"
+
+build:
+  dependencies:
+    tea.xyz/gx/go: '*'
+    awscli.com/iam-authenticator: '*'
+    gnu.org/make: '*'
+    rubygems.org/counterfeiter: '*'
+    rubygems.org/go-bindata: '*'
+    rubygems.org/mockery: '*'
+  script: |
+    export GOBIN=#{ENV["HOME"]}/go/bin
+    export PATH="$PATH:$GOBIN"
+    export EKSCTL_VERSION="{{version.tag}}"
+    make build
+    mkdir -p "#{prefix}/bin"
+    cp eksctl "#{prefix}/bin/"
+    generate_completions_from_executable("#{prefix}/bin/eksctl", "completion")
+  env:
+    GOPATH: "#{ENV["HOME"]}/go"
+    GO111MODULE: "on"
+    PATH: "#{ENV["PATH"]}:#{ENV["HOME"]}/go/bin"
+
+provides:
+  - bin/eksctl
+
+test:
+  tests:
+    - command: "--help"
+      exit-code: 0
+      regexp: 'The official CLI for Amazon EKS'
+    - command: "create nodegroup"
+      exit-code: 1
+      regexp: 'Error: couldn\'t create node group filter from command line options: --cluster must be set'

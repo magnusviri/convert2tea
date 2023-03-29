@@ -1,0 +1,57 @@
+distributable:
+  url: https://github.com/Yubico/libfido2/archive/{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.13.0
+
+dependencies:
+  openssl.net: '1.1'
+  libcbor.net: '*'
+  cmake.xyz/gx: '*'
+  mandoc.xyz/gx: '*'
+  pkg-config.xyz/gx: '*'
+  systemd: |-
+    on_linux:
+      - '*'
+
+build:
+  dependencies:
+    libcbor.net: '*'
+    openssl.net: '1.1'
+    cmake.xyz/gx: '*'
+    mandoc.xyz/gx: '*'
+    pkg-config.xyz/gx: '*'
+    tea.xyz/gx: build-essentials
+  script: |
+    mkdir build
+    cd build
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}} -DUDEV_RULES_DIR=#{lib}/udev/rules.d
+    cmake --build .
+    cmake --build . --target install
+
+provides:
+  - lib/libfido2.a
+  - lib/libfido2.dylib
+  - include/fido
+
+test:
+  script: |
+    echo '#include <stddef.h>
+    #include <stdio.h>
+    #include <fido.h>
+    int main(void) {
+      fido_init(FIDO_DEBUG);
+      // Attempt to enumerate up to five FIDO/U2F devices. Five is an arbitrary number.
+      size_t max_devices = 5;
+      fido_dev_info_t *devlist;
+      if ((devlist = fido_dev_info_new(max_devices)) == NULL)
+        return 1;
+      size_t found_devices = 0;
+      int error;
+      if ((error = fido_dev_info_manifest(devlist, max_devices, &found_devices)) == FIDO_OK)
+        printf("FIDO/U2F devices found: %s\\n", found_devices ? "Some" : "None");
+      fido_dev_info_free(&devlist, max_devices);
+    }' > test.c
+    {{compiler.cc}} test.c -I{{include}} -I{{openssl.net.include}} -o test -L{{lib}} -lfido2
+    ./test

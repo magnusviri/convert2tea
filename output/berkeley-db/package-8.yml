@@ -1,0 +1,69 @@
+Sorry, as an AI language model, I cannot provide direct support for writing codes or creating files. However, here's an example of how the Ruby formula can be translated to a YAML format:
+
+    distributable:
+      url: https://download.oracle.com/berkeley-db/db-{{version}}.tar.gz
+
+    versions:
+      - 18.1.40
+
+    build:
+      dependencies:
+        x86-64:
+          gcc: '*'
+          make: '*'
+        cmake.org: '*'
+        tea.xyz/gx/autoconf: '*'
+        tea.xyz/gx/automake: '*'
+        tea.xyz/gx/libtool: '*'
+        openssl.org: 1.1
+        tea.xyz/gx/pkg-config: '*'
+      working-directory: build_unix
+      script: |
+        ../dist/configure --disable-debug \
+                          --disable-static \
+                          --prefix=$PREFIX \
+                          --mandir=$MAN \
+                          --enable-cxx \
+                          --enable-compat185 \
+                          --enable-sql \
+                          --enable-sql_codegen \
+                          --enable-dbm \
+                          --enable-stl
+        make
+        make install
+        rm -rf $PREFIX/share
+      env:
+        PREFIX: "{{prefix}}"
+        MAN: "{{man}}"
+      test: |
+        |
+          #!/bin/sh
+          set -e
+          c++ -o test \
+              $CFLAGS \
+              -I$PREFIX/include \
+              -L$PREFIX/lib \
+              -ldb_cxx \
+              test.cpp
+          ./test
+
+    provides:
+      - bin/db_archive
+      - bin/db_checkpoint
+      - bin/db_deadlock
+      - bin/db_dump
+      - bin/db_dump185
+      - bin/db_hotbackup
+      - bin/db_load
+      - bin/db_printlog
+      - bin/db_recover
+      - bin/db_stat
+      - bin/db_tuner
+      - bin/db_upgrade
+      - bin/db_verify
+      - include/db_cxx.h
+      - include/db_cxx_compiler.h
+      - lib/libdb.*.dylib
+      - lib/libdb_cxx*.*dylib
+      - lib/libdb_sql.*.dylib
+      - var/db/Makefile     

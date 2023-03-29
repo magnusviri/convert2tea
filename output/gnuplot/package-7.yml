@@ -1,0 +1,50 @@
+Unfortunately, it is not possible to convert a Ruby formula to a YAML format automatically as it involves understanding the specific structure and syntax of each format. However, here is an example YAML formula for the project gnuplot:
+
+    distributable:
+      url: https://downloads.sourceforge.net/project/gnuplot/gnuplot/5.4.6/gnuplot-5.4.6.tar.gz
+
+    build:
+      dependencies:
+        gnuplot: '*'
+        autoconf: -build
+        automake: -build
+        libtool: -build
+        pkg-config: '*'
+        gd: '*'
+        libcerf: '*'
+        lua: '*'
+        pango: '*'
+        qt: '5'
+        readline: '*'
+      prefix: /usr/local
+      script: |
+        args=(
+          --disable-dependency-tracking
+          --disable-silent-rules
+          --with-readline={{prefix}}/opt/readline
+          --without-tutorial
+          --disable-wxwidgets
+          --with-qt
+          --without-x
+          --without-latex
+        )
+        ./prepare && ./configure "${args[@]}" || ./configure "${args[@]}"
+        make
+        make install
+
+    provides:
+      - bin/gnuplot
+
+    test:
+      fixture: |
+        set terminal dumb;
+        set output "/dev/null";
+        plot sin(x);
+      script: |
+        gnuplot -e "$FIXTURE"
+        if [[ "$(gnuplot --version)" != "gnuplot 5.4.6"* ]]; then
+            echo "invalid version" >&2
+            exit 1
+        fi
+
+Note that this is just an example and may not work as-is for the specific version of gnuplot you are building. It is recommended to consult the official documentation and adjust the formula accordingly.

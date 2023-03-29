@@ -1,0 +1,30 @@
+distributable:
+  url: https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: https://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html
+  regex: href=.*?cfitsio[._-]v?(\d+(?:\.\d+)+)\.t
+
+provides:
+  - lib/libcfitsio.dylib
+  - bin/fitscheck
+  - bin/fitscopy
+
+build:
+  dependencies:
+    zlib: '*'
+  script: |
+    ./configure --prefix={{prefix}} --enable-reentrant --with-zlib={{packages.zlib.prefix}}
+    make shared
+    make install
+    mkdir -p {{pkgshare}}/testprog
+    cp ./testprog* {{pkgshare}}/testprog
+
+test:
+  script: |
+    cp {{pkgshare}}/testprog/testprog* {{testpath}}
+    {{ENV.cc}} testprog.c -o testprog -I{{include}} -L{{lib}} -lcfitsio
+    ./testprog > testprog.lis
+    test $(md5 -r testprog.lis | cut -f1 -d' ') = 8d5de250029f09ef87b8570c5d6046b3
+    test $(md5 -r testprog.fit | cut -f1 -d' ') = 3b2f040d8e482b1e58dc7a9feeaa900e

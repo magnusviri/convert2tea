@@ -1,0 +1,43 @@
+distributable:
+  url: https://github.com/aws/aws-sdk-cpp/archive/{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: aws/aws-sdk-cpp/releases/tags
+  ignore: /-(alpha|beta|rc)\d*$/
+
+detect:
+  cmd: aws-sdk-cpp-config --version
+  regex: {{ version }}
+
+dependencies:
+  cmake.org/cmake: '*'
+  curl.se: '*'
+
+provides:
+  - lib/libaws-cpp-sdk-core.dylib
+  - lib/libaws-cpp-sdk-s3.dylib
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++
+    tea.xyz/gx/make: '*'
+  script: |-
+    cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DENABLE_UNITY_BUILD=ON \
+          -DCMAKE_MACOSX_RPATH=ON \
+          -DCUSTOM_MEMORY_MANAGEMENT=OFF \
+          -DENABLE_TESTING=OFF \
+          -DAWS_IOS=OFF \
+          -DAWS_ANDROID=OFF \
+          -DAWS_SKIP_EXTERNAL_LOCKS=ON \
+          -DENABLE_EXAMPLES=OFF \
+          -DCUSTOM_MAX_EXPIRATION_IN_SECS=-1 \
+          -DCMAKE_INSTALL_RPATH=#{rpath}
+    cmake --build build --parallel $HAB_CMAKE_JOBS --config Release
+    cmake --install build
+
+test:
+  commands:
+    - aws-sdk-cpp-config --version

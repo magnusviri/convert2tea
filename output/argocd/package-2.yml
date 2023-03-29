@@ -1,0 +1,30 @@
+distributable:
+  git:
+    url: https://github.com/argoproj/argo-cd.git
+    commit: 5bcd846fa16e4b19d8f477de7da50ec0aef320e5
+  path: ./
+
+versions:
+  - 2.6.7
+
+build:
+  dependencies:
+    tea.xyz/gx/go: '*'
+    tea.xyz/gx/node: '*'
+    tea.xyz/gx/yarn: '*'
+  script: |
+    make dep-ui-local
+    NODE_ENV=production NODE_ONLINE_ENV=online yarn --cwd ui build
+    make cli-local
+    install -Dm755 "dist/argocd" "{{bin}}/argocd"
+    generate-completions -i "{{bin}}/argocd" -o "{{prefix}}/etc"
+    ln -sf "{{prefix}}/etc/argocd/completion/bash_completion" "{{home}}/.bash_completion.d/argocd"
+    ln -sf "{{prefix}}/etc/argocd/completion/zsh_completion" "{{home}}/.zsh/completion/_argocd"
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    printf "y\n" | "{{bin}}/argocd" version
+
+  timeout: 10m

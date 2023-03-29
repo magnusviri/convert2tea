@@ -1,0 +1,68 @@
+distributable:
+  url: https://nlnetlabs.nl/downloads/ldns/ldns-{{version}}.tar.gz
+
+versions:
+  - 1.8.3
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    swig.org: '^4.0'
+    openssl.org: '>=1.1'
+    python.org: '>=3.11'
+  script: |
+    mkdir -p build
+    cd build
+    cmake \
+      -DWITH_PYTHON=YES \
+      -DWITH_PYTHON3=YES \
+      -DWITH_PYTHON3_DYNAMIC_LIB=YES \
+      -DPYTHON_EXECUTABLE=$(which python3.11) \
+      -DPYTHON_INCLUDE_DIR=$(python3.11 -c 'from distutils.sysconfig import get_python_inc; print(get_python_inc())') \
+      -DPYTHON_LIBRARY=$(python3.11 -c 'import distutils.sysconfig as s; print(s.get_config_var("LIBDIR"))') \
+      -DCMAKE_INSTALL_PREFIX={{prefix}} \
+      -DLIB_INSTALL_DIR={{lib}} \
+      -DBIN_INSTALL_DIR={{bin}} \
+      -DPKG_CONFIG_LIBDIR={{lib}}/pkgconfig \
+      -DUSE_DANE_VERIFY=NO \
+      ..
+    make
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  env:
+    cxxflags: $(pkg-config --cflags ldns)
+  fixture: |
+    #include <iostream>
+    #include <ldns/ldns.h>
+    int main()
+    {
+      ldns_resolver *res;
+      ldns_rdf *domain;
+      ldns_pkt *p;
+      ldns_status s;
+      res = NULL;
+      domain = NULL;
+      p = NULL;
+      s = ldns_resolver_new_frm_file(&res, NULL);
+      if (s == LDNS_STATUS_OK) {
+        domain = ldns_dname_new_frm_str("nlnetlabs.nl");
+        s = ldns_resolver_send_pkt(&p, res, domain, LDNS_RR_TYPE_TXT, LDNS_RR_CLASS_IN, LDNS_RD);
+      }
+      ldns_resolver_deep_free(res);
+      ldns_rdf_deep_free(domain);
+      ldns_pkt_free(p);
+      if (s == LDNS_STATUS_OK) {
+        std::cout << "PASS" << std::endl;
+      } else {
+        std::cout << "FAIL" << std::endl;
+      }
+    }
+  script: |
+    mv $FIXTURE test.cpp
+    g++ test.cpp ${cxxflags} -o test -lldns
+    ./test

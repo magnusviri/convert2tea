@@ -1,0 +1,80 @@
+distributable:
+  url: https://dlcdn.apache.org/httpd/httpd-{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  github: None
+
+build:
+  dependencies:
+    apache.org: '*'
+    apr.apache.org: '*'
+    apr-util.apache.org: '*'
+    brotli.org: '*'
+    libnghttp2.org: '*'
+    openssl.org: 1.1.*
+    pcre.org: '*'
+    zlib.net: '*'
+  working-directory: "{{name}}"
+  script: |
+    # make symlink to apr-x.y.z directory
+    ln -sf "{{prefix}}/opt/apr" "srclib/apr"
+    ln -sf "{{prefix}}/opt/apr-util" "srclib/apr-util"
+    ln -sf "{{prefix}}/opt/brotli" "srclib/brotli"
+    ln -sf "{{prefix}}/opt/libnghttp2" "srclib/nghttp2"
+    # get rid of hardcoded path in configure script
+    sed -i -e "s|/usr/local/httpd-{{version}}|{{prefix}}|g" configure
+    ./configure --prefix="{{prefix}}" \
+                --enable-mods-shared=all \
+                --enable-mpms-shared=all \
+                --with-ssl="{{prefix}}" \
+                --enable-ssl \
+                --with-nghttp2="{{prefix}}" \
+                --enable-http2 \
+                --enable-ldap \
+                --with-ldap \
+                --with-included-apr \
+                --with-brotli="{{prefix}}" \
+                --enable-brotli \
+                --with-pcre="{{prefix}}" \
+                --enable-so \
+                --with-z="{{prefix}}"
+    make
+    make install
+    # avoid using Cellar paths
+    inreplace \
+      %W[{{prefix}}/bin/apachectl {{prefix}}/bin/apxs] \
+      -r "{{opt_prefix}}", "{{prefix}}"
+    # avoid conflict with other installs
+    mv {{prefix}}/bin/rotatelogs {{prefix}}/bin/rotatelogs.{{version}}
+    mv {{prefix}}/bin/split-logfile {{prefix}}/bin/split-logfile.{{version}}
+ 
+provides:
+  - bin/apachectl
+  - bin/apxs
+  - bin/ab
+  - bin/dbmmanage
+  # specify the binaries or tea magic won’t work
+ 
+test:
+  fixture: |
+    <html>
+      <head>
+        <title>Hello World</title>
+      </head>
+      <body>
+        <h1>Hello World</h1>
+      </body>
+    </html>
+  script: |
+    # configure httpd to use a test config file
+    config="{{test_root}}/conf/httpd.conf"
+    printf "<VirtualHost *:*>\n DocumentRoot \"%s/public\"\n ErrorLog \"%s/httpd-error.log\"\n</VirtualHost>" "{{test_root}}" "{{test_root}}" > "$config"
+    printf "Include %s\n" "$config" >> "{{test_root}}/conf/httpd.conf"
+    # create a test file
+    echo "$FIXTURE" > "{{test_root}}/public/index.html"
+    # start and stop the server
+    "{{prefix}}/bin/apachectl" start
+    sleep 2
+    curl --silent --show-error --fail --retry 10 --retry-max-time 30 -X GET -H 'Content-Type: text/html' http://localhost:{{port}} | grep "<title>Hello World</title>"
+    "{{prefix}}/bin/apachectl" stop

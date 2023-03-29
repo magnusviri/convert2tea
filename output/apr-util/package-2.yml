@@ -1,0 +1,36 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=apr/apr-util-{{ version }}.tar.bz2
+  mirror: https://archive.apache.org/dist/apr/apr-util-{{ version }}.tar.bz2
+  strip-components: 1
+
+versions:
+  - 1.6.3
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    apr: '*'
+    openssl@1.1: '*'
+    expat: {linux: '*', macos: '>= 2.2.6'}
+    libxcrypt: {linux: '>= 4.4.15', macos: '>= 4.0.0'}
+    sqlite: {linux: '*', macos: '>= 3.7.17'}
+    mawk: {linux: '>= 1.3.3'}
+    unixodbc: {linux: '>= 2.3.1', macos: '>= 2.3.4'}
+  script: |
+    ./configure --prefix={{ prefix }} \
+      --with-apr={{ Formula['apr'].opt_prefix }} \
+      --with-crypto \
+      --with-openssl={{ Formula['openssl@1.1'].opt_prefix }} \
+      --without-pgsql
+    make --jobs {{hw.concurrency}} install
+    ln -s {{lib}} {{libexec}}/lib
+    rm -rf {{prefix}}/share  # docs are online
+    rm -rf {{lib}}/**/*.{la,exp}
+    sed -i'' "s,#{prefix},{{opt_prefix}}," {{bin}}/apu-{{version.major}}-config
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    {{bin}}/apu-{{version.major}}-config --prefix | grep {{opt_prefix}}

@@ -1,0 +1,28 @@
+distributable:
+  url: https://github.com/Carthage/Carthage/archive/{{version.marketing}}.tar.gz
+
+versions:
+  - 0.39.0
+
+dependencies:
+  xcode: ["10.0", :build]
+  macos: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    make prefix_install PREFIX={{prefix}}
+    cp Source/Scripts/carthage-bash-completion {{prefix}}/etc/bash_completion.d/carthage
+    cp Source/Scripts/carthage-zsh-completion {{prefix}}/share/zsh/site-functions/_carthage
+    cp Source/Scripts/carthage-fish-completion {{prefix}}/share/fish/vendor_completions.d/carthage.fish
+
+provides:
+  - bin/carthage
+
+test:
+  script: |
+    echo 'github "jspahrsummers/xcconfigs"' > Cartfile
+    carthage update --cache-builds --platform macOS --verbose
+
+Note: This formula assumes that the Carthage project is hosted on Github and follows the standard Github release tagging format. If this is not the case, the distributable and versions fields may need to be adjusted accordingly.

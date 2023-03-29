@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 """
+Converts a brew formula to tea using a trained AI model.
 """
 
 __author__ = "James Reynolds"
@@ -10,45 +11,21 @@ __license__ = "MIT"
 __version__ = "0.0.1"
 
 from pprint import pprint
-import jinja2
+import random
+from jinja2 import Environment, PackageLoader
 import re
 import requests
 import sys
+import os
 
 from genericAIModel import GenericAIModel
-import parser
+import myParser
+import examples
 
 
 def getPrompt(brew_example, tea_example, example_project, brew_source, project):
-    environment = jinja2.Environment()
-    template = environment.from_string(
-        """You are PackageGPT, a large language model that understands software packages and how to build them from source.
-
-    Follow the instructions.
-
-    Here's an example ruby formula for the brew package manager for the project {{ example_project }}:
-
-{% filter indent(width=8) %}
-{{ brew_example }}
-{% endfilter %}
-
-    Here's an example package.yml yml for the tea package manager for the project {{ example_project }} built from source:
-
-{% filter indent(width=8) %}
-{{ tea_example }}
-{% endfilter %}
-
-    Here's an example ruby formula for the brew package manager for the project {{ project }}:
-
-{% filter indent(width=8) %}
-{{ brew_source }}
-{% endfilter %}
-
-    Provide a package.yml yml for the tea package manager for the project {{ project }} built from source:
-
-    """
-    )
-
+    environment = Environment(loader=PackageLoader('convert2tea',))
+    template = environment.get_template("prompt-1-example.jinja2")
     return template.render(
         example_project=example_project,
         brew_example=brew_example,
@@ -56,7 +33,6 @@ def getPrompt(brew_example, tea_example, example_project, brew_source, project):
         brew_source=brew_source,
         project=project,
     )
-
 
 def cleanupBrewFormula(formula):
     die = [
@@ -102,14 +78,13 @@ def cleanupBrewFormula(formula):
     return cleanedFormula
 
 
-def convertFiles(options):
-    project, language = options.project[0], options.language[0]
+def convertFiles(language, project, url, dry_run):
     matches = re.match(
         "^https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/(.*).rb",
-        options.url[0],
+        url,
     )
     if matches:
-        source_url = options.url[0]
+        source_url = url
     else:
         sys.stderr.write(
             f"Your url must begin with 'https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/' and end with '.rb'\n"
@@ -117,63 +92,76 @@ def convertFiles(options):
         exit(-1)
 
     # Get source
+    print(source_url)
     session = requests.Session()
     response = session.get(source_url)
+    if response.status_code != 200:
+        sys.stderr.write(f"Unable to get source from {source_url}\n")
+        exit(-1)
     brew_source = cleanupBrewFormula(response.text)
 
     # Get example files
-    templates = {
-        "ruby": {
-            "brew": "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/asciidoctor.rb",
-            "tea": "https://raw.githubusercontent.com/teaxyz/pantry/main/projects/asciidoctor.org/package.yml",
-            "name": "asciidoctor",
-        },
-        "python": {
-            "brew": "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/twine-pypi.rb",
-            "tea": "https://raw.githubusercontent.com/teaxyz/pantry/main/projects/github.com/pypa/twine/package.yml",
-            "name": "twine",
-        },
-        "go": {
-            "brew": "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/glow.rb",
-            "tea": "https://raw.githubusercontent.com/teaxyz/pantry/main/projects/charm.sh/glow/package.yml",
-            "name": "glow",
-        },
-        "c": {
-            "brew": "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/aria2.rb",
-            "tea": "https://raw.githubusercontent.com/teaxyz/pantry/main/projects/aria2.github.io/package.yml",
-            "name": "aria2",
-        },
-    }
-    if language not in templates:
+    if language not in examples.examples:
         sys.stderr.write(f"Unknown language: {language}\n")
         exit(-1)
-    example_project = templates[language]["name"]
+    random_example = random.choice(examples.examples[language])
+    example_project = random_example["name"]
 
     # brew example
-    example1_url = templates[language]["brew"]
+    example1_url = "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/{}".format(random_example["brew"])
+    print(example1_url)
     response = session.get(example1_url)
+    if response.status_code != 200:
+        sys.stderr.write(f"Unable to get source from {example1_url}\n")
+        exit(-1)
     brew_example = cleanupBrewFormula(response.text)
 
     # tea example
-    example2_url = templates[language]["tea"]
+    example2_url = "https://raw.githubusercontent.com/teaxyz/pantry/main/projects/{}/package.yml".format(random_example["tea"])
+    print(example2_url)
     response = session.get(example2_url)
+    if response.status_code != 200:
+        sys.stderr.write(f"Unable to get source from {example2_url}\n")
+        exit(-1)
     tea_example = response.text
 
     prompt = getPrompt(brew_example, tea_example, example_project, brew_source, project)
     print(prompt)
 
-    if not options.dry_run:
-        model = GenericAIModel("openai", "gpt-3.5-turbo-0301")
-        result = model.query(prompt)
-        print(result)
-
+    if not dry_run:
+        repeat = 3
+        while True:
+            print(f"Querying model for {project}...")
+            model = GenericAIModel("openai", "gpt-3.5-turbo-0301")
+            result = model.query(prompt)
+            print(result)
+            if not os.path.exists(f"output/{project}"):
+               os.makedirs(f"output/{project}")
+            counter = 0
+            while True:
+                fname = f"output/{project}/package-{counter}.yml"
+                fname2 = f"output/{project}/prompt-{counter}.txt"
+                if not os.path.isfile(fname):
+                    break
+                counter += 1
+            with open(fname, 'w') as file:
+                file.write(result)
+            with open(fname2, 'w') as file:
+                file.write(prompt)
+            success = re.search(r"distributable", result)
+            if success:
+                print("Success!")
+                repeat -= 1
+            if repeat == 0:
+                break
 
 def main():
-    options = parser.parse(sys.argv[1:])
+    options = myParser.parse(sys.argv[1:])
+    print(options)
     if options.version:
         print(__version__)
     else:
-        result = convertFiles(options)
+        convertFiles(options.project[0], options.language[0], options.url[0], options.dry_run)
 
 
 if __name__ == "__main__":

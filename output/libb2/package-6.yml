@@ -1,0 +1,25 @@
+distributable:
+  url: https://github.com/BLAKE2/libb2/releases/download/v{{version}}/libb2-{{version}}.tar.gz
+
+versions:
+  - 0.98.1
+
+build:
+  dependencies:
+    x86-64:
+      tea.xyz/gx/make: '*'
+      nasm.us: 2
+    tea.xyz/gx/cc: c99
+    cmake.org: ^3
+  working-directory: .
+  script: |
+    ./configure --disable-dependency-tracking --disable-silent-rules --prefix={{prefix}} $ARGS
+    make install
+  env:
+    ARGS:
+      - '--enable-fat' unless 'arm64-darwin' in platform
+  test: |
+    b2sum --version
+
+provides:
+  - bin/b2sum

@@ -1,0 +1,49 @@
+distributable:
+  url: https://kerberos.org/dist/krb5/{{version}}/krb5-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.20.1
+
+build:
+  working-directory: src
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    openssl.org: 1.1
+    apple.bison: '*'
+    apple.libedit: '*'
+  script: |
+    ./configure --prefix={{prefix}} \
+      --disable-nls \
+      --disable-silent-rules \
+      --without-system-verto \
+      --without-keyutils
+    make
+    make install
+  post-install:
+    - set -e -x
+    - >
+      cd "{{prefix}}";
+      for tool in krb5-config gssapi-config; do
+        rm -f bin/$tool;
+        sed "s,$(pwd),{{prefix}}," libexec/$tool > bin/$tool;
+        chmod +x bin/$tool;
+      done;
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    apple.bison: '*'
+    freedesktop.org/pkg-config: '^0.29'
+  env:
+    krb5_config: "{{prefix}}/bin/krb5-config"
+    cflags: "$(pkg-config --cflags krb5)"
+  fixture: |
+    #include <krb5.h>
+    int main() {}
+  script: |
+    echo "Compiling test program"
+    $krb5_config --cflags | xargs $CC test.cpp -o test $cflags
+    echo "Running test program"
+    ./test

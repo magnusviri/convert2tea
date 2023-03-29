@@ -1,0 +1,39 @@
+Sorry, as an AI language model, I cannot generate a YML formula for the given Ruby formula for hicolor-icon-theme. However, here's an equivalent Ruby formula for the project hicolor-icon-theme in the YML format:
+
+      distributable:
+        url: https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-{{version}}.tar.xz
+        strip-components: 1
+
+      versions:
+        gitlab: xdg/default-icon-theme
+
+      license: all_of
+      licenses:
+        - FSFUL
+        - FSFULLR
+        - GPL-2.0-only
+        - X11
+
+      dependencies:
+        freedesktop.org/pkg-config: ^0.29
+
+      build:
+        head:
+          dependencies:
+            gnu.org/autoconf: ^2
+            gnu.org/automake: ^1
+            freedesktop.org/m4: '*'
+            gnu.org/libtool: ^2
+          script: |
+            ./autogen.sh --prefix="{{prefix}}" --disable-silent-rules
+            make --jobs {{ hw.concurrency }} install
+        stable:
+          script: |
+            ./configure --prefix="{{prefix}}" --disable-silent-rules
+            make --jobs {{ hw.concurrency }} install
+
+      provides:
+        - share/icons/hicolor/index.theme
+
+      test:
+        command: test -f share/icons/hicolor/index.theme

@@ -1,0 +1,73 @@
+distributable:
+  url: http://download.osgeo.org/gdal/{{version}}/gdal-{{version}}.tar.xz
+
+versions:
+  - 3.6.3
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    tea.xyz/gx/cc: c99
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+    homebrew/core/curl: '*'
+    homebrew/core/pkg-config: '*'
+    homebrew/core/python@3.11: '*'
+    memoize_lru: '*'
+    openexr: '*'
+    unixodbc: '*'
+    webp: '*'
+    xerces-c: '*'
+    xz: '*'
+    zstd: '*'
+    osgeo-libs: '*'
+  working-directory: build
+  script: |
+    # Work around Homebrew's "prefix scheme" patch which causes non-pip installs
+    # to incorrectly try to write into HOMEBREW_PREFIX/lib since Python 3.10.
+    sed -i "${{s/.*/  - -fPIC/g}}" gdal/swig/python/CMakeLists.txt
+    cmake .. $ARGS
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DPYTHON_EXECUTABLE={{python3}}
+      - -DENABLE_PAM=ON
+      - -DBUILD_PYTHON_BINDINGS=ON
+      - -DINCLUDE_DIR={{include}}
+      - -DINCLUDE_DIR_OPT={{include}}
+      - -DLIB_DIR={{lib}}
+      - -DLIB_DIR_OPT={{lib}}
+      - -DGDAL_DATA={{prefix}}/share/gdal
+      - -DGDAL_INCLUDE_DIR={{include}}
+      - -DGDAL_LIB_DIR={{lib}}
+      - -DGEOS_LIBRARY={{prefix}}/lib/libgeos_c.dylib
+      - -DGEOS_CONFIG={{bin}}/geos-config
+      - -DHDF5_ROOT={{prefix}}
+      - -DLIBKML_ROOT={{prefix}}
+      - -DOPENJPEG_ROOT={{prefix}}
+      - -DPOPPLER_ROOT={{prefix}}
+      - -DCURL_INCLUDE_DIR={{include}}
+      - -DPCRE2_INCLUDE_DIR={{include}}
+      - -DVIRTUAL_ENV={{prefix}}
+      - -DRUNTIME_LIBRARY_DIRS={{lib}}
+      - -DCMAKE_CXX_STANDARD=17
+      - -DCURL_LIBRARY={{lib}}/libcurl.dylib
+    linux:
+      CFLAGS: -fPIC
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+  test: |
+    gdalinfo --version
+    ogrinfo --version
+
+provides:
+  - bin/gdalinfo
+  - bin/gdal_translate
+  - bin/gdalwarp
+  - bin/ogr2ogr
+  - bin/ogrinfo
+  - bin/ogrmerge
+  - bin/ogrtindex

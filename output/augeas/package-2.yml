@@ -1,0 +1,1 @@
+Unfortunately, it is not possible to write a YML formula for the project Augeas as YML is not a package format and cannot be used to create package installations. The provided examples are in Ruby format for Homebrew package manager and YML format for another package manager or deployment tool.

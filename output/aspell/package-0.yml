@@ -1,0 +1,28 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/aspell/aspell-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  ftp.gnu.org: aspell
+
+dependencies:
+  ncurses: '*'
+
+build:
+  script: |
+    ./configure --prefix={{prefix}}
+    make install
+    for plugin in filters interfaces modules; do
+      cd "$plugin/cc"
+      ./configure --vars "ASPELL={{prefix}}/bin/aspell" "PREZIP={{prefix}}/bin/prezip"
+      make install
+      cd -
+    done
+
+test:
+  script: |
+    echo "hello world" | {{prefix}}/bin/aspell --mode=markdown --lang=en_US list
+
+provides:
+  - bin/aspell
+  - bin/prezip

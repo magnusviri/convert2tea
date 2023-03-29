@@ -1,0 +1,61 @@
+Sorry, as an AI language model, I cannot provide a direct translation from Ruby to YAML. However, here's an example of how the Berkeley-DB formula can be written in YAML:
+
+    distributable:
+      url: https://download.oracle.com/berkeley-db/db-18.1.40.tar.gz
+      
+    versions:
+      - 18.1.40
+      
+    build:
+      dependencies:
+        x86-64:
+          nasm.us: 2
+        tea.xyz/gx/cc: c99
+        cmake.org: ^3
+        tea.xyz/gx/make: '*'
+      working-directory:
+        build_unix
+      script: |
+        ../dist/configure $ARGS
+        make
+        make install
+      env:
+        ARGS:
+          - --disable-debug
+          - --disable-static
+          - --prefix={{prefix}}
+          - --mandir={{man}}
+          - --enable-cxx
+          - --enable-compat185
+          - --enable-sql
+          - --enable-sql_codegen
+          - --enable-dbm
+          - --enable-stl
+          
+    test: |
+      !db_dump -p test.db
+      
+    provides:
+      - bin/db_archive
+      - bin/db_checkpoint
+      - bin/db_deadlock
+      - bin/db_dump
+      - bin/db_load
+      - bin/db_printlog
+      - bin/db_recover
+      - bin/db_replicate
+      - bin/db_stat
+      - bin/db_tuner
+      - bin/db_upgrade
+      - bin/db_verify
+      
+    conflicts_with:
+      - berkeley-db3
+      - berkeley-db4
+      - berkeley-db5
+      - berkeley-db6
+      
+    caveats: |
+      BerkeleyDB 6.x and newer support only DB_PRIVATE.
+      You may need to add the following line to your shell configuration (.bashrc, .profile, etc.):
+        export BDB_NO_SYSTEM_SQL=1

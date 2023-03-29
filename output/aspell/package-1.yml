@@ -1,0 +1,23 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/aspell/aspell-{{version}}.tar.gz
+
+versions:
+  - 0.60.8
+
+build:
+  dependencies:
+    x86-64:
+      ncurses: '*'
+    cmake.org: '*'
+    tea.xyz/gx/make: '*'
+  working-directory: "{{name}}-{{version}}"
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make
+    make install
+  test: |
+    aspell version
+
+provides:
+  - bin/aspell
+  - bin/prezip

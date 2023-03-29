@@ -1,0 +1,47 @@
+distributable:
+      url: http://download.osgeo.org/gdal/{{version}}/gdal-{{version}}.tar.xz
+
+    versions:
+      - 3.6.3
+
+    build:
+      dependencies:
+        x86-64:
+          cmake.org: ^3
+          giflib.com: '*'
+          libpng.org: '*'
+          libtiff.org: '*'
+          libxml2.org: '*'
+          netcdf.org: '*'
+          openjpeg.org: '*'
+          proj.org: '*'
+          python.org: 3.11
+          unixodbc.org: '*'
+          webp.com: '*'
+          xerces.apache.org: '*'
+          xz.com: '*'
+        working-directory:
+          build
+        script: |
+          cmake .. $ARGS $LIBRARIES
+          make
+          make install
+        env:
+          ARGS:
+            - -DCMAKE_BUILD_TYPE=Release
+            - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+            - -DENABLE_PAM=ON
+            - -DBUILD_PYTHON_BINDINGS=ON
+            - -DPython_EXECUTABLE=#{which(python3)}
+            - -DGDAL_PYTHON_INSTALL_LIB=#{site_packages}
+            - -DCMAKE_CXX_STANDARD=17
+          LIBRARIES:
+            - -DDEPENDENCY_INCLUDE_DIR='/usr/local/x86_64-unknown-linux-gnu/'
+            - -DDEPENDENCY_LIBRARY_DIR='/usr/local/x86_64-unknown-linux-gnu/lib'
+          linux:
+            CFLAGS: -fPIC
+            CXXFLAGS: -fPIC
+            LDFLAGS: -pie
+      test: |
+        gdalinfo --formats
+        ogrinfo --formats

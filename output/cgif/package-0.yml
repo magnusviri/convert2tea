@@ -1,0 +1,45 @@
+distributable:
+  url: https://github.com/dloebl/cgif/archive/refs/tags/V{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: dloebl/cgif
+  strip: /^cgif-/
+
+provides:
+  - lib/libcgif.dylib
+
+dependencies:
+  mesonbuild.com/meson: ^0.54
+  ninja-build.org/ninja: '*'
+  gsl.sourceforge.net/gsl: '*'
+
+build:
+  dependencies:
+    gnu.org/automake: '*'
+    gnu.org/autoconf: '*'
+    gnu.org/libtool: '*'
+    gnu.org/pkg-config: '*'
+    sjeng.org/m4: '*'
+  script: |
+    ./autogen.sh
+    mkdir build
+    cd build
+    meson ..
+    ninja -v
+    ninja install
+    install_name_tool -id "@rpath/libcgif.dylib" #{lib}/libcgif.dylib
+
+test: |
+  export DYLD_LIBRARY_PATH=#{lib}
+  export LD_LIBRARY_PATH=#{lib}
+  export CGIF_DATA_DIR=#{etc}/cgif
+  export CGIF_ICON_DIR=/usr/share/icons
+  export CGIF_HELP_DIR=#{prefix}/share/doc/cgif
+  export CGIF_DOCS_DIR=#{prefix}/share/doc/cgif
+
+  cgif -h
+  cgif --version
+  cgif --info
+  cgif --mode image -f test.txt -o test.gif
+  test -f test.gif

@@ -1,0 +1,77 @@
+distributable:
+  url: https://download.open-mpi.org/release/hwloc/v{{version}}/hwloc-{{version}}.tar.bz2
+
+versions:
+  - 2.9.0
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+    libxml2.org: '*'
+    freedesktop.org/pkg-config: '*'
+  script: |
+    sh ../configure CFLAGS=-I{{prefix}}/include LDFLAGS=-L{{prefix}}/lib --prefix={{prefix}} --enable-shared --enable-static --disable-cairo --without-x
+    make -j${nproc}
+    make install
+  post-installation:
+    - pkg-config --list-all hwloc
+    - pkg-config hwloc --static --libs > {{prefix}}/lib/pkgconfig/hwloc.pc
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: '*'
+  env:
+    cflags: $(pkg-config --cflags hwloc) -I{{prefix}}/include
+    ldflags: $(pkg-config --libs hwloc) -L{{prefix}}/lib
+  fixture: |
+    #include <assert.h>
+    #include <errno.h>
+    #include <hwloc.h>
+    #include <stdlib.h>
+    #include <stdio.h>
+
+    int main(void)
+    {
+        hwloc_topology_t topology;
+
+        /* Allocate and initialize topology object. */
+        hwloc_topology_init(&amp;topology);
+
+        /* ... Optionally, put detection configuration here to ignore some
+        * objects, define a synthetic topology, or load from XML, etc....
+        * The default is to detect all the objects of the machine that
+        * the caller is allowed to access.
+        */
+
+        /* Perform the topology detection. */
+        if (hwloc_topology_load(topology) == -1) {
+            fprintf(stderr, "Failed to load topology: %s\n", strerror(errno));
+            hwloc_topology_destroy(topology);
+            exit(EXIT_FAILURE);
+        }
+
+        /* Optionally, get some additional topology information
+        * in case we need the topology depth, # of cores, etc.
+        */
+        hwloc_obj_type_t t = HWLOC_OBJ_CORE;
+        int core_depth = hwloc_get_type_depth(topology, t);
+        int num_cores = hwloc_get_nbobjs_by_depth(topology, core_depth);
+
+        assert(num_cores == (int) sysconf(_SC_NPROCESSORS_ONLN));
+
+        /* Destroy topology object. */
+        hwloc_topology_destroy(topology);
+
+        return 0;
+    }
+  script: |
+    mv $FIXTURE test.c
+    ${CC} -c test.c ${cflags}
+    ${CC} test.o ${ldflags} -o test
+    ./test

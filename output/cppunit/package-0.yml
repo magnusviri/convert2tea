@@ -1,0 +1,33 @@
+distributable:
+  url: https://dev-www.libreoffice.org/src/cppunit-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: https://wiki.freedesktop.org/www/Software/cppunit/
+  regex: /cppunit[._-]v?(\d+(?:\.\d+)+)\.t/i
+  url: https://dev-www.libreoffice.org/src/
+
+provides:
+  - bin/DllPlugInTester
+
+dependencies:
+  gcc.gnu.org: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/libtool: '*'
+    freedesktop.org/pkg-config: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+    - --disable-dependency-tracking
+    - --prefix="{{prefix}}"
+
+test: |
+  DllPlugInTester --help

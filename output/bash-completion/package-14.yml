@@ -1,0 +1,27 @@
+distributable:
+  url: https://src.fedoraproject.org/repo/pkgs/bash-completion/bash-completion-1.3.tar.bz2/a1262659b4bbf44dc9e59d034de505ec/bash-completion-1.3.tar.bz2
+  strip-components: 1
+
+versions:
+  - 1.3
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  working-directory: .
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} 
+    make install
+
+provides:
+  - bin/bash_completion
+
+caveats: |
+  Add the following line to your ~/.bash_profile:
+    [[ -r "#{prefix}/etc/profile.d/bash_completion.sh" ]] && . "#{prefix}/etc/profile.d/bash_completion.sh"
+
+test:
+  script: |
+    bash -c ". #{prefix}/etc/profile.d/bash_completion.sh"

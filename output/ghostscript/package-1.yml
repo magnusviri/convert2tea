@@ -1,0 +1,65 @@
+distributable:
+  url: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs{{ version }}/ghostpdl-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  - 10.01.1
+
+build:
+  dependencies:
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/automake: build.head?
+    tea.xyz/gx/autoconf: build.head?
+    tea.xyz/gx/libtool: build.head?
+    fontconfig/fontconfig: '*'
+    freetype/freetype: '*'
+    jbig2dec/jbig2dec: '*'
+    jpeg/jpeg-turbo: '*'
+    libidn/libidn: '*'
+    libpng/libpng: '*'
+    libtiff/libtiff: '*'
+    little-cms2/little-cms2: '*'
+    openjpeg/openjpeg: '*'
+    expat/expat: macOS
+    zlib/zlib: macOS
+  script: |
+    if test -d share; then
+      # Delete local vendored sources so build uses system dependencies
+      libs=(expat freetype jbig2dec jpeg lcms2mt libpng openjpeg tiff zlib)
+      for l in "${libs[@]}"; do
+        rm -rf "base/${l}"
+      done
+      # Make sure shared libraries follow platform naming conventions.
+      sed -i '' 's|\($(GS_SONAME_MAJOR)\)|\1.$(GS_SOEXT)|g;
+                 s|\($(GS_SONAME_MAJOR_MINOR)\)|\1.$(GS_SOEXT)|g' base/unix-dll.mak
+      # Configure with necessary options
+      ./configure --prefix="{{ prefix }}" \
+                  --disable-compile-inits \
+                  --disable-cups \
+                  --disable-gtk \
+                  --with-system-libtiff \
+                  --without-x
+      # Install binaries and libraries
+      make install
+      make soinstall
+      # Install fonts
+      mkdir -p {{pkgshare}}/fonts &&
+      (cd Resource/Init/font ; tar cf - . | (cd {{pkgshare}}/fonts ; tar xvf -))
+    fi
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    ps="$(tee test.ps <<EOF
+          %!PS
+          /Helvetica findfont
+          12 scalefont
+          setfont
+          72 720 moveto
+          (Hello World!) show
+          showpage
+          EOF
+        )"
+    {{bin}}/ps2ascii "$ps" | grep "Hello World!"

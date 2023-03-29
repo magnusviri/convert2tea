@@ -1,0 +1,30 @@
+distributable:
+  repository: https://github.com/argoproj/argo-cd
+  revision: "5bcd846fa16e4b19d8f477de7da50ec0aef320e5"
+
+versions:
+  - 2.6.7
+
+build:
+  dependencies:
+    tea.xyz/gx/go: '*'
+    tea.xyz/gx/node: '*'
+    tea.xyz/gx/yarn: '*'
+  script: |
+    make dep-ui-local
+    env NODE_ENV=production NODE_ONLINE_ENV=online yarn --cwd ui build
+    make cli-local
+    install -Dm755 dist/argocd {{prefix}}/bin/argocd
+    tee {{prefix}}/share/bash-completion/completions/argocd \
+      <( {{prefix}}/bin/argocd completion bash )
+    tee {{prefix}}/share/zsh/site-functions/argocd \
+      <( {{prefix}}/bin/argocd completion zsh )
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    {{prefix}}/bin/argocd help >/dev/null
+    touch argocd-config
+    chmod 600 argocd-config
+    {{prefix}}/bin/argocd context --config argocd-config | cat # cat prevents exit code 1 on empty output

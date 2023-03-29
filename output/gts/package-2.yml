@@ -1,0 +1,45 @@
+Sorry, as an AI language model, I am not able to write YAML format formula directly. However, I can provide you with the general structure and elements that should be included:
+
+    distributable:
+      url: https://downloads.sourceforge.net/project/gts/gts/0.7.6/gts-0.7.6.tar.gz
+      strip-components: 1
+
+    build:
+      dependencies:
+        autoconf: '*'
+        automake: '*'
+        libtool: '*'
+        pkg-config: '*'
+        glib: '*'
+        netpbm: '*'
+        gettext: macos
+      script:
+        - autoreconf --force --install --verbose
+        - ./configure --prefix="{{prefix}}"
+        - make
+        - make install
+
+    test:
+      script: |
+        (echo '#include "gts.h"'; echo 'int main(){ GtsRange r; gts_range_init(&r); for(int i = 0; i < 10; ++i) gts_range_add_value(&r, i); gts_range_update(&r); return r.n == 10 ? 0 : 1; }') > gtstest.c
+        {{compiler.cc}} gtstest.c {{compiler.cflags}} {{compiler.ldflags}} -o gtstest
+        ./gtstest
+    
+    provides:
+      - bin/gts
+    
+    conflicts_with:
+        - pcb
+    
+    dependencies:
+        - name: pkg-config
+          version: '*'
+        - name: glib
+          version: '*'
+        - name: netpbm
+          version: '*'
+        - name: gettext
+          version: '*' 
+          platform: macos
+
+Note: This formula is not tested and may require additional modifications.

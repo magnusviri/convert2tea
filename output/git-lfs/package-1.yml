@@ -1,0 +1,40 @@
+distributable:
+  url: https://github.com/git-lfs/git-lfs/releases/download/v{{version}}/git-lfs-v{{version}}.tar.gz
+
+versions:
+  - 3.3.0
+
+build:
+  dependencies:
+    x86-64:
+      make.us: '*'
+      ruby.org: '*'
+      go.dev: '*'
+      asciidoctor.org: '*'
+      ronn.github.com: '*'
+  working-directory:
+    out
+  script: |
+    make
+    make man RONN={{bin}}/ronn
+    mv man/html man1 man5 man7 /usr/share/man/
+    mv man/man1/* man/man5/* man/man7/* /usr/share/man/man1 /usr/share/man/man5 /usr/share/man/man7
+    make install PREFIX={{prefix}}
+  env:
+    PATH: "{{env.PATH}}:{{brewprefix}}/bin:{{brewprefix}}/sbin"
+  post-install:
+    - echo "Update your git config to finish installation:"
+    - echo ""
+    - echo "  # Update global git config"
+    - echo "  $ git lfs install"
+    - echo ""
+    - echo "  # Update system git config"
+    - echo "  $ git lfs install --system"
+
+test: |
+  git init
+  git lfs track test
+  grep -q test .gitattributes
+
+provides:
+  - bin/git-lfs

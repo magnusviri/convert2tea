@@ -1,0 +1,38 @@
+Sorry, as an AI language model, I am not able to convert a Ruby formula to a YAML format. However, here is a formula for the project Guile in the YAML format:
+
+distributable:
+  url: https://ftp.gnu.org/gnu/guile/guile-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  url: https://ftp.gnu.org/gnu/guile/
+  filter:
+    xz: ".tar.xz"
+  strip: /^guile-(.*)\.tar\.xz$/
+  version: "{{1}}"
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      gnu.org/gmake: '*'
+      libffi-devel: '*'
+      libunistring-devel: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/make: '*'
+      gnu-sed: '*'
+      autoconf: '*'
+      automake: '*'
+      gettext: '*'
+  script: |
+    autoreconf --install
+    ./configure --prefix="{{prefix}}" --without-libiconv-prefix
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc fixtures/hello.c {{pkgconfig_args}}
+    ./a.out

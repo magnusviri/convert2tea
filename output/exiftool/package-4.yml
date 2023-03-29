@@ -1,0 +1,36 @@
+Sorry, as an AI language model, I cannot provide a direct conversion from Ruby to YAML format. However, here's an attempt to translate the Ruby formula to the nearest YAML format:
+
+    distributable:
+      url: https://cpan.metacpan.org/authors/id/E/EX/EXIFTOOL/Image-ExifTool-{{ version }}.tar.gz
+      strip-components: 1
+
+    versions:
+      null: v(\d+\.\d+) # get version from url in regex format
+      gitlab: https://gitlab.com/php/php-src
+      strip: v
+
+    dependencies:
+      tea.xyz/gx/perl: *
+
+    build:
+      dependencies:
+        tea.xyz/gx/make: vsn
+      script: |
+        perl Makefile.PL \
+        INSTALLDIRS=vendor \
+        DESTDIR={{prefix}} \
+        INSTALLPRIVLIB={{prefix}}/lib \
+        INSTALLARCHLIB={{prefix}}/lib \
+        INSTALLSITELIB={{prefix}}/lib \
+        INSTALLSITEARCH={{prefix}}/lib \
+        PERL_LIB={{prefix}}/lib \
+        ETTMP={{HOMEBREW_TEMP}}
+
+        make install
+
+    test:
+      dependencies:
+        tea.xyz/gx/perl: *
+      script: |
+        test_image = {{test_fixtures}}/test.jpg
+        exiftool #{test_image} | grep "MIME Type\s+:\s+image/jpeg"

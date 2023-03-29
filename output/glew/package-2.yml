@@ -1,0 +1,72 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/glew/glew/{{version}}/glew-{{version}}.tgz
+  strip-components: 1
+
+provides:
+  - lib/libGLEW.dylib
+  - lib/libGLEW.a
+  - include/GL/glew.h
+  - include/GL/glxew.h
+  - include/GL/wglew.h
+
+versions:
+  bitbucket: nigels-com/glew
+  regex: '^glew-(\d+(?:\.\d+)+)$'
+
+dependencies:
+  cmake.org: '*'
+  macos:
+    depends_on:
+      freeglut.net: '*'
+      mesa3d.org: '*'
+  linux:
+    depends_on:
+      freeglut.net: '*'
+      mesa3d.org: '*'
+
+build:
+  script: |
+    cmake -S . -B _build $ARGS
+    cmake --build _build
+    cmake --install _build --prefix $PREFIX
+  env:
+    ARGS:
+      - -D CMAKE_INSTALL_RPATH={$prefix}/lib
+    darwin:
+      - -D CMAKE_OSX_SYSROOT=/
+      - -D CMAKE_OSX_DEPLOYMENT_TARGET=10.9
+    linux:
+      - -D CMAKE_BUILD_TYPE=Release
+      - -DGLUT_INCLUDE_DIR={{deps.freeglut.net.prefix}}/include
+      - -DGLUT_glut_LIBRARY={{deps.freeglut.net.prefix}}/lib/libglut.so
+      - -DGLEW_CMAKE_BUILD_STATIC_LIB=ON
+
+test:
+  script: |
+    test_file="test-$RANDOM"
+    cat > $test_file.c <<EOF
+    #include "GL/glew.h"
+    #include "GL/glut.h"
+    #include <stdio.h>
+    int main(int argc, char** argv) {
+        glutInit(&argc, argv);
+        glutCreateWindow("GLEW Test");
+        GLenum err = glewInit();
+        if (GLEW_OK != err) {
+            fprintf(stderr, "GLEW Error: \%s\textbackslash n", glewGetErrorString(err));
+            return 1;
+        }
+        return 0;
+    }
+    EOF
+    cmake -S . -B _build
+    (cd _build && make)
+    gcc $test_file.c -o $test_file -Iinclude -Llib -lGLEW -lGL -lglut
+    ./$test_file
+  env:
+    PATH:
+      - $PATH:{{prefix}}/bin
+      - /usr/X11R6/bin
+    DYLD_LIBRARY_PATH: {{prefix}}/lib
+    LINUX:
+      DISPLAY: ":99.0"

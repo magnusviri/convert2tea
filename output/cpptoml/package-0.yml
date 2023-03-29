@@ -1,0 +1,28 @@
+distributable:
+  url: https://github.com/skystrife/cpptoml/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: skystrife/cpptoml
+  regex: '^v(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)$'
+
+provides:
+  - include/cpptoml.h
+  - lib/libcpptoml.a
+  - lib/libcpptoml.dylib
+
+dependencies:
+  cmake.org: ^3.14
+  llvm.org: ^11
+  clang.llvm.org: ^11
+
+build:
+  script: |
+    cmake -S . -B build
+    cmake --build build -- ${MAKEFLAGS}
+    cmake --install build --prefix "{{prefix}}"
+  env:
+    CXXFLAGS: "-stdlib=libc++"
+
+test: |
+  echo "No test available for cpptoml"

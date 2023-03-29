@@ -1,0 +1,35 @@
+distributable:
+  url: https://github.com/emscripten-core/emscripten/archive/{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 3.1.34
+
+build:
+  dependencies:
+    tea.xyz/gx/cmake: '*'
+    tea.xyz/gx/node: '*'
+    tea.xyz/gx/python: 3.11
+    tea.xyz/gx/yuicompressor: '*'
+  script: |
+    em-config --global --disable-color
+    emsdk install {{ version }}
+    emsdk activate {{ version }}
+    source /opt/homebrew/share/emsdk/emsdk_env.sh
+    rm -rf ~/.emscripten # ensure a fresh configuration
+    export LLVM_ROOT="{{ libexec }}/llvm/bin"
+    export BINARYEN_ROOT="{{ libexec }}/binaryen"
+    export NODE_JS="{{ brewery.node }}/bin/node"
+    export JAVA_HOME="/Library/Java/Home"
+    cc --version
+    emcc --version
+    em++ --version
+    emar --version
+    emranlib --version
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/node: '*'
+  script: |
+    printf '#include<stdio.h>\nint main(){printf("hello world");}' > test.c && emcc test.c -o test.js && node test.js

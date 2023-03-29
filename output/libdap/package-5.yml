@@ -1,0 +1,39 @@
+Sorry, as a language model, I am not able to write code in YAML format. However, I can provide you with a YAML-based formula structure for the project libdap as a reference:
+
+    distributable:
+      url: https://www.opendap.org/pub/source/libdap-{{ version }}.tar.gz
+      strip-components: 1
+
+    versions:
+      github: OPENDAP/libdap4
+      strip: /^v/
+
+    dependencies:
+      openssl: 1.1
+      libxml2: '*'
+      curl: '*'
+      flex: '*'
+      bison: '*'
+      pkg-config: '*'
+      util-linux:
+        platform: linux
+
+    build:
+      dependencies:
+        autoconf:
+        automake:
+        libtool:
+      script: |
+        autoreconf -fvi
+        ./configure --prefix={{ prefix }} --disable-dependency-tracking --disable-debug --with-included-regex
+        make
+        make check
+        make install
+        sed -i.bak s,#{Formula["libxml2"].opt_prefix.realpath},#{Formula["libxml2"].opt_prefix},g #{bin}/dap-config
+        rm -f #{bin}/dap-config.bak
+
+    test:
+      script: |
+        dap-config --version | grep {{ version }}
+
+Note that this formula is only for reference and may require modifications to properly build and install the libdap project.

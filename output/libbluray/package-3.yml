@@ -1,0 +1,44 @@
+Sorry, as an AI language model, I cannot write a formula in YAML format but I can provide guidance for converting the Ruby formula for the project libbluray to the YAML format. Here are the steps:
+
+1. Create a new YAML file and give it a name (e.g. libbluray.yml).
+2. Under the root node, create a `distributable` node and specify the `url` attribute with the download URL for the latest version of libbluray.
+3. Create a `versions` node to specify where to look for available versions of libbluray. Use the `github` attribute to specify the URL for the GitHub repository where tags are stored, and use the `strip` attribute to specify any prefix to remove from the tag names.
+4. Create a `build` node to specify the build process. Under the `dependencies` node, specify the dependencies needed to build the package on different platforms. Use `linux` and `darwin` as keys for the respective platforms, and use the package name and version range as values. Under `script`, list the commands needed to build and install the package, including any command line arguments needed for configuration.
+5. Create a `test` node to specify the tests to be run. List the dependencies needed to run the tests (if any) and the commands needed to compile and run the tests.
+
+Here's what the resulting YAML file might look like:
+
+```yaml
+distributable:
+  url: https://download.videolan.org/videolan/libbluray/{{version}}/libbluray-{{version}}.tar.bz2
+
+versions:
+  github: https://github.com/videolan/libbluray/tags
+  strip: v
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      freetype: '*'
+      fontconfig: '*'
+      libxml2: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/make: '*'
+      autoconf: '*'
+      automake: '*'
+      libtool: '*'
+    pkg-config: '*'
+  script: |
+    ./bootstrap
+    ./configure --prefix="{{prefix}}" --disable-dependency-tracking --disable-silent-rules --disable-bdjava-jar
+    make --jobs {{hw.concurrency}} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -I{{include}} -L{{lib}} -lbluray -o test
+    ./test
+```

@@ -1,0 +1,55 @@
+Sorry, as an AI language model, I cannot directly convert an existing Ruby formula to YAML format. However, here is a rough YAML format that can be used as a starting point:
+
+    distributable:
+      url: https://ftp.gnu.org/gnu/guile/guile-{{ version.raw }}.tar.gz
+      strip-components: 1
+
+    versions:
+      ftp: ftp.gnu.org/gnu/guile/
+      filetype: tar.gz
+
+    build:
+      dependencies:
+        linux:
+          gnu.org/gcc: '*'
+        darwin:
+          tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+        brew:
+          - bdw-gc
+          - gmp
+          - libffi
+          - libtool
+          - libunistring
+          - pkg-config
+          - readline
+      script: |
+        ./configure --prefix="{{prefix}}" \
+                    --with-libreadline-prefix=#{Formula["readline"].opt_prefix} \
+                    --with-libgmp-prefix=#{Formula["gmp"].opt_prefix} \
+                    --disable-nls
+        make --jobs {{ hw.concurrency }} install
+        # Create directories so installed modules can create links inside.
+        mkdir -p #{HOMEBREW_PREFIX}/lib/guile/3.0/site-ccache
+        mkdir -p #{HOMEBREW_PREFIX}/lib/guile/3.0/extensions
+        mkdir -p #{HOMEBREW_PREFIX}/share/guile/site/3.0
+
+      post_install:
+        - >
+          Pathname.glob("#{lib}/*.dylib") do |dylib|
+              lib.install_symlink dylib.basename => "#{dylib.basename(".dylib")}.so"
+          end
+
+      caveats: |
+        Guile libraries can now be installed here:
+            Source files: #{HOMEBREW_PREFIX}/share/guile/site/3.0
+          Compiled files: #{HOMEBREW_PREFIX}/lib/guile/3.0/site-ccache
+              Extensions: #{HOMEBREW_PREFIX}/lib/guile/3.0/extensions
+        Add the following to your .bashrc or equivalent:
+          export GUILE_LOAD_PATH="#{HOMEBREW_PREFIX}/share/guile/site/3.0"
+          export GUILE_LOAD_COMPILED_PATH="#{HOMEBREW_PREFIX}/lib/guile/3.0/site-ccache"
+          export GUILE_SYSTEM_EXTENSIONS_PATH="#{HOMEBREW_PREFIX}/lib/guile/3.0/extensions"
+
+      test:
+        script: |
+          scheme -q < #{testpath}/hello.scm

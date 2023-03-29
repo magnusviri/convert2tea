@@ -1,0 +1,36 @@
+Here's an example yml formula for the project aws-sdk-cpp:
+
+    distributable:
+      url: https://github.com/aws/aws-sdk-cpp/archive/{{ version }}.tar.gz
+      strip-components: 1
+    
+    versions:
+      github: aws/aws-sdk-cpp/releases/tags
+      ignore: /rc\d+$/
+    
+    detect:
+      cmd: aws --version
+      regex: aws-cli/\d+.\d+.\d+\s+\(.*\)\s+aws-sdk-cpp/\d+.\d+.\d+(\.\d+)?/
+    
+    dependencies:
+      cmake: '*'
+      curl.se: '>=7.41.0'
+    
+    provides:
+      - bin/aws
+    
+    build:
+      script: |-
+        cmake -B build -S . -DBUILD_ONLY="core" -DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX={{prefix}}
+        cmake --build build
+        cmake --install build
+      env:
+        HOMEBREW_CMAKE_OPTS: "-DCMAKE_INSTALL_LIBDIR=#{lib}"
+    
+    test:
+      script: |
+        mkdir build-test
+        cd build-test
+        cmake .. -DBUILD_ONLY="test" -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH=#{prefix}
+        cmake --build .
+        ctest --output-on-failure -C Release -E "SigV4.*"

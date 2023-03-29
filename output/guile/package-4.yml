@@ -1,0 +1,44 @@
+Unfortunately, it is not possible to directly convert from a Ruby formula to a YAML formula, as the two formats serve different purposes and have different syntaxes. However, the information from the Ruby formula can be used to create a new YAML formula from scratch.
+
+Here's an example YAML formula for the project guile:
+
+    distributable:
+      url: https://ftp.gnu.org/gnu/guile/guile-{{version}}.tar.xz
+      strip-components: 1
+
+    versions:
+      ftp:
+        url: https://ftp.gnu.org/gnu/guile/?C=M&O=D
+        pattern: /guile-(\d+(?:\.\d+)*)\.tar\.xz/
+        version: '$1'
+
+      git:
+        url: https://git.savannah.gnu.org/git/guile.git
+        branch: main
+
+      dependencies:
+        linux:
+          gnu.org/gcc: '*'
+          tea.xyz/gx/cc: c99
+        darwin:
+          gnu.org/gcc: '>= 7'
+          tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+        brew: readline, gmp, libtool, libunistring, bdw-gc, pkg-config
+
+    build:
+      script: |
+        export GUILE_AUTO_COMPILE=0
+        export PKG_CONFIG_PATH="{{prefix}}/lib/pkgconfig"
+        export PATH="{{dependencies.tea.xyz/gx/cc}}:$PATH"
+        ./configure --prefix="{{prefix}}"
+        make --jobs {{hw.concurrency}} install
+
+    test:
+      script: |
+        echo "(display \"Hello World\")(newline)" > hello.scm
+        {{dependencies.tea.xyz/gx/cc}} -L{{prefix}}/lib -I{{prefix}}/share/guile/3.0/include -o hello \
+            `guile-config compile` `guile-config link` hello.scm
+        ./hello
+
+Note that this formula may differ from the actual Guile formula used in any specific package manager, and may require additional customization or adjustments.

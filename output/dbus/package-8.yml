@@ -1,0 +1,51 @@
+distributable:
+  url: https://dbus.freedesktop.org/releases/dbus/dbus-{{version.raw}}.tar.xz
+  strip-components: 1
+
+versions:
+  github: dbus/dbus.git
+  ignore:
+    - /^1.[0-3]\./ # ignore releases numbered 1.0 to 1.3
+  livecheck:
+    url: https://dbus.freedesktop.org/releases/dbus/
+    regex: href=.*?dbus[._-]v?(\d+\.\d+\.\d+)\.t
+
+dependencies:
+  perl.org: '*'
+  pkg-config: '*'
+  xmlto: '*'
+  expat: '*'
+
+build:
+  dependencies:
+    autoconf: head
+    autoconf-archive: head
+    automake: head
+    libtool: head
+    tea.xyz/gx/patchelf: '*'
+  script: |
+    # Fix the TMPDIR to one D-Bus doesn't reject due to odd symbols
+    export TMPDIR=/tmp
+    export XML_CATALOG_FILES={{etc}}/xml/catalog
+
+    bash autogen.sh
+    bash configure \
+      --prefix={{prefix}} \
+      --localstatedir={{var}} \
+      --sysconfdir={{etc}} \
+      --enable-xml-docs \
+      --disable-doxygen-docs \
+      --without-x \
+      --disable-tests \
+      --enable-launchd \
+      --with-launchd-agent-dir={{prefix}}
+
+    make
+    make install
+
+    tea patchelf -h -L lib -r $(greadelf -d ./dbus-daemon | grep NEEDED | awk '{print $5}' | tr '\n' ',') ./dbus-daemon
+    tea patchelf -h -L lib -r $(greadelf -d ./dbus-launch | grep NEEDED | awk '{print $5}' | tr '\n' ',') ./dbus-launch
+
+test:
+  script:
+    dbus-daemon --version

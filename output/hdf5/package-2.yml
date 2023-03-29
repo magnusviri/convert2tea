@@ -1,0 +1,48 @@
+distributable:
+       url: https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{{version.major}}.{{version.minor}}/{{name}}-{{version}}/src/{{name}}-{{version}}.tar.bz2
+       strip-components: 1
+
+    versions:
+      - 1.12.2
+
+    build:
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: '*'
+        gnu.org/bison: ^3
+        cmake.org: '*'
+        gnu.org/autoconf: '*'
+        gnu.org/automake: '*'
+        gnu.org/libtool: '*'
+        gnu.org/gcc: '*'
+        github.com/cisd/OpenBLAS: '*'
+        libaec.org: '*'
+      script: |
+        autoreconf --force --install --verbose
+        cmake \
+          -DCMAKE_INSTALL_PREFIX="{{prefix}}" \
+          -DBUILD_SHARED_LIBS=true \
+          -DHDF5_BUILD_CPP_LIB=true \
+          -DHDF5_BUILD_EXAMPLES=true \
+          -DHDF5_BUILD_FORTRAN=true \
+          -DHDF5_BUILD_HL_LIB=true \
+          -DHDF5_BUILD_TOOLS=true \
+          -DHDF5_ENABLE_Z_LIB_SUPPORT=true \
+          -DHDF5_ENABLE_SZIP_SUPPORT=true \
+          -DSZIP_INCLUDE_DIR="{{prefix}}/include" \
+          -DSZIP_LIBRARY="{{prefix}}/lib/libsz.a" \
+          -DBLAS_LIBRARIES="{{prefix}}/lib/libopenblas.a" \
+          -DENABLE_64_BIT=1 \
+          .
+        make --jobs {{hw.concurrency}}
+        make install
+
+    provides:
+      - bin/h5cc
+      - bin/h5fc
+
+    test:
+      script: |
+        (echo "create test.h5"; echo "close"; echo "y") | h5perf_serial
+        h5dump -H test.h5 | grep "root group"
+        rm test.h5

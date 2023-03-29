@@ -1,0 +1,58 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/gts/gts/0.7.6/gts-0.7.6.tar.gz
+  strip-components: 1
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/libtool: '*'
+    tea.xyz/gx/pkg-config: '*'
+    gnu/gettext: latest
+    brew/glib: '*'
+    brew/netpbm: '*'
+  working-directory: gts-0.7.6
+  script: |
+    autoreconf --force --install --verbose
+    ./configure --prefix="{{prefix}}"
+    make
+    make install
+
+provides:
+  - lib/libgts-0.7.dylib
+
+test:
+  fixture: |
+    #include "gts.h"
+    int main() {
+      GtsRange r;
+      gts_range_init(&r);
+      for (int i = 0; i < 10; ++i) {
+        gts_range_add_value(&r, i);
+      }
+      gts_range_update(&r);
+      if (r.n != 10) {
+        return 1;
+      }
+      return 0;
+    }
+  script: |
+    cflags=$(pkg-config --cflags --libs gts)
+    cc gtstest.c $cflags -lm -o gtstest
+    ./gtstest
+
+patch:
+  gtstest.c: |
+    #include <gts.h>
+    int main() {
+      GtsRange r;
+      gts_range_init(&r);
+      for (int i = 0; i < 10; ++i) {
+        gts_range_add_value(&r, i);
+      }
+      gts_range_update(&r);
+      if (r.n != 10) {
+        return 1;
+      }
+      return 0;
+    }

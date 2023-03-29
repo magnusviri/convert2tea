@@ -1,0 +1,47 @@
+distributable:
+  url: https://github.com/jemalloc/jemalloc/releases/download/{{ version }}/jemalloc-{{ version }}.tar.bz2
+  strip-components: 1
+
+versions:
+  - 5.3.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/docbook-xsl: '*'
+  script: |
+    args = %W[
+      --disable-debug
+      --prefix={{ prefix }}
+      --with-jemalloc-prefix=
+    ]
+    if test "{{ version }}" = "HEAD"; then
+      args << "--with-xslroot=#{gx.deps.global['docbook-xsl'].prefix}/docbook-xsl"
+      ./autogen.sh *args
+      make dist
+    else
+      ./configure *args
+    fi
+    make
+    make check
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cat << EOF >> test.c
+      #include <stdlib.h>
+      #include <jemalloc/jemalloc.h>
+      int main(void) {
+        for (size_t i = 0; i < 1000; i++) {
+          // Leak some memory
+          malloc(i * 100);
+        }
+        // Dump allocator statistics to stderr
+        malloc_stats_print(NULL, NULL, NULL);
+      }
+    EOF
+    cc test.c -L{{prefix}}/lib -ljemalloc -o test
+    ./test

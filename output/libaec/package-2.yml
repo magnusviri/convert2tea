@@ -1,0 +1,38 @@
+distributable:
+  url: https://gitlab.dkrz.de/k202009/libaec/-/archive/v{{version}}/libaec-v{{version}}.tar.bz2
+
+versions:
+  gitlab: k202009/libaec/tags
+
+provides:
+  - bin/aec
+  - include/aec.h
+  - lib/libaec.a
+  - lib/libaec.dylib
+  - lib/libaec.3.dylib
+  - lib/libaec.so
+  - lib/libaec.so.3
+
+build:
+  dependencies:
+    cmake: '*'
+  link_overwrite:
+    - include/szlib.h
+    - lib/libsz.a
+    - lib/libsz.dylib
+    - lib/libsz.2.dylib
+    - lib/libsz.so
+    - lib/libsz.so.2
+  script: |
+    mkdir build
+    cd build
+    cmake .. -DCMAKE_BUILD_TYPE=None \
+             -DCMAKE_INSTALL_PREFIX={{prefix}} \
+             -DBUILD_SHARED_LIBS=ON \
+             -DBUILD_TESTING=ON
+    make
+    make install
+    make test
+
+test:
+  script: test "`aec -v`" = "{{version}}"

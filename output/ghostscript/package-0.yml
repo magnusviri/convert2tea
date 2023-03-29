@@ -1,0 +1,107 @@
+distributable:
+  url: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs{{ version | replace(".", "") }}/ghostpdl-{{ version }}.tar.xz
+
+versions:
+  - 10.01.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    fontconfig: '*'
+    freetype: '*'
+    jbig2dec: '*'
+    jpeg-turbo: '*'
+    libidn: '*'
+    libpng: '*'
+    libtiff: '*'
+    little-cms2: '*'
+    openjpeg: '*'
+    expat: '*'
+    zlib: '*'
+  patch_file: |-
+    diff --git a/base/unix-dll.mak b/base/unix-dll.mak
+    index 89dfa5a..c907831 100644
+    --- a/base/unix-dll.mak
+    +++ b/base/unix-dll.mak
+    @@ -100,10 +100,26 @@ GS_DLLEXT=$(DLL_EXT)
+
+
+    # MacOS X
+    -#GS_SOEXT=dylib
+    -#GS_SONAME=$(GS_SONAME_BASE).$(GS_SOEXT)
+    -#GS_SONAME_MAJOR=$(GS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_SOEXT)
+    -#GS_SONAME_MAJOR_MINOR=$(GS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
+    +GS_SOEXT=dylib
+    +GS_SONAME=$(GS_SONAME_BASE).$(GS_SOEXT)
+    +GS_SONAME_MAJOR=$(GS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_SOEXT)
+    +GS_SONAME_MAJOR_MINOR=$(GS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
+
+    +PCL_SONAME=$(PCL_SONAME_BASE).$(GS_SOEXT)
+    +PCL_SONAME_MAJOR=$(PCL_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_SOEXT)
+    +PCL_SONAME_MAJOR_MINOR=$(PCL_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
+
+    +XPS_SONAME=$(XPS_SONAME_BASE).$(GS_SOEXT)
+    +XPS_SONAME_MAJOR=$(XPS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_SOEXT)
+    +XPS_SONAME_MAJOR_MINOR=$(XPS_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
+
+    +PDF_SONAME=$(PDF_SONAME_BASE).$(GS_SOEXT)
+    +PDF_SONAME_MAJOR=$(PDF_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_SOEXT)
+    +PDF_SONAME_MAJOR_MINOR=$(PDF_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
+
+    +GPDL_SONAME=$(GPDL_SONAME_BASE).$(GS_SOEXT)
+    +GPDL_SONAME_MAJOR=$(GPDL_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_SOEXT)
+    +GPDL_SONAME_MAJOR_MINOR=$(GPDL_SONAME_BASE).$(GS_VERSION_MAJOR).$(GS_VERSION_MINOR).$(GS_SOEXT)
+  script: |
+    if test {{hw.platform}} = darwin; then
+      sed "s|dylibs'|dylibs', '-Wl,-rpath,@loader_path/../lib|g" -i.base0
+      # 1. Make sure shared libraries follow platform naming conventions.
+      # 2. Prevent dependent rebuilds on minor version bumps.
+      # Reported upstream at:
+      # https://bugs.ghostscript.com/show_bug.cgi?id=705907
+      # https://bugs.ghostscript.com/show_bug.cgi?id=705908
+      patch -p1 < .base0
+    fi
+
+    # Delete local vendored sources so build uses system dependencies
+    libs=("expat" "freetype" "jbig2dec" "jpeg" "lcms2mt" "png" "openjpeg" "tiff" "zlib")
+    for lib in "${libs[@]}"; do
+      find "$lib" -type f -delete
+      find "$lib" -type d -delete
+    done
+
+    # Configure and build the binaries and libraries
+    ./configure \
+      --disable-cups \
+      --disable-compile-inits \
+      --disable-gtk \
+      --with-system-libtiff \
+      --without-x \
+      --prefix={{ prefix }}
+    make -j{{hw.concurrency}} install
+    make install-so
+    rm -rf {{prefix}}/share  # docs are online
+
+    if test {{hw.platform}} = darwin; then
+      install_name_tool -change \
+        @rpath/libmpdec.3.dylib \
+        @loader_path/libmpdec.3.dylib \
+        {{prefix}}/lib/libmpdec++.dylib
+    fi
+
+    # Install the fonts
+    SOURCE_URL="https://sourceforge.net/projects/gs-fonts/files/ghostscript-fonts-std-8.11.tar.gz/download"
+    curl -L "$SOURCE_URL" -o fonts.tar.gz
+    mkdir -p fonts
+    tar -xzf fonts.tar.gz -C fonts
+    (cd fonts && find . -name '*.pfa' -exec mkfontscale {} \; && find . -name '*.pfb' -exec mkfontscale {} \;)
+    cp -r fonts/* {{pkgshare}}/fonts
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cp "$(brew --prefix ghostscript)/share/ghostscript/{{ version }}/examples/tiger.eps" test.eps
+    ps2pdf test.eps
+    gs -dQUIET -dBATCH -dNOPAUSE -sDEVICE=pngalpha -r144 -sOutputFile=test.png test.pdf
+    exit $(( $(file test.png | grep -c "PNG image data") - 1 ))

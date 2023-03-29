@@ -1,0 +1,39 @@
+distributable:
+  url: https://github.com/libass/libass/releases/download/{{ version }}/libass-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  - 0.17.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: cc
+    tea.xyz/gx/make: '*'
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/freetype: '*'
+    tea.xyz/gx/fribidi: '*'
+    tea.xyz/gx/harfbuzz: '*'
+    tea.xyz/gx/libunibreak: '*'
+    tea.xyz/gx/fontconfig: '*'
+    tea.xyz/gx/nasm: '*' on intel
+    tea.xyz/gx/autoconf: '*' on head
+    tea.xyz/gx/automake: '*' on head
+    tea.xyz/gx/libtool: '*' on head
+  script: |
+    {{command}} autoreconf -i
+    ./configure --prefix={{prefix}} {{compilerflags | join(' ')}}
+    make --jobs {{hw.concurrency}} install
+    rm -rf {{prefix}}/share  # docs are online
+    {{#onLinux}}
+    install_name_tool -change \
+      @rpath/libmpdec.3.dylib \
+      @loader_path/libmpdec.3.dylib \
+      {{prefix}}/lib/libmpdec++.dylib
+    {{/onLinux}}
+    
+test:
+  dependencies:
+    tea.xyz/gx/cc: cc 
+  script: |
+    {{command}} test.cpp -I{{include}} -L{{lib}} -lass -o test
+    ./test

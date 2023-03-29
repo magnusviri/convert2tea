@@ -1,0 +1,52 @@
+distributable:
+  url: https://github.com/OSGeo/libgeotiff/releases/download/{{version.marketing}}/libgeotiff-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.7.1
+
+dependencies:
+  jpeg-turbo: '*'
+  libtiff: '*'
+  proj: '*'
+
+build:
+  dependencies:
+    autoconf.net: '*'
+    automake.net: '*'
+    libtool.net: '*'
+  script: |
+    ./autogen.sh
+    ./configure --with-jpeg --prefix={{prefix}}
+    make
+    make install
+
+provides:
+  - lib/libgeotiff.dylib
+
+test:
+  script: |
+    echo '#include "geotiffio.h"
+          #include "xtiffio.h"
+          #include <stdlib.h>
+          #include <string.h>
+          int main(int argc, char* argv[])
+          {
+            TIFF *tif = XTIFFOpen(argv[1], "w");
+            GTIF *gtif = GTIFNew(tif);
+            TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32) 10);
+            GTIFKeySet(gtif, GeogInvFlatteningGeoKey, TYPE_DOUBLE, 1, (double)123.456);
+            int i;
+            char buffer[20L];
+            memset(buffer,0,(size_t)20L);
+            for (i=0;i<20L;i++){
+              TIFFWriteScanline(tif, buffer, i, 0);
+            }
+            GTIFWriteKeys(gtif);
+            GTIFFree(gtif);
+            XTIFFClose(tif);
+            return 0;
+          }' > test.c
+    {{cc}} test.c -I{{header_search_path}} -L{{library_search_path}} -lgeotiff -L{{Formula["libtiff"].opt_lib}} -ltiff -o test
+    ./test test.tif
+    listgeo test.tif

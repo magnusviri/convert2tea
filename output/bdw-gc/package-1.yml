@@ -1,0 +1,27 @@
+distributable:
+  url: https://github.com/ivmai/bdwgc/releases/download/v{{ version }}/gc-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 8.2.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/pkg-config: '*'
+  script: |
+    ./autogen.sh
+    ./configure --disable-debug \
+                --disable-dependency-tracking \
+                --prefix={{ prefix }} \
+                --enable-cplusplus \
+                --enable-static \
+                --enable-large-config
+    make --jobs {{hw.concurrency}} check install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -I{{prefix}}/include -L{{prefix}}/lib -lgc -o test
+    ./test

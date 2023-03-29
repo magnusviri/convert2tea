@@ -1,0 +1,24 @@
+distributable:
+  url: https://invisible-mirror.net/archives/dialog/dialog-{{version}}.tgz
+  strip-components: 1
+
+versions:
+  - 1.3-20230209
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/ncurses: '*'
+  working-directory: dialog-{{version}}
+  script: |
+    ./configure --prefix={{prefix}} --with-ncurses
+    make
+    make install
+
+provides:
+  - bin/dialog
+
+test:
+  script: |
+    dialog --version

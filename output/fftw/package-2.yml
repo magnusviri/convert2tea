@@ -1,0 +1,41 @@
+Please note that there is no direct mapping between Ruby and YAML formats, so the following is just an approximation.
+
+    distributable:
+      url: https://fftw.org/fftw-{{ version }}.tar.gz
+      strip-components: 1
+
+    versions:
+      url: https://fftw.org/download.html
+      regex: 'Recommended stable release is <a href="fftw-(\d+(?:\.\d+)+)\.tar\.gz">.*</a>.'
+
+    build:
+      dependencies:
+        linux:
+          gnu.org/gcc: '*'
+          open-mpi: '*'
+        darwin:
+          apple.com/xcode: '>7.0'
+          open-mpi: '*'
+          gcc: '*'
+      script: |
+        ./configure --prefix="{{ prefix }}" \
+                    --enable-shared \
+                    --disable-debug \
+                    --enable-threads \
+                    --disable-dependency-tracking \
+                    --enable-mpi \
+                    --enable-openmp \
+                    {% if hw.cpu.family == "Intel" %}
+                    --enable-sse2 \
+                    --enable-avx \
+                    --enable-avx2 \
+                    {% endif %}
+                    {% if meta.arch == "arm64" %}
+                    --disable-implib \
+                    {% endif %}
+        make --jobs {{ hw.concurrency }} install
+
+    test:
+      script: |
+        cc fixture.c -lfftw3
+        ./a.out

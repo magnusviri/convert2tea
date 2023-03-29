@@ -1,0 +1,44 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/emacs/emacs-28.2.tar.xz
+  mirror: https://ftpmirror.gnu.org/emacs/emacs-28.2.tar.xz
+
+build:
+  dependencies:
+    pkg-config.org: '*'
+    gnutls.org: '*'
+    jansson.org: '*'
+    libxml2.org: '*'
+    ncurses.org: '*'
+  script: |
+    # Avoid build error on Mojave
+    if [[ "{{macos.version}}" == "mojave" ]]; then
+      echo "ac_cv_func_aligned_alloc=no" >> configure.env
+    fi
+    
+    ./configure \
+      --disable-silent-rules \
+      --enable-locallisppath={{prefix}}/share/emacs/site-lisp \
+      --infodir={{man}}/emacs \
+      --prefix={{prefix}} \
+      --with-gnutls \
+      --without-x \
+      --with-xml2 \
+      --without-dbus \
+      --with-modules \
+      --without-ns \
+      --without-imagemagick \
+      --without-selinux
+
+    make
+    make install
+
+provides:
+  - bin/emacs
+
+test:
+  script: |
+    OUT="$(emacs --batch --eval=\"(print (+ 2 2))\" 2>&1)"
+    echo "$OUT"
+    if [[ "$OUT" != "4" ]]; then
+      exit 1
+    fi

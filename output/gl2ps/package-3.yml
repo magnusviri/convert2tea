@@ -1,0 +1,45 @@
+distributable:
+  url: https://geuz.org/gl2ps/src/gl2ps-{{ version }}.tgz
+  strip-components: 1
+
+versions:
+  - 1.4.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: "*"
+    cmake: "*"
+    libpng: "*"
+  on_linux:
+    dependencies:
+      freeglut: "*"
+  script: |
+    mkdir build
+    cd build
+    cmake .. \
+      -DCMAKE_INSTALL_PREFIX={{ prefix }} \
+      -DGLUT_INCLUDE_DIR=/usr/local/include \
+      -DGLUT_glut_LIBRARY=/usr/local/lib/libglut.dylib \
+      -DOpenGL_INCLUDE_DIR=/System/Library/Frameworks/OpenGL.framework/Headers \
+      -DGLUT_INCLUDE_DIR=/System/Library/Frameworks/GLUT.framework/Headers
+
+    make --jobs {{hw.concurrency}} install
+  test:
+    dependencies:
+      tea.xyz/gx/cc: c99
+    script: |
+      cc -DHAVE_CONFIG_H \
+        -I../../include/ \
+        -I../../src/ \
+        -L{{prefix}}/lib \
+        -L/usr/local/opt/libpng/lib \
+        -lgl2ps \
+        -lGLU \
+        -lGL \
+        -lglut \
+        -lpng \
+        test.c -o test
+
+      ./test
+      assert "[ $(find . -iname '*.eps' | wc -l) -gt 0 ]"

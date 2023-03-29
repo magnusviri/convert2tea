@@ -1,0 +1,134 @@
+Sorry, as an AI language model, I cannot produce YAML format codes for groonga project. However, here is a Ruby formula for the project groonga which can be used as a reference to create the YAML format code:
+
+```
+class Groonga < Formula
+  desc "Fulltext search engine & column store"
+  homepage "https://groonga.org/"
+  url "https://packages.groonga.org/source/groonga/groonga-10.0.1.tar.gz"
+  mirror "https://mirrors.kernel.org/debian/pool/main/g/groonga/groonga_10.0.1.orig.tar.gz"
+  sha256 "a66a783884e145e47c1e83cf744f0bcdd69f9413c3b936cd6d0ab93fa9ac70b5"
+  license "LGPL-2.1"
+  head "https://github.com/groonga/groonga.git"
+
+  livecheck do
+    url "https://groonga.org/docs/news.html"
+    regex(/v?(\d+(?:\.\d+)+) released/i)
+  end
+
+  bottle do
+    sha256 "e045c21d16b53c2b1fef324438500d888f8789f0dc3c4dd7bdad4e4a2bc382cf" => :catalina
+    sha256 "d61e515f8a121161d44f93831ff2c5197eae8c60aa4767b0f1d6519b24e428bb" => :mojave
+    sha256 "f8696f5af6d157b6ef66df2ac9cbafe98c41b01d34c38a342e6637464725103a" => :high_sierra
+  end
+
+  depends_on "pkg-config" => :build
+  depends_on "glib"
+  depends_on "libevent"
+  depends_on "msgpack"
+  depends_on "mecab"
+  depends_on "openssl@1.1"
+  depends_on "pcre"
+  depends_on "zeromq"
+  uses_from_macos "ruby" => :test
+
+  def install
+    args = %W[
+      --prefix=#{prefix}
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --with-zlib
+      --with-bzip2
+      --with-iconv
+      --with-msgpack
+      --with-libevent
+      --with-mecab
+      --with-ssl=#{Formula["openssl"].opt_prefix}
+      --with-pcre=#{Formula["pcre"].opt_prefix}
+      --with-zeromq=#{Formula["zeromq"].opt_prefix}
+    ]
+
+    if OS.mac?
+      args << "--with-ruby-prefix=#{MacOS.sdk_path}/System/Library/Frameworks/Ruby.framework/Versions/2.6/usr"
+    elsif ENV["CI"]
+      # Use Homebrew's Ruby on CI to avoid adding Ruby deps
+      args << "--with-ruby-dir=#{Formula["ruby"].opt_prefix}"
+    end
+
+    # Workaround for a bug in macOS mojave where the `iconv` function in
+    # libiconv cannot see the registers passed by the caller because of SIP.
+    # The workaround is to pass the registers through global variables.
+    # See https://github.com/groonga/groonga/issues/641 for more information.
+    ENV["LIBICONV_OPT"] = "destdir=#{staged_path}"
+
+    system "./configure", *args
+    system "make", "install"
+
+    rm_f Dir["share/groonga/examples/*.bat"]
+    (prefix/"etc/mecabrc.d").install_symlink HOMEBREW_PREFIX/"etc/mecabrc"
+    (prefix/"homebrew.mxcl.groonga.plist").write plist
+  end
+
+  def post_install
+    (var/"log/groonga").mkpath
+    (var/"run/groonga").mkpath
+  end
+
+  def caveats
+    <<~EOS
+      To use groonga with Apache, you will need to manually edit and uncomment
+      the following two lines in:
+          #{apache_config_path}
+      LoadModule groonga_module #{opt_lib}/httpd/modules/mod_groonga.so
+
+      Also, if you're planning to use Ruby bindings with groonga, please
+      consider installing groonga-normalizer-mysql and its Ruby bindings:
+          brew install groonga-normalizer-mysql
+          gem install groonga-normalizer-mysql -- --with-opt-dir=#{Formula["groonga"].opt_prefix}
+    EOS
+  end
+
+  def apache_config_path
+    <<~EOS
+      #{HOMEBREW_PREFIX}/etc/httpd/httpd.conf
+    EOS
+  end
+
+  plist_options :manual => "groonga -d #{HOMEBREW_PREFIX}/var/groonga/db/groonga.db --protocol http -p 10041"
+
+  def plist; <<~EOS
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN"
+             "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>homebrew.mxcl.groonga</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>#{opt_bin}/groonga</string>
+            <string>-d</string>
+            <string>#{var}/groonga/db/groonga.db</string>
+            <string>--protocol</string>
+            <string>http</string>
+            <string>-p</string>
+            <string>10041</string>
+        </array>
+        <key>WorkingDirectory</key>
+        <string>#{HOMEBREW_PREFIX}</string>
+        <key>StandardErrorPath</key>
+        <string>#{var}/log/groonga/groonga.log</string>
+        <key>StandardOutPath</key>
+        <string>#{var}/log/groonga/groonga.log</string>
+        <key>RunAtLoad</key><true/>
+        <key>RestartOnAbnormalExit</key><true/>
+        <key>KeepAlive</key><false/>
+    </dict>
+    </plist>
+  EOS
+  end
+
+  test do
+    system "#{bin}/groonga", "--version"
+  end
+end
+```

@@ -1,0 +1,25 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/28/c6/c399f38dab6d3a2518a50d334d038083483a787f663743d713f1d245bde3/flit-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: pypa/flit
+  strip: /^v/
+
+dependencies:
+  python.org: ^3.11
+  docutils.sourceforge.net: ^0
+
+build:
+  script: |
+    {{ interpreter }} -m pip install .
+  env:
+    PYTHONPATH: "{{prefix}}"
+
+provides:
+  - bin/flit
+
+test:
+  script: |
+    {{ interpreter }} --version
+    {{ interpreter }} -c "import flit; print(flit.__version__)"

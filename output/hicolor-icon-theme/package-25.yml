@@ -1,0 +1,28 @@
+distributable:
+  url: https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  regex: href=.*?hicolor-icon-theme[._-]v?(\d+(?:\.\d+)+)\.t/i
+  
+dependencies:
+  - name: freedesktop.org/glib
+    version: ^2
+  
+build:
+  dependencies:
+    - name: gnu.org/automake
+      version: ^1
+    - name: gnu.org/autoconf
+      version: ^2
+    - name: freedesktop.org/pkg-config
+      version: ^0.29
+  script: |
+    ./configure --prefix={{prefix}}
+    make --jobs {{ hw.concurrency }} install
+
+provides:
+  - share/icons/hicolor/index.theme
+
+test:
+  - test -f share/icons/hicolor/index.theme

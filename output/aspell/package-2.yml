@@ -1,0 +1,32 @@
+distributable:
+          url: https://ftp.gnu.org/gnu/aspell/aspell-{{version}}.tar.gz
+
+        versions:
+          - 0.60.8
+
+        build:
+          dependencies:
+            x86-64:
+              tar.gz: '*'
+              gcc.us: '*'
+              make.us: '*'
+              ncurses: '*'
+          working-directory:
+            aspell-{{version}}
+          script: |
+            ./configure --prefix="{{prefix}}"
+            make
+            make install
+            export PATH="$PATH:{{prefix}}/bin"
+            for dict in $(ls share/aspell); do
+              cd share/aspell/$dict && ./configure --vars "ASPELL={{prefix}}/bin/aspell" "PREZIP={{prefix}}/bin/prezip"
+              make install
+              cd ../../..
+            done
+
+        test: |
+          aspell list -d en_US <<< "misspell worrd" | grep -q "worrd"
+
+        provides:
+          - bin/aspell
+          - bin/prezip

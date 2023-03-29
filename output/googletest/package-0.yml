@@ -1,0 +1,31 @@
+distributable:
+  url: https://github.com/google/googletest/archive/v1.13.0.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.13.0
+
+provides:
+  - lib/libgtest.a
+  - lib/libgtest_main.a
+  - include/gtest
+
+build:
+  dependencies:
+    tea.xyz/gx/cmake: '*'
+    tea.xyz/gx/gcc: '>=7.0.0'
+
+  script: |
+    cmake .
+    make
+    make install
+    (cd googlemock/src && tar cf - .) | (cd $PREFIX/include/googlemock && tar xf -)
+    (cd googletest/src && tar cf - .) | (cd $PREFIX/include/gtest && tar xf -)
+
+test:
+  script: |
+    (echo '#include "gtest/gtest.h"' ; \
+     echo 'TEST(Simple, Boolean) {' ; \
+     echo '  ASSERT_TRUE(true);' ; \
+     echo '}' ) | $PREFIX/bin/g++ -x c++ -std=c++14 - $PREFIX/lib/libgtest.a $PREFIX/lib/libgtest_main.a -pthread -o test
+    ./test

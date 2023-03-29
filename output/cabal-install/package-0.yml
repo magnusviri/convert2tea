@@ -1,0 +1,30 @@
+distributable:
+  url: >
+    https://downloads.haskell.org/~cabal/cabal-install-{{version.raw}}/cabal-install-{{version.raw}}-x86_64-{{ "apple-darwin" if OS.mac? else "unknown-linux" }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: haskell/cabal/tags
+
+dependencies:
+  ghc.org: '*'
+
+provides:
+  - bin/cabal
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    cp -R * $out
+    chmod +w $out/bin/cabal
+    echo "#!/usr/bin/env bash" > $out/bin/cabal-real
+    tail -n+2 $out/bin/cabal >> $out/bin/cabal-real
+    echo "exec \"\$@\"" >> $out/bin/cabal-real
+    mv $out/bin/cabal-real $out/bin/cabal
+    fix-shebangs.ts $out/bin/cabal
+
+test:
+  script:
+    cabal update
+    cabal --version

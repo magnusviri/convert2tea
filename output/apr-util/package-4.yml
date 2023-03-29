@@ -1,0 +1,40 @@
+distributable:
+  url: "https://www.apache.org/dyn/closer.lua?path=apr/apr-util-{{version}}.tar.bz2"
+
+versions:
+  github: "apache/apr-util"
+  strip: /^apr-util-/
+
+dependencies:
+  openssl.org: "^1.1"
+  apr: "*"
+
+build:
+  dependencies:
+    tea.xyz/gx/make: "*"
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/shell: "bash"
+  script: |
+    ./configure $ARGS \
+      --with-apr={{deps "apr" | first | install_path}} \
+      --with-openssl={{deps "openssl.org" | first | install_path}}
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --prefix={{prefix}}
+    - --with-crypto
+    - --without-pgsql
+
+test:
+  script: |
+    echo "TODO: Add tests"
+
+provides:
+  - bin/apu-1-config
+  - bin/apu-1
+  - bin/dbmmanage
+  - bin/htdbm
+  - bin/httxt2dbm
+  - bin/logresolve
+  - bin/checkgid
+  - bin/htpasswd

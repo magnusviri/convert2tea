@@ -1,0 +1,36 @@
+distributable:
+  url: https://dev-www.libreoffice.org/src/cppunit-{{ version }}.tar.gz
+
+versions:
+  libreoffice: libreoffice/core
+  strip: /^cppunit[._-]/
+
+provides:
+  - bin/DllPlugInTester
+
+dependencies:
+  make.org: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++11
+    freedesktop.org/pkg-config: '*'
+    gnupg.org/libgcrypt: '*'
+    gnupg.org/libgpg-error: '^1'
+    zlib.net: '*'
+  script: |
+    export CFLAGS="-I/usr/local/opt/gettext/include"
+    export LDFLAGS="-L/usr/local/opt/gettext/lib"
+    export CPPFLAGS="$CFLAGS"
+    export PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig:/usr/local/lib/pkgconfig"
+    ./configure $ARGS
+    make -j {{hw.concurrency}} all
+    make install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --disable-dependency-tracking
+    LIBTOOLIZE: glibtoolize
+
+test: |
+  bin/DllPlugInTester --help

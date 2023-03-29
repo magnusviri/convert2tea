@@ -1,0 +1,35 @@
+distributable:
+  url: https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.12/hdf5-1.12.2/src/hdf5-1.12.2.tar.bz2
+  strip-components: 1
+
+versions:
+  - 1.12.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: gcc
+    tea.xyz/gx/cxx: g++
+    tea.xyz/gx/fc: gfortran
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/libtool: '*'
+    tea.xyz/gx/make: '*'
+    libaec: '*'
+    zlib: '*'
+  working-directory: build
+  script: |
+    autoreconf --force --install --verbose
+    ASMFLAGS="" CFLAGS="${CFLAGS} -fPIC" CPPFLAGS="${CPPFLAGS} -fPIC" CXXFLAGS="${CXXFLAGS} -fPIC" FCFLAGS="${FCFLAGS} -fPIC" ./configure --prefix="${prefix}" --disable-dependency-tracking --enable-build-mode=production --enable-fortran --enable-cxx --disable-silent-rules --with-szlib="${libaec}" --with-zlib="${zlib}" && make && make install
+  env:
+    AUTOMAKE_VERSION: 1.16
+    AUTOCONF_VERSION: 2.69
+    LIBTOOL: "glibtool --tag=CC"
+    LIBTOOLIZE: glibtoolize
+
+provides:
+  - bin/h5cc
+  - bin/h5fc
+
+test:
+  script: |
+    echo "No test for HDF5."

@@ -1,0 +1,31 @@
+distributable:
+  url: https://github.com/capstone-engine/capstone/archive/{{version}}.tar.gz
+
+versions:
+  github: capstone-engine/capstone/tags
+  regex: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+
+dependencies:
+  build:
+    - tea.xyz/gx/make
+    - tea.xyz/gx/pkg-config
+    - tea.xyz/gx/llvm
+
+provides:
+  - lib/libcapstone.a
+  - lib/libcapstone.dylib
+  - lib/libcapstone.#{`llvm-config --shared-mode` == "1\n" ? "dylib" : "a" }
+
+environment:
+  C_INCLUDE_PATH: "{{prefix}}/include"
+  LIBRARY_PATH: "{{prefix}}/lib"
+
+build:
+  script: |
+    make
+    make install PREFIX={{prefix}} 
+
+test:
+  script: |
+    clang -o test $CFLAGS $LDFLAGS /usr/local/Cellar/capstone/4.0.2/lib/libcapstone.a -I/usr/local/Cellar/capstone/4.0.2/include test.c
+    ./test

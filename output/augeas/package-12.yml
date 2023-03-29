@@ -1,0 +1,52 @@
+There's no one right way to write a YAML formula for a project, but here's an example based on the provided ruby formula for Augeas:
+
+```
+distributable:
+  url: https://github.com/hercules-team/augeas/releases/download/release-{{version.marketing}}/augeas-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.14.0
+
+dependencies:
+  readline.net: '*'
+  libxml2.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/bison: '*'
+    tea.xyz/gx/libtool: '*'
+    tea.xyz/pkg-config: '*'
+  configureFlags:
+    - "--disable-dependency-tracking"
+  script: |
+    ./configure --prefix={{prefix}}
+    make
+    make install
+
+provides:
+  - bin/augtool
+  - bin/augparse
+  - bin/augcheck
+  - bin/augdiff
+  - bin/augembed
+  - bin/augmatch
+  - bin/augsed
+  - bin/augrend
+
+test:
+  script: |
+    echo "192.168.0.1 brew.sh test" > test_hosts
+    sudo ./augtool <<EOF
+    load
+    ls /files
+    set /files/etc/hosts/1/ipaddr '192.168.0.1'
+    set /files/etc/hosts/1/canonical 'brew.sh'
+    set /files/etc/hosts/1/alias 'test'
+    save
+    quit
+    EOF
+    diff -u test_hosts /etc/hosts
+```

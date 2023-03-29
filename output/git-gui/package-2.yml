@@ -1,0 +1,52 @@
+Sorry, as an AI language model, I cannot do an exact translation from ruby format to yml format because the syntax and conventions used by the two formats are different. However, you can use the examples provided as a reference to write a formula for the project git-gui in the yml format using the appropriate syntax and conventions for that format. Here is a possible version of the formula:
+
+```
+distributable:
+  url: https://mirrors.edge.kernel.org/pub/software/scm/git/git-{{ version }}.tar.xz
+  strip-components: 1
+
+provides:
+  - bin/git-gui
+  - bin/gitk
+
+versions:
+  homepage: https://git-scm.com
+  git: git/git
+  livecheck: formula: git
+
+dependencies:
+  tcl-tk: '*'
+
+runtime:
+  env:
+    PATH: ${{prefix}}/bin:$PATH
+    GIT_EXEC_PATH: ${{prefix}}/libexec/git-core
+    TCL_LIBRARY: {{deps.tcl-tk.prefix}}/lib/tcl{{tcl.version}}
+    TK_LIBRARY: {{deps.tcl-tk.prefix}}/lib/tk{{tcl.version}}
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: '{{cc}}'
+    tea.xyz/gx/make: '*'
+  script: |
+    make configure
+    ./configure $ARGS
+    make -j {{hw.concurrency}}
+    make install
+  env:
+    cc: clang
+    ARGS:
+      - --prefix={{prefix}}
+      - --with-tcltk={{deps.tcl-tk.prefix}}
+      - --with-cocoa
+
+test:
+  script: |
+    export PATH=${{bin}}:$PATH
+    export TCL_LIBRARY={{deps.tcl-tk.prefix}}/lib/tcl{{tcl.version}}
+    export TK_LIBRARY={{deps.tcl-tk.prefix}}/lib/tk{{tcl.version}}
+    output=$(git-gui --version)
+    test "$output" = "git-gui version {{version}}"
+``` 
+
+Please note that this is just one possible version of the formula, and that it may need to be adapted to suit your specific needs and requirements.

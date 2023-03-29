@@ -1,0 +1,43 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/cscope/cscope/v{{version}}/cscope-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 15.9
+
+build:
+  working-directory: cscope-{{version}}
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    freedesktop.org/pkg-config: '*'
+    ncurses: '*'
+  script: |
+    ./configure --prefix={{prefix}} --mandir={{man}}
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  fixture: |
+    #include <stdio.h>
+    #include <stdlib.h>
+    void func()
+    {
+      printf("Hello World!");
+    }
+    int main()
+    {
+      func();
+      return 0;
+    }
+  script: |
+    mv $FIXTURE test.c
+    echo './test.c' > cscope.files
+    {{bin}}/cscope -b -k
+    out=$(cat {{bin}}/cscope.out | grep 'test.c.*func')
+    if test -n "$out"; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi
