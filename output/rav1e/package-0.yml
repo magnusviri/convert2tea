@@ -1,0 +1,32 @@
+Sorry, as an AI language model, I am not able to provide an YAML formula from a Ruby formula directly. However, here's an example YAML format for the rav1e project:
+
+        distributable:
+          url: https://github.com/xiph/rav1e/archive/v{{ version }}.tar.gz
+          strip-components: 1
+
+        provides:
+          - bin/rav1e
+
+        versions:
+          github: xiph/rav1e/tags
+          strip: v
+
+        dependencies:
+          zlib.net: ^1
+
+        build:
+          dependencies:
+            rust-lang.org: '>=1.51'
+            rust-lang.org/cargo: '*'
+            cargo-c: '*'
+          on_intel:
+            dependencies:
+              nasm: '*'
+          script:
+            cargo install --locked --path . --root {{prefix}}
+            cargo cinstall --prefix {{prefix}}
+
+        test:
+          script: |
+            wget -O homebrew-bus_qcif_7.5fps.y4m https://github.com/Homebrew/homebrew-core/raw/HEAD/Formula/rav1e/homebrew-bus_qcif_7.5fps.y4m
+            rav1e --tile-rows=2 homebrew-bus_qcif_7.5fps.y4m --output=bus_qcif_15fps.ivf

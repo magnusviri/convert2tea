@@ -1,0 +1,40 @@
+distributable:
+  url: https://github.com/git-lfs/git-lfs/releases/download/v{{version}}/git-lfs-v{{version}}.tar.gz
+
+build:
+  dependencies:
+    asciidoctor: '*'
+    go: '*'
+    ruby-lang.org: '*'
+    ronn: '*'
+  script: |
+    export GIT_LFS_SHA=""
+    export VERSION={{version}}
+    make
+    make man RONN={{prefix}}/bin/ronn
+    mkdir -p "{{prefix}}/bin"
+    mv bin/git-lfs "{{prefix}}/bin"
+    mkdir -p "{{prefix}}"/man/man1 "{{prefix}}"/man/man5 "{{prefix}}"/man/man7 "{{prefix}}"/doc
+    cp man/man1/*.1 "{{prefix}}"/man/man1
+    cp man/man5/*.5 "{{prefix}}"/man/man5
+    cp man/man7/*.7 "{{prefix}}"/man/man7
+    cp -r man/html "{{prefix}}"/doc
+
+provides:
+  - bin/git-lfs
+
+dependencies:
+  rubygems.org: '*'
+
+caveats: |
+  Update your git config to finish installation:
+  # Update global git config
+  $ git lfs install
+  # Update system git config
+  $ git lfs install --system
+
+test:
+  script: |
+    git init
+    git lfs track test
+    grep -q '^test filter=lfs' .gitattributes

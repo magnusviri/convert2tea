@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/xiph/rav1e/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/rav1e
+
+versions:
+  github: xiph/rav1e/tags
+  strip: "v"
+
+dependencies:
+  nasm: { system: true }
+  zlib.net: "^1"
+
+build:
+  dependencies:
+    rust-lang.org: ">=1.54"
+    rust-lang.org/cargo: "*"
+    cargo-c: "*"
+  script:
+    - cargo install --locked --path . --root {{prefix}}
+    - cargo cinstall --prefix {{prefix}}
+
+test:
+  script:
+    - mkdir -p testdata
+    - wget -q -O "testdata/bus_qcif_7.5fps.y4m" "https://people.xiph.org/~xiphmont/y4m/bus_qcif_7.5fps.y4m"
+    - rav1e --tile-rows=2 testdata/bus_qcif_7.5fps.y4m --output=testdata/bus_qcif_15fps.ivf

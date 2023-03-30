@@ -1,0 +1,48 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/c3/42/3ee6d2da0694d8b71f9a781e81902e7e176448e025376b486172c6f269bd/jupyterlab-3.6.2.tar.gz
+  strip-components: 1
+
+versions:
+  pypi: jupyterlab
+
+dependencies:
+  python.org: ">=3.7"
+  node.js: ">=10"
+  pandoc: "*"
+  pygments: "*"
+  zeromq: "*"
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: "*"
+    rust-lang.org: ">=1.48.0"
+    rust-lang.org/cargo: "*"
+  env:
+    JUPYTER_PATH: "{{var.etc}}/jupyter"
+    CPATH: "{{deps.python.org.prefix}}/include/python{{deps.python.org.version.marketing}}"
+  script: |
+    python-venv.sh {{prefix}}/bin/jupyterlab
+    PYTHONPATH={{prefix}}/bin/jupyterlab/libexec/{{var.site_packages}} \
+    {{prefix}}/bin/jupyter labextension install \
+      @jupyter-widgets/jupyterlab-manager@3.0.0 \
+      jupyterlab-execute-time@3.0.0 \
+      jupyterlab-theme-{{var.version}}@{{var.version}} \
+      jupyterlab-server@2.6.0 \
+      jupyterlab-toc@3.0.0 \
+      nbdime-jupyterlab@3.0.0 \
+      @bokeh/jupyter_bokeh@3.0.0 \
+      @krassowski/jupyterlab-lsp@3.0.0 \
+      jupyterlab-git@0.32.2 \
+      jupyterlab-drawio@0.10.0 \
+      jupyterlab-variableInspector@3.0.0 \
+      jupyterlab-system-monitor@0.9.0
+
+test: |
+  jupyter-labextension list
+  jupyter nbconvert --to html --execute example.ipynb
+
+provides:
+  - bin/jupyter-lab
+  - bin/jupyter-labextension
+  - bin/jupyter-nbconvert

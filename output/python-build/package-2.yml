@@ -1,0 +1,24 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/de/1c/fb62f81952f0e74c3fbf411261d1adbdd2d615c89a24b42d0fe44eb4bcf3/build-0.10.0.tar.gz
+
+versions:
+  - 0.10.0
+
+dependencies:
+  python.org: 3.11
+
+build:
+  script: |
+    virtualenv --python={{dependencies.python.org}} {{prefix}}
+    source {{prefix}}/bin/activate
+    pip install .
+    deactivate
+
+provides:
+  - bin/pyproject-build
+
+test:
+  script: |
+    pyproject-build
+    assert test -f {{prefix}}/dist/build-0.10.0.tar.gz
+    assert test -f {{prefix}}/dist/build-0.10.0-py3-none-any.whl

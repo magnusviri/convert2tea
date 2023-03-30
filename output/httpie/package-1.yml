@@ -1,0 +1,28 @@
+distributable:
+  url: https://github.com/httpie/httpie/archive/refs/tags/3.2.1.tar.gz
+  strip-components: 1
+
+versions:
+  - 3.2.1
+
+dependencies:
+  python.org: 3.11
+  pygments: any
+
+build:
+  script: |
+    python-venv.sh {{prefix}}/bin/httpie
+    echo "BUILD_CHANNEL = 'homebrew'" > {{prefix}}/bin/httpie/lib/python3.11/site-packages/httpie/internal/__build_channel__.py
+
+provides:
+  - bin/http
+  - bin/https
+  - bin/httpie
+
+test:
+  script: |
+    httpie --version
+    https --version
+    http --version
+    raw_url="https://raw.githubusercontent.com/Homebrew/homebrew-core/HEAD/Formula/httpie.rb"
+    http --ignore-stdin $raw_url

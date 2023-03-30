@@ -1,0 +1,33 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/e6/a4/c7a1fb8e60067fe4eb5f4bfd13ce9f51bec963dd9a5c50321d8a20b7a3f2/SCons-4.5.2.tar.gz
+  strip-components: 1
+
+versions:
+  - 4.5.2
+
+dependencies:
+  python.org: 3.11
+
+build:
+  script: |
+    virtualenv {{prefix}}/venv
+    source {{prefix}}/venv/bin/activate
+    pip install ./
+    deactivate
+
+provides:
+  - bin/scons
+
+test:
+  fixture: |
+    # SCons test file
+    test = file('test.cpp', 'w')
+    test.write('#include <iostream>\nint main(){std::cout<<"Homebrew"<<std::endl;return 0;}')
+    test.close()
+
+  script: |
+    source {{prefix}}/venv/bin/activate
+    scons
+    ./test > output.txt
+    grep "Homebrew" output.txt > /dev/null
+    deactivate

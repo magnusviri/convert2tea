@@ -1,0 +1,24 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/96/41/dffce7ba281a21edd231ad7e7c7cb363c8aecb53ca4b8fee7e7ec24ea1f2/certbot-2.4.0.tar.gz
+  strip-components: 1
+
+versions:
+  github: certbot/certbot/tags
+
+dependencies:
+  python.org: ^3
+  rust: any
+  augeas: any
+  dialog: any
+  openssl@1.1: any
+  libffi: any
+
+build:
+  - pkg-config
+  - python-venv.sh {{prefix}}/bin/certbot
+
+provides:
+  - bin/certbot
+
+test:
+  - certbot --version

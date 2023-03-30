@@ -1,0 +1,44 @@
+distributable:
+  url: https://github.com/ipython/ipython/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: ipython/ipython/tags
+  strip: /^rel-/
+
+dependencies:
+  python.org: '>=3.7'
+  pygments: '*'
+
+build:
+  script: |
+    python-venv.sh {{prefix}}/bin/ipython
+
+    # manually register all the ipython-* executables with tea
+    #FIXME dirty hack, replace with a proper solution
+    for _EXEC in {{prefix}}/venv/bin/ipython-*; do
+      CMD_NAME="${_EXEC##*/}" # get text after the last slash (the command name)
+      TRG_BIN_NAME="{{prefix}}/bin/$CMD_NAME"
+      cp -v  {{prefix}}/bin/ipython $TRG_BIN_NAME # copy the tea-configured executable with the correct name
+      # replace the original 'ipython' with the correct $CMD_NAME
+      sed -i.bak -e \
+        "s|/bin/ipython|/bin/$CMD_NAME|" \
+        $TRG_BIN_NAME
+    done
+
+    {{prefix}}/venv/bin/pip install -U pip # upgrade pip
+    {{prefix}}/venv/bin/pip install ipython # install ipython
+
+    rm -v {{prefix}}/bin/ipython-*.bak
+
+test:
+  script: |
+    ipython --version
+
+  env:
+    PYTHONPATH: {{prefix}}/lib/python3.11/site-packages
+
+provides:
+  - bin/ipython
+  - bin/ipython3
+  - man/man1/ipython.1

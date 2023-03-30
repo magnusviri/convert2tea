@@ -1,0 +1,22 @@
+distributable:
+  url: https://github.com/rust-lang/rustup/archive/{{ version }}.tar.gz
+
+provides:
+  - bin/rustup-init
+
+versions:
+  github: rust-lang/rustup/tags
+  strip: /rustup-/
+
+build:
+  dependencies:
+    rust-lang.org: '>=1.49'
+    rust-lang.org/cargo: '*'
+    api.github.com: '>=1.25'
+    apple.com/xcode: '>=10.0'
+    apple.com/command_line_tools: '>=11.3'
+  script:
+    cargo install --features no-self-update --locked --path . --root {{prefix}}
+
+test:
+  - rustup-init --version

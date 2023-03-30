@@ -1,0 +1,154 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project fastlane:
+
+
+        class Fastlane < Formula
+          homepage "https://fastlane.tools"
+          url "https://github.com/fastlane/fastlane/archive/2.212.1.tar.gz"
+          head "https://github.com/fastlane/fastlane.git", branch: "master"
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          depends_on "ruby@3.1"
+          on_macos do
+            depends_on "terminal-notifier"
+          end
+          def install
+            ENV["GEM_HOME"] = libexec
+            ENV["GEM_PATH"] = libexec
+            system "gem", "build", "fastlane.gemspec"
+            system "gem", "install", "fastlane-#{version}.gem", "--no-document"
+            (bin/"fastlane").write_env_script libexec/"bin/fastlane",
+              PATH:                            "#{Formula["ruby"].opt_bin}:#{libexec}/bin:$PATH",
+              FASTLANE_INSTALLED_VIA_HOMEBREW: "true",
+              GEM_HOME:                        libexec.to_s,
+              GEM_PATH:                        libexec.to_s
+            # Remove vendored pre-built binary
+            terminal_notifier_dir = libexec.glob("gems/terminal-notifier-*/vendor/terminal-notifier").first
+            (terminal_notifier_dir/"terminal-notifier.app").rmtree
+            if OS.mac?
+              ln_sf(
+                (Formula["terminal-notifier"].opt_prefix/"terminal-notifier.app").relative_path_from(terminal_notifier_dir),
+                terminal_notifier_dir,
+              )
+            end
+          end
+          test do
+            assert_match "fastlane #{version}", shell_output("#{bin}/fastlane --version")
+            actions_output = shell_output("#{bin}/fastlane actions")
+            assert_match "gym", actions_output
+            assert_match "pilot", actions_output
+            assert_match "screengrab", actions_output
+            assert_match "supply", actions_output
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project fastlane:
+
+
+        distributable:
+           url: https://github.com/fastlane/fastlane/archive/{{version}}.tar.gz
+           strip-components: 1
+
+        versions:
+          github: fastlane/fastlane/releases/tags
+
+        dependencies:
+          ruby-lang.org: ^3.1
+          rubygems.org: '*'
+
+        build:
+          dependencies:
+            rubygems.org: '*'
+            tea.xyz/gx/make: '*'
+            tea.xyz/gx/cc: '*'
+          env:
+            GEM_HOME: ${{prefix}}
+            GEM_PATH: ${{prefix}}
+          script: |
+            gem build fastlane.gemspec
+
+            gem install \
+              --no-user-install \
+              --bindir={{prefix}}/gems/bin \
+              --no-document \
+              fastlane-{{version}}.gem
+
+            mkdir "{{prefix}}"/bin
+            mv props/fastlane "{{prefix}}"/bin
+
+            # fails to code sign and non-essential
+            rm -rf "{{prefix}}"/gems/terminal-notifier-*
+
+        provides:
+          - bin/fastlane
+
+        test:
+          env:
+            # or writes a bunch of warnings to stdout
+            LC_ALL: en_US.UTF-8
+            LANG: en_US.UTF-8
+          script: |
+            out="$(fastlane --version 2>/dev/null | tail -n1)"
+            test "$out" = "fastlane {{version}}"
+
+
+
+    Here's an example ruby formula for the project edencommon:
+
+
+        class Edencommon < Formula
+          homepage "https://github.com/facebookexperimental/edencommon"
+          url "https://github.com/facebookexperimental/edencommon/archive/refs/tags/v2023.03.27.00.tar.gz"
+          head "https://github.com/facebookexperimental/edencommon.git", branch: "main"
+          depends_on "cmake" => :build
+          depends_on "googletest" => :build
+          depends_on "folly"
+          depends_on "gflags"
+          depends_on "glog"
+          def install
+            # Fix "Process terminated due to timeout" by allowing a longer timeout.
+            inreplace "eden/common/utils/test/CMakeLists.txt",
+                      /gtest_discover_tests\((.*)\)/,
+                      "gtest_discover_tests(\\1 DISCOVERY_TIMEOUT 30)"
+            system "cmake", "-S", ".", "-B", "_build", "-DBUILD_SHARED_LIBS=ON", *std_cmake_args
+            system "cmake", "--build", "_build"
+            system "cmake", "--install", "_build"
+          end
+          test do
+            (testpath/"test.cc").write <<~EOS
+              #include <eden/common/utils/ProcessNameCache.h>
+              #include <cstdlib>
+              #include <iostream>
+              using namespace facebook::eden;
+              ProcessNameCache& getProcessNameCache() {
+                static auto* pnc = new ProcessNameCache;
+                return *pnc;
+              }
+              ProcessNameHandle lookupProcessName(pid_t pid) {
+                return getProcessNameCache().lookup(pid);
+              }
+              int main(int argc, char **argv) {
+                if (argc <= 1) return 1;
+                int pid = std::atoi(argv[1]);
+                std::cout << lookupProcessName(pid).get() << std::endl;
+                return 0;
+              }
+            EOS
+            system ENV.cxx, "-std=c++17", "-I#{include}", "test.cc",
+                            "-L#{lib}", "-L#{Formula["folly"].opt_lib}",
+                            "-L#{Formula["boost"].opt_lib}", "-L#{Formula["glog"].opt_lib}",
+                            "-ledencommon_utils", "-lfolly", "-lboost_context-mt", "-lglog", "-o", "test"
+            assert_match "ruby", shell_output("./test #{Process.pid}")
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project edencommon in the yml format:

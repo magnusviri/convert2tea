@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/pyenv/pyenv-virtualenv/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: pyenv/pyenv-virtualenv/tags  # reads github *tags*
+  strip: /^v/
+
+dependencies:
+  brew:
+    - pyenv
+
+build:
+  script: |
+    export PREFIX="{{prefix}}"
+    ./install.sh
+    # macOS Big Sur and earlier do not support `readlink -f`
+    sed -i.bak 's|readlink|{{brew_coreutils}}/greadlink|g' "{{prefix}}/bin/pyenv-virtualenv-prefix"
+    rm -f "{{prefix}}/bin/pyenv-virtualenv-prefix.bak"
+  env:
+    brew_coreutils: "{{brew_prefix}}/opt/coreutils/libexec/gnubin"
+
+test:
+  script: |
+    pyenv init -
+    pyenv virtualenvs
+
+  provides:
+    - bin/pyenv-virtualenv

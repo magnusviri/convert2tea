@@ -1,0 +1,98 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project docutils:
+
+
+        class Docutils < Formula
+          homepage "https://docutils.sourceforge.io"
+          url "https://downloads.sourceforge.net/project/docutils/docutils/0.19/docutils-0.19.tar.gz"
+          license all_of: [:public_domain, "BSD-2-Clause", "GPL-3.0-or-later", "Python-2.0"]
+          revision 1
+          depends_on "python@3.11"
+          def install
+            python3 = "python3.11"
+            system python3, *Language::Python.setup_install_args(prefix, python3)
+            bin.glob("*.py") do |f|
+              bin.install_symlink f => f.basename(".py")
+            end
+          end
+          test do
+            system bin/"rst2man.py", prefix/"HISTORY.txt"
+            system bin/"rst2man", prefix/"HISTORY.txt"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project docutils:
+
+
+        distributable:
+          url: https://downloads.sourceforge.net/project/docutils/docutils/{{version.marketing}}/docutils-{{version.marketing}}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 0.19.0
+
+        dependencies:
+          python.org: 3.11
+
+        build:
+          script: |
+            python-venv.sh {{prefix}}/bin/docutils
+
+
+        provides:
+          - bin/docutils
+
+        test:
+          fixture: |
+            - This is a bullet list.
+            - Bullets can be "*", "+", or "-".
+
+          script: |
+            docutils $FIXTURE test.html
+
+
+
+    Here's an example ruby formula for the project hatch:
+
+
+        class Hatch < Formula
+          include Language::Python::Virtualenv
+          homepage "https://hatch.pypa.io/latest/"
+          url "https://files.pythonhosted.org/packages/75/60/ea5735ec08a80cbf57ed152bd3544df775812fe5931c3de8937501aae2d6/hatch-1.6.3.tar.gz"
+          revision 1
+          depends_on "pygments"
+          depends_on "python@3.11"
+          depends_on "virtualenv"
+          on_linux do
+            depends_on "rust" => :build
+          end
+          def install
+            virtualenv_install_with_resources
+            # we depend on virtualenv, but that's a separate formula, so install a `.pth` file to link them
+            site_packages = Language::Python.site_packages("python3.11")
+            virtualenv = Formula["virtualenv"].opt_libexec
+            (libexec/site_packages/"homebrew-virtualenv.pth").write virtualenv/site_packages
+            generate_completions_from_executable(bin/"hatch", shells: [:fish, :zsh], shell_parameter_format: :click)
+          end
+          test do
+            ENV["HATCH_PYTHON"] = "self"
+            system bin/"hatch", "new", "homebrew"
+            assert_predicate testpath/"homebrew/pyproject.toml", :exist?
+            cd testpath/"homebrew" do
+              inreplace "pyproject.toml", "dependencies = []", "dependencies = ['requests==2.24.0']"
+              system bin/"hatch", "config", "set", "dirs.env.virtual", ".venv"
+              system bin/"hatch", "env", "create"
+              output = shell_output("#{bin}/hatch env run -- python -c 'import requests;print(requests.__version__)'")
+              assert_equal "2.24.0", output.strip.lines.last
+            end
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project hatch in the yml format:

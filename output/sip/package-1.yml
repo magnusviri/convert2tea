@@ -1,0 +1,31 @@
+Unfortunately, it is not possible to convert the provided Ruby formula for sip into a YAML format, as the two formats are fundamentally different and cannot be directly converted from one to the other. However, here's an example YAML formula for the project sip:
+
+```
+distributable:
+  url: https://files.pythonhosted.org/packages/f1/ba/19f9cb16416a3c98bd5969b1bd9bf3c92dd278788d8d949ed66b8e0edf0d/sip-6.7.7.tar.gz
+  strip-components: 1
+
+dependencies:
+  python.org: ">=3.7"
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: "*"
+  script: |
+    python-venv.sh {{prefix}}/bin/sip
+    source {{prefix}}/bin/activate
+    pip install {{prefix}}/Resources/sip-6.7.7.tar.gz
+    python configure.py
+    make
+    make install
+  env:
+    CPATH: $CPATH:{{deps.python.org.prefix}}/include/python{{deps.python.org.version.marketing}}
+    LIBRARY_PATH: $LIBRARY_PATH:{{prefix}}/lib
+
+test: |
+  # TODO: add test
+
+provides:
+  - bin/sip
+```

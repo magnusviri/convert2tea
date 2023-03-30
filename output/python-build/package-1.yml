@@ -1,0 +1,21 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/de/1c/fb62f81952f0e74c3fbf411261d1adbdd2d615c89a24b42d0fe44eb4bcf3/build-{{version}}.tar.gz
+
+versions:
+  - 0.10.0
+
+dependencies:
+  python.org: 3.11
+
+build:
+  script: |
+    python-venv.sh {{prefix}}/bin/python-build
+
+provides:
+  - bin/python-build
+
+test:
+  script: |
+    pyproject-build
+    test -f dist/build-{{version}}.tar.gz
+    test -f dist/build-{{version}}-py3-none-any.whl

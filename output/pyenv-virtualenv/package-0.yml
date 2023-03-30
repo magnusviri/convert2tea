@@ -1,0 +1,28 @@
+distributable:
+  url: https://github.com/pyenv/pyenv-virtualenv/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: pyenv/pyenv-virtualenv/tags
+  strip: /^v/
+
+dependencies:
+   - pyenv
+
+build:
+  script: |
+    PYENV_ROOT="/usr/local/opt/pyenv"
+    PYENV_VIRTUALENV_ROOT="${PYENV_ROOT}/plugins/pyenv-virtualenv"
+
+    mkdir -p "${PYENV_VIRTUALENV_ROOT}"
+
+    rsync -av . "${PYENV_VIRTUALENV_ROOT}/"
+
+    ln -sf "${PYENV_VIRTUALENV_ROOT}/bin/pyenv-virtualenv" "${PREFIX}/bin/"
+
+test:
+  script:
+    - pyenv virtualenvs
+
+provides:
+  - bin/pyenv-virtualenv

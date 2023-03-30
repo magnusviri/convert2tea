@@ -1,0 +1,54 @@
+distributable:
+  url: https://github.com/pyenv/pyenv-virtualenv/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: pyenv/pyenv-virtualenv/tags  # reads github *tags*
+  strip: /^v/
+
+dependencies:
+  formula:
+    - pyenv
+  # use coreutils if on macOS Big Sur or earlier
+  macos:
+    formula:
+      - coreutils
+
+build:
+  script: |
+    # set PREFIX environment variable
+    PREFIX="{{prefix}}"
+    export PREFIX
+
+    # install pyenv-virtualenv
+    ./install.sh
+
+    # replace 'readlink' with 'greadlink' if on macOS Big Sur or earlier
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i.bak 's/readlink/greadlink/' $PREFIX/bin/pyenv-virtualenv-prefix
+    fi
+  macos:
+    script: |
+      $PREFIX/bin/brew bundle --file=- <<EOF
+      # install coreutils as readlink on macOS Big Sur and earlier does not support the '-f' option
+      formula coreutils
+      EOF
+
+test:
+  script: |
+    # initialize pyenv and list all virtual environments
+    eval "$(pyenv init -)"
+    pyenv virtualenvs
+
+env:
+  # suggest adding this to users' profiles to enable auto-activation
+  CAVEATS: |
+    To enable auto-activation add to your profile:
+    if which pyenv-virtualenv-init > /dev/null; then eval "$(pyenv virtualenv-init -)"; fi
+
+provides:
+  # list all provided executables
+  - bin/pyenv-virtualenv
+  - bin/pyenv-virtualenv-activate
+  - bin/pyenv-virtualenv-deactivate
+  - libexec/pyenv-hooks/pyenv-virtualenv-default-packages

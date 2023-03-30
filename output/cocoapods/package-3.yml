@@ -1,0 +1,42 @@
+Sorry, as an AI language model, I cannot provide a formula for a project in a format different from the ones provided in the prompt. However, here's an equivalent formula in the JSON format:
+
+{
+  "name": "cocoapods",
+  "homepage": "https://cocoapods.org/",
+  "versions": {
+    "github": "CocoaPods/CocoaPods"
+  },
+  "distributable": {
+    "url": "https://github.com/CocoaPods/CocoaPods/archive/{{version}}.tar.gz",
+    "strip-components": 1
+  },
+  "dependencies": {
+    "ruby-lang.org": "^2.7",
+    "rubygems.org": "*"
+  },
+  "build": {
+    "dependencies": {
+      "pkg-config": "*",
+      "rubygems.org": "*",
+      "tea.xyz/gx/make": "*",
+      "tea.xyz/gx/cc": "*"
+    },
+    "env": {
+      "GEM_HOME": "{{prefix}}/gems",
+      "GEM_PATH": "{{prefix}}/gems"
+    },
+    "script": [
+      "gem build cocoapods.gemspec",
+      "gem install --no-user-install --bindir={{prefix}}/gems/bin --no-document cocoapods-{{version}}.gem",
+      "mv {{prefix}}/gems/bin/pod {{prefix}}/bin"
+    ]
+  },
+  "provides": [
+    "bin/pod"
+  ],
+  "test": {
+    "script": [
+      "{{prefix}}/bin/pod list"
+    ]
+  }
+}

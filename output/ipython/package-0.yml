@@ -1,0 +1,25 @@
+distributable:
+  url: https://github.com/ipython/ipython/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: ipython/ipython/tags
+  strip: /^rel-/
+
+dependencies:
+  python.org: '>=3.7'
+
+build:
+  script: |
+    python3 -m venv --system-site-packages {{prefix}}/venv
+    {{prefix}}/venv/bin/python3 setup.py install --prefix="{{prefix}}/venv" --single-version-externally-managed -O1
+
+test:
+  script: |
+    {{prefix}}/venv/bin/ipython -h > /dev/null
+
+provides:
+  - bin/ipython
+  - bin/ipython3
+  - share/man/man1/ipython.1
+  - share/man/man1/ipython3.1

@@ -1,0 +1,36 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/c3/42/3ee6d2da0694d8b71f9a781e81902e7e176448e025376b486172c6f269bd/jupyterlab-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: jupyterlab/jupyterlab/tags
+
+dependencies:
+  python.org: ">=3.7"
+  pyyaml: "*"
+  nodejs.org: "*"
+  pandoc: "*"
+  pygments: "*"
+  ipython: "*"
+  zeromq: "*"
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: "*"
+    rust-lang.org: ">=1.48.0"
+    rust-lang.org/cargo: "*"
+    hatch: "*"
+  script: |
+    python-venv.sh {{prefix}}/bin/jupyterlab
+    jupyter-packaging get-manifest --output-dir {{prefix}}/var/jupyterlab-manifest --format full
+  env:
+    CFLAGS: "-I{{deps.python.org.prefix}}/include/python{{deps.python.org.version.marketing}}"
+    CPATH: "{{deps.python.org.prefix}}/include/python{{deps.python.org.version.marketing}}"
+    LDFLAGS: "-L{{deps.python.org.prefix}}/lib -L{{deps.nodejs.org.prefix}}/lib -L{{deps.zeromq.prefix}}/lib -L{{deps.ipython.opt_prefix}}/lib"
+
+test: |
+  jupyter-lab --version
+
+provides:
+  - bin/jupyter-lab

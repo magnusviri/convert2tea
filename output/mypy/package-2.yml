@@ -1,0 +1,22 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/62/54/be80f8d01f5cf72f774a77f9f750527a6fa733f09f78b1da30e8fa3914e6/mypy-{{version.stable}}.tar.gz
+
+versions:
+  - 1.1.1
+
+dependencies:
+  python.org: 3.11
+
+build:
+  script: |
+    MYPY_USE_MYPYC=1
+    MYPYC_OPT_LEVEL=3
+    python-venv.sh {{prefix}}/bin/mypy
+
+provides:
+  - bin/mypy
+
+test:
+  script: |
+    mypy --version
+    (echo "def test(x:str) -> str: return x"; echo "test(1)") | mypy - 2>&1 | grep "error"

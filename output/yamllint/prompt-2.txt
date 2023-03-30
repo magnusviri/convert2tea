@@ -1,0 +1,90 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project docutils:
+
+
+        class Docutils < Formula
+          homepage "https://docutils.sourceforge.io"
+          url "https://downloads.sourceforge.net/project/docutils/docutils/0.19/docutils-0.19.tar.gz"
+          license all_of: [:public_domain, "BSD-2-Clause", "GPL-3.0-or-later", "Python-2.0"]
+          revision 1
+          depends_on "python@3.11"
+          def install
+            python3 = "python3.11"
+            system python3, *Language::Python.setup_install_args(prefix, python3)
+            bin.glob("*.py") do |f|
+              bin.install_symlink f => f.basename(".py")
+            end
+          end
+          test do
+            system bin/"rst2man.py", prefix/"HISTORY.txt"
+            system bin/"rst2man", prefix/"HISTORY.txt"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project docutils:
+
+
+        distributable:
+          url: https://downloads.sourceforge.net/project/docutils/docutils/{{version.marketing}}/docutils-{{version.marketing}}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 0.19.0
+
+        dependencies:
+          python.org: 3.11
+
+        build:
+          script: |
+            python-venv.sh {{prefix}}/bin/docutils
+
+
+        provides:
+          - bin/docutils
+
+        test:
+          fixture: |
+            - This is a bullet list.
+            - Bullets can be "*", "+", or "-".
+
+          script: |
+            docutils $FIXTURE test.html
+
+
+
+    Here's an example ruby formula for the project yamllint:
+
+
+        class Yamllint < Formula
+          include Language::Python::Virtualenv
+          homepage "https://github.com/adrienverge/yamllint"
+          url "https://files.pythonhosted.org/packages/25/7e/704143fd83b6d13d8d146730bd01d10b73d9eb78137f7ee52fec7ed3c594/yamllint-1.30.0.tar.gz"
+          head "https://github.com/adrienverge/yamllint.git", branch: "master"
+          depends_on "python@3.11"
+          depends_on "pyyaml"
+          def install
+            virtualenv_install_with_resources
+          end
+          test do
+            (testpath/"bad.yaml").write <<~EOS
+              ---
+              foo: bar: gee
+            EOS
+            output = shell_output("#{bin}/yamllint -f parsable -s bad.yaml", 1)
+            assert_match "syntax error: mapping values are not allowed here", output
+            (testpath/"good.yaml").write <<~EOS
+              ---
+              foo: bar
+            EOS
+            assert_equal "", shell_output("#{bin}/yamllint -f parsable -s good.yaml")
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project yamllint in the yml format:

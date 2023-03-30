@@ -1,0 +1,37 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/e6/a4/c7a1fb8e60067fe4eb5f4bfd13ce9f51bec963dd9a5c50321d8a20b7a3f2/SCons-4.5.2.tar.gz
+
+versions:
+  - 4.5.2
+
+dependencies:
+  python.org: 3.11
+
+build:
+  script: |
+    virtualenv {{prefix}}
+    source {{prefix}}/bin/activate
+    pip install . --no-deps --ignore-installed
+
+provides:
+  - bin/scons
+
+test:
+  script: |
+    echo "Building test.c"
+    (cat << EOF
+#include <stdio.h>
+int main()
+{
+    printf("Homebrew");
+    return 0;
+}
+EOF
+    ) > {{prefix}}/test.c
+    (cat << EOF
+Program('test.c')
+EOF
+    ) > {{prefix}}/SConstruct
+    source {{prefix}}/bin/activate
+    scons
+    {{prefix}}/test | grep Homebrew

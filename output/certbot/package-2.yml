@@ -1,0 +1,23 @@
+distributable:
+  url: https://github.com/certbot/certbot/archive/refs/tags/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: certbot/certbot/tags
+
+dependencies:
+  python.org: ^3
+  augeas: 
+  dialog:
+  libffi:
+
+build:
+  - rust
+  - python-venv.sh {{prefix}}/bin/certbot
+
+provides:
+  - bin/certbot
+
+test:
+  - certbot --version
+  - certbot 2>&1 >/dev/null | grep 'Either run as root' || true

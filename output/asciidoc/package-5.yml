@@ -1,0 +1,33 @@
+distributable:
+  url: https://github.com/asciidoc-py/asciidoc-py/archive/refs/tags/v{{version}}.tar.gz
+
+versions:
+  github: asciidoc-py/asciidoc-py/tags
+  strip: /^v/
+
+dependencies:
+  docbook: any
+  python.org: '>=3.7'
+  source-highlight: any
+
+build:
+  script: |
+    python3 -m venv {{prefix}}/venv
+    . {{prefix}}/venv/bin/activate
+
+    pip install --upgrade pip setuptools
+    pip install --prefix {{prefix}} --ignore-installed .
+    mkdir --parents {{prefix}}/etc/xml
+
+    XML_CATALOG_FILES={{prefix}}/etc/xml/catalog asciidoc --backend=docbook -d book -o {{prefix}}/test.xml man/adoc.1.txt
+
+  env:
+    XML_CATALOG_FILES: "{{prefix}}/etc/xml/catalog"
+
+
+test:
+  script: |
+    assert test -f "{{prefix}}/test.xml"
+
+provides:
+  - bin/asciidoc

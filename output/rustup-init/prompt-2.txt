@@ -1,0 +1,92 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project mdcat:
+
+
+        class Mdcat < Formula
+          homepage "https://github.com/swsnr/mdcat"
+          url "https://github.com/swsnr/mdcat/archive/refs/tags/mdcat-1.1.1.tar.gz"
+          head "https://github.com/swsnr/mdcat.git", branch: "main"
+          depends_on "cmake" => :build
+          depends_on "rust" => :build
+          on_linux do
+            depends_on "pkg-config" => :build
+            depends_on "openssl@3"
+          end
+          def install
+            system "cargo", "install", *std_cargo_args
+          end
+          test do
+            (testpath/"test.md").write <<~EOS
+              _lorem_ **ipsum** dolor **sit** _amet_
+            EOS
+            output = shell_output("#{bin}/mdcat --no-colour test.md")
+            assert_match "lorem ipsum dolor sit amet", output
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project mdcat:
+
+
+        distributable:
+          url: https://github.com/swsnr/mdcat/archive/refs/tags/mdcat-{{ version }}.tar.gz
+          strip-components: 1
+
+        provides:
+          - bin/mdcat
+
+        versions:
+          github: swsnr/mdcat/tags
+          strip: /mdcat-/
+
+        build:
+          dependencies:
+            rust-lang.org: '>=1.56'
+            rust-lang.org/cargo: '*'
+            freedesktop.org/pkg-config: '*'
+          script:
+            cargo install --locked --path . --root {{prefix}}
+
+        test:
+          mdcat --version
+
+
+
+    Here's an example ruby formula for the project rustup-init:
+
+
+        class RustupInit < Formula
+          homepage "https://github.com/rust-lang/rustup"
+          url "https://github.com/rust-lang/rustup/archive/1.25.2.tar.gz"
+          license any_of: ["Apache-2.0", "MIT"]
+          depends_on "rust" => :build
+          uses_from_macos "curl"
+          uses_from_macos "xz"
+          on_linux do
+            depends_on "pkg-config" => :build
+            depends_on "openssl@3"
+          end
+          def install
+            system "cargo", "install", "--features", "no-self-update", *std_cargo_args
+          end
+          test do
+            ENV["CARGO_HOME"] = testpath/".cargo"
+            ENV["RUSTUP_HOME"] = testpath/".multirust"
+            system bin/"rustup-init", "-y"
+            (testpath/"hello.rs").write <<~EOS
+              fn main() {
+                println!("Hello World!");
+              }
+            EOS
+            system testpath/".cargo/bin/rustc", "hello.rs"
+            assert_equal "Hello World!", shell_output("./hello").chomp
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project rustup-init in the yml format:

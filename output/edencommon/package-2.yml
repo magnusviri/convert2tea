@@ -1,0 +1,38 @@
+distributable:
+           url: https://github.com/facebookexperimental/edencommon/archive/{{version}}.tar.gz
+           strip-components: 1
+
+        versions:
+          github: facebookexperimental/edencommon/releases/tags
+
+        dependencies:
+          cmake.org: '*'
+          googletest.org: '*'
+          folly.org: '*'
+          gflags.io: '*'
+          glog.org: '*'
+
+        build:
+          dependencies:
+            tea.xyz/gx/cmake: '*'
+            tea.xyz/gx/googletest: '*'
+            tea.xyz/gx/folly: '*'
+            tea.xyz/gx/gflags: '*'
+            tea.xyz/gx/glog: '*'
+          script: |
+            cmake \
+              -DCMAKE_INSTALL_PREFIX="{{prefix}}" \
+              -DBUILD_SHARED_LIBS=ON \
+              -S . -B _build \
+              -G Ninja \
+              -DCMAKE_C_COMPILER=clang \
+              -DCMAKE_CXX_COMPILER=clang++
+            cmake --build _build
+            cmake --install _build
+
+        test:
+          script: |
+            (echo "0"; echo $PID; echo "ruby") | c++ -std=c++17 -I"{{prefix}}"/include -L"{{prefix}}"/lib \
+              -ledencommon_utils -lfolly -lboost_context-mt -lglog -lgtest -lgtest_main -o test \
+              test.cc
+            ./test 2> /dev/null | grep ruby

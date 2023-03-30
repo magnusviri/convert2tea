@@ -1,0 +1,33 @@
+---
+
+    distributable:
+      url: https://github.com/ImageOptim/libimagequant/archive/{{version}}.tar.gz
+      strip-components: 1
+
+    provides:
+      - lib/libimagequant.0.dylib
+      - lib/libimagequant.dylib
+      - lib/libimagequant.a
+
+    versions:
+      github: ImageOptim/libimagequant/releases
+      strip: /^v/
+
+    dependencies:
+      darwin:
+        pkgconfig: any
+
+    build:
+      dependencies:
+        cargo-lang.org: '>=1.60'
+        cargo-lang.org/cargo: '*'
+        rust-lang.org/cargo-c: '*'
+      script:
+        cd imagequant-rs
+        cargo cinstall --root {{prefix}}
+
+    test:
+      script: |
+        echo "fn main() -> Result<(), Box<dyn std::error::Error>> { Ok(()) }" > test.rs
+        rustc test.rs
+        objdump -T test | grep -q imagequant

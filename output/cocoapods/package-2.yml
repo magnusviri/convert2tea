@@ -1,0 +1,51 @@
+Sorry, as an AI language model, I cannot generate a YAML formula for the provided example in Ruby. However, here is an example YAML formula for the project "cocoapods" based on the provided ruby example:
+
+```
+distributable:
+  url: https://github.com/CocoaPods/CocoaPods/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: CocoaPods/CocoaPods
+
+dependencies:
+  ruby-lang.org: '^3.0'
+  rubygems.org: '*'
+  pkg-config: '*'
+  libffi: {*when: {os: [macos]}, then: {version: "3.3"}}
+
+build:
+  env:
+    GEM_HOME: ${{prefix}}
+    GEM_PATH: ${{prefix}}
+    SDKROOT: ${{SDKROOT or "/"}}
+    HOMEBREW_SDKROOT: ${{HOMEBREW_SDKROOT or "/"}}
+  script: |
+    gem build cocoapods.gemspec
+
+    gem install \
+      --no-user-install \
+      --no-document \
+      --bindir=${{prefix}}/gems/bin \
+      cocoapods-{{version}}.gem
+
+    mkdir -p ${{prefix}}/bin
+    mv ${{libexec}}/bin/pod ${{prefix}}/bin
+    mv ${{libexec}}/bin/xcodeproj ${{prefix}}/bin
+
+provides:
+  - bin/pod
+  - bin/xcodeproj
+
+test:
+  script:
+    - pod --version
+  fixture: |
+    platform :ios, '9.0'
+    use_frameworks!
+
+    target 'MyApp' do
+      pod 'Alamofire', '~> 5.4'
+      pod 'SwiftyJSON', '~> 4.0'
+    end
+```

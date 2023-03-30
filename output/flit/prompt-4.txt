@@ -1,0 +1,129 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project twine:
+
+
+        class TwinePypi < Formula
+          include Language::Python::Virtualenv
+          homepage "https://github.com/pypa/twine"
+          url "https://files.pythonhosted.org/packages/b7/1a/a7884359429d801cd63c2c5512ad0a337a509994b0e42d9696d4778d71f6/twine-4.0.2.tar.gz"
+          head "https://github.com/pypa/twine.git", branch: "main"
+          depends_on "docutils"
+          depends_on "pygments"
+          depends_on "python@3.11"
+          depends_on "six"
+          def install
+            virtualenv_install_with_resources
+            pkgshare.install "tests/fixtures/twine-1.5.0-py2.py3-none-any.whl"
+          end
+          test do
+            wheel = "twine-1.5.0-py2.py3-none-any.whl"
+            cmd = "#{bin}/twine upload -uuser -ppass #{pkgshare}/#{wheel} 2>&1"
+            assert_match(/Uploading.*#{wheel}.*HTTPError: 403/m, shell_output(cmd, 1))
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project twine:
+
+
+        distributable:
+          url: https://github.com/pypa/twine/archive/refs/tags/{{ version }}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: pypa/twine/releases/tags  # reads github *releases* but uses the tags of those releases
+          strip: /^v/
+
+        dependencies:
+          python.org: '>=3.7'
+
+        build:
+          script: |
+            python-venv.sh {{prefix}}/bin/twine
+
+        provides:
+          - bin/twine
+
+        test:
+          script: |
+            twine --version | grep "^twine version {{version}}"
+
+            # Create a minimal package
+            mv $FIXTURE pyproject.toml
+            echo "Hello World" > README.md
+
+            # Build the package
+            {{prefix}}/venv/bin/pip install --upgrade build
+            {{prefix}}/venv/bin/python -m build
+
+            # check the package
+            twine check dist/*
+
+            # clean up
+            rm -rf dist
+          fixture: |
+            # pyproject.toml
+            [build-system]
+            requires = ["setuptools>=61.0"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "example_package"
+            version = "0.0.1"
+            authors = [
+              { name="Example Author", email="author@example.com" },
+            ]
+            description = "A small example package"
+            readme = "README.md"
+            requires-python = ">=3.7"
+            classifiers = [
+                "Programming Language :: Python :: 3",
+                "License :: OSI Approved :: MIT License",
+                "Operating System :: OS Independent",
+            ]
+
+            [project.urls]
+            "Homepage" = "https://github.com/pypa/sampleproject"
+            "Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+
+
+
+    Here's an example ruby formula for the project flit:
+
+
+        class Flit < Formula
+          include Language::Python::Virtualenv
+          homepage "https://github.com/pypa/flit"
+          url "https://files.pythonhosted.org/packages/28/c6/c399f38dab6d3a2518a50d334d038083483a787f663743d713f1d245bde3/flit-3.8.0.tar.gz"
+          head "https://github.com/pypa/flit.git", branch: "main"
+          depends_on "docutils"
+          depends_on "python@3.11"
+          def install
+            virtualenv_install_with_resources
+          end
+          test do
+            (testpath/"sample.py").write <<~END
+              """A sample package"""
+              __version__ = "0.1"
+            END
+            (testpath/"pyproject.toml").write <<~END
+              [build-system]
+              requires = ["flit_core"]
+              build-backend = "flit_core.buildapi"
+              [tool.flit.metadata]
+              module = "sample"
+              author = "Sample Author"
+            END
+            system bin/"flit", "build"
+            assert_predicate testpath/"dist/sample-0.1-py2.py3-none-any.whl", :exist?
+            assert_predicate testpath/"dist/sample-0.1.tar.gz", :exist?
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project flit in the yml format:

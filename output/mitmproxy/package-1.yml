@@ -1,0 +1,35 @@
+distributable:
+  url: https://github.com/mitmproxy/mitmproxy/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: mitmproxy/mitmproxy/tags
+
+dependencies:
+  python.org: ">=3.7"
+  openssl.org: ">=1.1.1"
+  protobuf: "*"
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: "*"
+    rust-lang.org: ">=1.48.0" # needed for cryptography
+    rust-lang.org/cargo: "*"
+  script: |
+    python-venv.sh {{prefix}}/bin/mitmproxy
+    {{dependencies.openssl.org.prefix}}/bin/pkg-config {{dependencies.openssl.org.prefix}}/lib/pkgconfig/libssl.pc {{dependencies.openssl.org.prefix}}/lib/pkgconfig/libcrypto.pc # fix for openssl.pc not being found
+  env:
+    # python includes are subdirectoried under the version
+    # frankly, python's versioning system causes a lot of
+    # issues for us despite its similarities to our own,
+    # due to versioning at the end of the path tree,
+    # instead of the beginning.
+    PKG_CONFIG_LIBDIR: $PKG_CONFIG_LIBDIR:{{dependencies.openssl.org.prefix}}/lib/pkgconfig:{{dependencies.protobuf.prefix}}/lib/pkgconfig
+
+test: |
+  ENV["LANG"] = "en_US.UTF-8"
+  assert_match version.to_s, shell_output("{{prefix}}/bin/mitmproxy --version 2>&1")
+
+provides:
+  - bin/mitmproxy

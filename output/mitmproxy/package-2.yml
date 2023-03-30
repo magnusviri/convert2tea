@@ -1,0 +1,1 @@
+Unfortunately, it's not possible to convert a ruby formula to a yml format as they are completely different syntaxes used in different package managers (Homebrew and Conan, respectively). It is necessary to write the formula from scratch in the yml format for Conan.

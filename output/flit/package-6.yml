@@ -1,0 +1,43 @@
+distributable:
+  url: https://github.com/pypa/flit/archive/{{ version }}.tar.gz
+
+versions:
+  github: pypa/flit/releases
+  strip: /^v/
+
+dependencies:
+  python.org: '>=3.7'
+
+build:
+  script: |
+    pip install --upgrade flit
+    flit install --symlink
+
+provides:
+  - bin/flit
+
+test:
+  script: |
+    flit --version | grep "{{version}}"
+
+    # Create a minimal package
+    mkdir test-package
+    cd test-package
+    echo '"""A sample package"""' > sample.py
+    echo '__version__ = "0.1"' >> sample.py
+    echo '[build-system]' > pyproject.toml
+    echo 'requires = ["flit_core"]' >> pyproject.toml
+    echo 'build-backend = "flit_core.buildapi"' >> pyproject.toml
+    echo '[tool.flit.metadata]' >> pyproject.toml
+    echo 'module = "sample"' >> pyproject.toml
+    echo 'author = "Sample Author"' >> pyproject.toml
+
+    # Build the package
+    flit build
+
+    # check the package
+    flit check dist/*
+
+    # clean up
+    cd ..
+    rm -rf test-package

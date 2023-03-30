@@ -1,0 +1,92 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project docutils:
+
+
+        class Docutils < Formula
+          homepage "https://docutils.sourceforge.io"
+          url "https://downloads.sourceforge.net/project/docutils/docutils/0.19/docutils-0.19.tar.gz"
+          license all_of: [:public_domain, "BSD-2-Clause", "GPL-3.0-or-later", "Python-2.0"]
+          revision 1
+          depends_on "python@3.11"
+          def install
+            python3 = "python3.11"
+            system python3, *Language::Python.setup_install_args(prefix, python3)
+            bin.glob("*.py") do |f|
+              bin.install_symlink f => f.basename(".py")
+            end
+          end
+          test do
+            system bin/"rst2man.py", prefix/"HISTORY.txt"
+            system bin/"rst2man", prefix/"HISTORY.txt"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project docutils:
+
+
+        distributable:
+          url: https://downloads.sourceforge.net/project/docutils/docutils/{{version.marketing}}/docutils-{{version.marketing}}.tar.gz
+          strip-components: 1
+
+        versions:
+          - 0.19.0
+
+        dependencies:
+          python.org: 3.11
+
+        build:
+          script: |
+            python-venv.sh {{prefix}}/bin/docutils
+
+
+        provides:
+          - bin/docutils
+
+        test:
+          fixture: |
+            - This is a bullet list.
+            - Bullets can be "*", "+", or "-".
+
+          script: |
+            docutils $FIXTURE test.html
+
+
+
+    Here's an example ruby formula for the project httpie:
+
+
+        class Httpie < Formula
+          include Language::Python::Virtualenv
+          homepage "https://httpie.io/"
+          url "https://github.com/httpie/httpie/archive/refs/tags/3.2.1.tar.gz"
+          head "https://github.com/httpie/httpie.git", branch: "master"
+          depends_on "pygments"
+          depends_on "python@3.11"
+          def install
+            # We use a special file called __build_channel__.py to denote which source
+            # was used to install httpie.
+            File.write("httpie/internal/__build_channel__.py", "BUILD_CHANNEL = \"homebrew\"")
+            virtualenv_install_with_resources
+            man1.install_symlink libexec/"share/man/man1/http.1"
+            man1.install_symlink libexec/"share/man/man1/https.1"
+            man1.install_symlink libexec/"share/man/man1/httpie.1"
+            bash_completion.install "extras/httpie-completion.bash" => "httpie"
+            fish_completion.install "extras/httpie-completion.fish" => "httpie.fish"
+          end
+          test do
+            assert_match version.to_s, shell_output("#{bin}/httpie --version")
+            assert_match version.to_s, shell_output("#{bin}/https --version")
+            assert_match version.to_s, shell_output("#{bin}/http --version")
+            raw_url = "https://raw.githubusercontent.com/Homebrew/homebrew-core/HEAD/Formula/httpie.rb"
+            assert_match "PYTHONPATH", shell_output("#{bin}/http --ignore-stdin #{raw_url}")
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project httpie in the yml format:

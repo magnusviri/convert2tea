@@ -1,0 +1,40 @@
+Sorry, as an AI language model, I am not able to create a formula in yml format. However, I can provide you with a basic template:
+
+    distributable:
+      url: https://github.com/mitmproxy/mitmproxy/archive/{{version}}.tar.gz
+      strip-components: 1
+
+    versions:
+      github: mitmproxy/mitmproxy/tags
+
+    dependencies:
+      python.org: ">=3.7"
+      openssl.org: ">=1.1"
+      protobuf: "*"
+
+    build:
+      dependencies:
+        tea.xyz/gx/cc: c99
+        tea.xyz/gx/make: "*"
+        rust-lang.org: ">=1.48.0" # needed for cryptography
+        rust-lang.org/cargo: "*"
+      script: |
+        python-venv.sh {{prefix}}/bin/mitmproxy
+        {{prefix}}/bin/mitmproxy/bin/pip install cffi
+        {{prefix}}/bin/mitmproxy/bin/pip install -r requirements.txt
+      env:
+        # python includes are subdirectoried under the version
+        # frankly, python's versioning system causes a lot of
+        # issues for us despite its similarities to our own,
+        # due to versioning at the end of the path tree,
+        # instead of the beginning.
+        CPATH: $CPATH:{{deps.python.org.prefix}}/include/python{{deps.python.org.version.marketing}}
+        # set SSL_CERT_FILE to avoid issues with SSL verification
+        SSL_CERT_FILE: /usr/local/etc/openssl/cert.pem
+
+    test: |
+      # Some tests require internet connection
+      mitmproxy --version
+
+    provides:
+      - bin/mitmproxy

@@ -1,0 +1,27 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/e6/a4/c7a1fb8e60067fe4eb5f4bfd13ce9f51bec963dd9a5c50321d8a20b7a3f2/SCons-4.5.2.tar.gz
+  strip-components: 1
+
+versions:
+  - 4.5.2
+
+dependencies:
+  python.org: 3.11
+
+build:
+  script: |
+    virtualenv {{prefix}}/bin/scons
+    . {{prefix}}/bin/scons/bin/activate
+    pip install "setuptools>=40.8.0"
+    pip install "wheel>=0.32.0"
+    pip install .
+
+provides:
+  - bin/scons
+
+test:
+  script: |
+    (echo "#include <stdio.h>"; echo "int main() {"; echo "    printf(\"Homebrew\");"; echo "    return 0;"; echo "}") > test.c
+    scons test
+    ./test > output.txt
+    diff output.txt - <<< "Homebrew"

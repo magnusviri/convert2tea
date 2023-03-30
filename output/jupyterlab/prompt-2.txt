@@ -1,0 +1,252 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project awscli:
+
+
+        class Awscli < Formula
+          include Language::Python::Virtualenv
+          homepage "https://aws.amazon.com/cli/"
+          url "https://github.com/aws/aws-cli/archive/2.11.6.tar.gz"
+          head "https://github.com/aws/aws-cli.git", branch: "v2"
+          depends_on "cmake" => :build
+          depends_on "rust" => :build # for cryptography
+          depends_on "docutils"
+          depends_on "pycparser"
+          depends_on "python@3.11"
+          depends_on "six"
+          uses_from_macos "mandoc"
+          # Python resources should be updated based on setup.cfg. One possible way is:
+          # 1. Run `pipgrip 'awscli @ #{url}' --sort`
+          # 2. Ignore `docutils` and `six`. Update all other PyPI packages
+          def python3
+            which("python3.11")
+          end
+          def install
+            # Temporary workaround for Xcode 14's ld causing build failure (without logging a reason):
+            # ld: fatal warning(s) induced error (-fatal_warnings)
+            # Ref: https://github.com/python/cpython/issues/97524
+            ENV.append "LDFLAGS", "-Wl,-no_fixup_chains" if DevelopmentTools.clang_build_version >= 1400
+            # The `awscrt` package uses its own libcrypto.a on Linux. When building _awscrt.*.so,
+            # Homebrew's default environment causes issues, which may be due to `openssl` flags.
+            # This causes installation to fail while running `scripts/gen-ac-index` with error:
+            # ImportError: _awscrt.cpython-39-x86_64-linux-gnu.so: undefined symbol: EVP_CIPHER_CTX_init
+            # As workaround, add relative path to local libcrypto.a before openssl's so it gets picked.
+            if OS.linux?
+              python_version = Language::Python.major_minor_version(python3)
+              ENV.prepend "CFLAGS", "-I./build/temp.linux-x86_64-#{python_version}/deps/install/include"
+              ENV.prepend "LDFLAGS", "-L./build/temp.linux-x86_64-#{python_version}/deps/install/lib"
+            end
+            # setuptools>=60 prefers its own bundled distutils, which is incompatible with docutils~=0.15
+            # Force the previous behavior of using distutils from the stdlib
+            # Remove when fixed upstream: https://github.com/aws/aws-cli/pull/6011
+            with_env(SETUPTOOLS_USE_DISTUTILS: "stdlib") do
+              virtualenv_install_with_resources
+            end
+            pkgshare.install "awscli/examples"
+            rm Dir[bin/"{aws.cmd,aws_bash_completer,aws_zsh_completer.sh}"]
+            bash_completion.install "bin/aws_bash_completer"
+            zsh_completion.install "bin/aws_zsh_completer.sh"
+            (zsh_completion/"_aws").write <<~EOS
+              #compdef aws
+              _aws () {
+                local e
+                e=$(dirname ${funcsourcetrace[1]%:*})/aws_zsh_completer.sh
+                if [[ -f $e ]]; then source $e; fi
+              }
+            EOS
+          end
+          def caveats
+            <<~EOS
+              The "examples" directory has been installed to:
+                #{HOMEBREW_PREFIX}/share/awscli/examples
+            EOS
+          end
+          test do
+            assert_match "topics", shell_output("#{bin}/aws help")
+            site_packages = libexec/Language::Python.site_packages(python3)
+            assert_includes Dir[site_packages/"awscli/data/*"], "#{site_packages}/awscli/data/ac.index"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project awscli:
+
+
+        distributable:
+          url: https://github.com/aws/aws-cli/archive/{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: aws/aws-cli/tags
+
+        dependencies:
+          python.org: ">=3.7"
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: "*"
+            rust-lang.org: ">=1.48.0" # needed for cryptography
+            rust-lang.org/cargo: "*"
+          script: |
+            python-venv.sh {{prefix}}/bin/aws
+          env:
+            # python includes are subdirectoried under the version
+            # frankly, python's versioning system causes a lot of
+            # issues for us despite its similarities to our own,
+            # due to versioning at the end of the path tree,
+            # instead of the beginning.
+            CPATH: $CPATH:{{deps.python.org.prefix}}/include/python{{deps.python.org.version.marketing}}
+
+        test: |
+          # Pretty much anything else appears to require AWS credentials
+          aws --version
+
+        provides:
+          - bin/aws
+
+
+
+    Here's an example ruby formula for the project jupyterlab:
+
+
+        class Jupyterlab < Formula
+          include Language::Python::Virtualenv
+          homepage "https://jupyter.org/"
+          url "https://files.pythonhosted.org/packages/c3/42/3ee6d2da0694d8b71f9a781e81902e7e176448e025376b486172c6f269bd/jupyterlab-3.6.2.tar.gz"
+          license all_of: [
+            "BSD-3-Clause",
+            "MIT", # semver.py
+          ]
+          depends_on "hatch" => :build
+          depends_on "python-build" => :build
+          depends_on "rust" => :build
+          depends_on "ipython"
+          depends_on "node"
+          depends_on "pandoc"
+          depends_on "pygments"
+          depends_on "python@3.11"
+          depends_on "pyyaml"
+          depends_on "six"
+          depends_on "zeromq"
+          uses_from_macos "expect" => :test
+          uses_from_macos "libxml2"
+          uses_from_macos "libxslt"
+          def python3
+            "python3.11"
+          end
+          def install
+            venv = virtualenv_create(libexec, python3)
+            ENV["JUPYTER_PATH"] = etc/"jupyter"
+            site_packages = Language::Python.site_packages(python3)
+            %w[ipython].each do |package_name|
+              package = Formula[package_name].opt_libexec
+              (libexec/site_packages/"homebrew-#{package_name}.pth").write package/site_packages
+            end
+            preinstall = %w[jupyterlab-pygments nbclassic]
+            linked_hatch = %w[
+              jupyter-core jupyter-client jupyter-events jupyter-server jupyter-server-terminals
+              nbformat ipykernel nbconvert
+            ]
+            linked_setuptools = %w[jupyter-console]
+            unlinked_hatch = %w[jupyterlab-server]
+            unlinked_setuptools = (
+              resources.map(&:name).to_set - preinstall - linked_hatch - linked_setuptools - unlinked_hatch
+            )
+            pybuild = Formula["python-build"].opt_bin/"pyproject-build"
+            hatch = Formula["hatch"].opt_bin/"hatch"
+            # The "preinstall" dependencies require `jupyterlab` to build. Since Homebrew doesn't
+            # allow circular dependencies, we locally build wheels for these dependencies
+            # using the pre-built PyPI wheels for `jupyterlab` and its dependencies.
+            preinstall.each do |r|
+              resource(r).stage do
+                system pybuild, "--wheel"
+                venv.pip_install Dir["dist/*.whl"].first
+              end
+            end
+            # install remaining packages into virtualenv and link specified packages
+            unlinked_setuptools.each do |r|
+              venv.pip_install resource(r)
+            end
+            unlinked_hatch.each do |r|
+              resource(r).stage do
+                system hatch, "build", "-t", "wheel"
+                venv.pip_install Dir["dist/*.whl"].first
+              end
+            end
+            linked_setuptools.each do |r|
+              venv.pip_install_and_link resource(r)
+            end
+            linked_hatch.each do |r|
+              resource(r).stage do
+                system hatch, "build", "-t", "wheel"
+                venv.pip_install_and_link Dir["dist/*.whl"].first
+              end
+            end
+            venv.pip_install_and_link buildpath
+            # remove bundled kernel
+            (libexec/"share/jupyter/kernels").rmtree
+            # install completion
+            resource("jupyter-core").stage do
+              bash_completion.install "examples/jupyter-completion.bash" => "jupyter"
+              zsh_completion.install "examples/completions-zsh" => "_jupyter"
+            end
+          end
+          def caveats
+            <<~EOS
+              Additional kernels can be installed into the shared jupyter directory
+                #{etc}/jupyter
+            EOS
+          end
+          test do
+            system bin/"jupyter-console --help"
+            assert_match python3, shell_output("#{bin}/jupyter kernelspec list")
+            (testpath/"console.exp").write <<~EOS
+              spawn #{bin}/jupyter-console
+              expect "In "
+              send "exit\r"
+            EOS
+            assert_match "Jupyter console", shell_output("expect -f console.exp")
+            (testpath/"notebook.exp").write <<~EOS
+              spawn #{bin}/jupyter notebook --no-browser
+              expect "NotebookApp"
+            EOS
+            assert_match "NotebookApp", shell_output("expect -f notebook.exp")
+            (testpath/"nbconvert.ipynb").write <<~EOS
+              {
+                "cells": []
+              }
+            EOS
+            system bin/"jupyter-nbconvert", "nbconvert.ipynb", "--to", "html"
+            assert_predicate testpath/"nbconvert.html", :exist?, "Failed to export HTML"
+            assert_match "-F _jupyter",
+              shell_output("bash -c \"source #{bash_completion}/jupyter && complete -p jupyter\"")
+            # Ensure that jupyter can load the jupyter lab package.
+            assert_match(/^jupyterlab *: #{version}$/,
+              shell_output(bin/"jupyter --version"))
+            # Ensure that jupyter-lab binary was installed by pip.
+            assert_equal version.to_s,
+              shell_output(bin/"jupyter-lab --version").strip
+            port = free_port
+            fork { exec "#{bin}/jupyter-lab", "-y", "--port=#{port}", "--no-browser", "--ip=127.0.0.1", "--LabApp.token=''" }
+            sleep 10
+            assert_match "<title>JupyterLab</title>",
+              shell_output("curl --silent --fail http://localhost:#{port}/lab")
+          end
+        end
+        __END__
+        --- a/pyproject.toml	2023-01-27 12:04:48
+        +++ b/pyproject.toml	2023-01-27 12:05:01
+        @@ -1,5 +1,5 @@
+         [build-system]
+        -requires=["jupyter_packaging~=0.9", "nbclassic>=0.4.0"]
+        +requires=["jupyter_packaging~=0.9"]
+         build-backend = "setuptools.build_meta"
+         [tool.check-manifest]
+
+
+
+    Based on the examples provided, write a formula for the project jupyterlab in the yml format:

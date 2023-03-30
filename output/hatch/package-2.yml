@@ -1,0 +1,33 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/75/60/ea5735ec08a80cbf57ed152bd3544df775812fe5931c3de8937501aae2d6/hatch-1.6.3.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.6.3
+
+dependencies:
+  python.org: 3.11
+  - pygments
+  - virtualenv
+  - rust:
+      condition: on_linux
+
+build:
+  script: |
+    python-venv.sh {{prefix}}/bin/hatch
+    generate-completions.sh {{prefix}}/bin/hatch
+
+provides:
+  - bin/hatch
+
+test:
+  fixture: |
+    - This is a bullet list.
+    - Bullets can be "*", "+", or "-".
+
+  script: |
+    hatch $FIXTURE test.html
+    hatch new homebrew
+    hatch config set dirs.env.virtual .venv
+    hatch env create
+    hatch env run -- python -c 'import requests;print(requests.__version__)'

@@ -1,0 +1,34 @@
+distributable:
+  url: https://github.com/rtomayko/ronn/archive/v{{version}}.tar.gz
+
+versions:
+  github: rtomayko/ronn/tags
+  strip: v
+
+provides:
+  - bin/ronn
+  - man/man1/ronn.1
+  - man/man7/ronn-format.7
+
+dependencies:
+  groff.info: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/ruby: '*'
+  script: |
+    gem install ronn -v {{version}} --no-document -- --use-system-gpgme
+    env GEM_HOME=$PWD gem contents ronn-$version | grep -v /doc/ |  sed "s|$PWD/bin/||g" | tar -C $prefix -xf -
+  env:
+    GEM_HOME: $PWD
+
+test:
+  dependencies:
+    gnu.org/coreutils: '*'
+    gnu.org/groff: '*'
+  script: |
+    echo 'simple(7) -- a simple ronn example
+    ==================================
+    This document is created by ronn.' > test.ronn
+    ronn --date 1970-01-01 test.ronn
+    echo "$(groff -t -man -Tascii test.7 | col -bx | sed -e 's/\x1b\[[0-9;]*m//g')" | cmp - test.out

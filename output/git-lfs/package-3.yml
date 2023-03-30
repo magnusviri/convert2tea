@@ -1,0 +1,40 @@
+distributable:
+  url: "https://github.com/git-lfs/git-lfs/releases/download/v{{version}}/git-lfs-v{{version}}.tar.gz"
+  strip-components: 1
+
+versions:
+  github: git-lfs/git-lfs/releases/tags
+
+dependencies:
+  asciidoctor: "*"
+  go: "*"
+  ronn: "*"
+  ruby-lang.org: "*"
+
+build:
+  dependencies:
+    makepkg.archlinux.org: "*"
+  env:
+    GIT_LFS_SHA: ""
+    VERSION: "{{version}}"
+  script: |
+    make
+    make man RONN={{prefix}}/bin/ronn
+    mkdir {{prefix}}/bin
+    mv bin/git-lfs {{prefix}}/bin/
+    mkdir -p {{prefix}}/share/man
+    mv man/* {{prefix}}/share/man/
+    mkdir -p {{prefix}}/share/doc/git-lfs/html
+    mv man/*.html {{prefix}}/share/doc/git-lfs/html
+
+provides:
+  - bin/git-lfs
+
+test:
+  script:
+    - git init
+    - git lfs track test
+    - |
+      if [ "$(grep 'test filter=lfs' .gitattributes)" = "" ]; then
+        exit 1
+      fi

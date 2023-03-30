@@ -1,0 +1,33 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/3b/5a/637bbd7a481b600f2a5df09aa66e066aefe2b6db5dd5d60cec44674ed4fa/cfn-lint-0.76.1.tar.gz
+
+versions:
+  - 0.76.1
+
+dependencies:
+  python.org: 3.11
+  - python-typing-extensions
+  - pyyaml
+  - six
+
+build:
+  script: |
+    python-venv.sh {{prefix}}/bin/cfn-lint
+
+provides:
+  - bin/cfn-lint
+
+test:
+  fixture: |
+    AWSTemplateFormatVersion: '2010-09-09'
+    Resources:
+      # Helps tests map resource types
+      IamPipeline:
+        Type: "AWS::CloudFormation::Stack"
+        Properties:
+          TemplateURL: !Sub 'https://s3.${AWS::Region}.amazonaws.com/bucket-dne-${AWS::Region}/${AWS::AccountId}/pipeline.yaml'
+          Parameters:
+            DeploymentName: iam-pipeline
+            Deploy: 'auto'
+  script: |
+    cfn-lint test.yml

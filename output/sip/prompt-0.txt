@@ -1,0 +1,171 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project awscli:
+
+
+        class Awscli < Formula
+          include Language::Python::Virtualenv
+          homepage "https://aws.amazon.com/cli/"
+          url "https://github.com/aws/aws-cli/archive/2.11.6.tar.gz"
+          head "https://github.com/aws/aws-cli.git", branch: "v2"
+          depends_on "cmake" => :build
+          depends_on "rust" => :build # for cryptography
+          depends_on "docutils"
+          depends_on "pycparser"
+          depends_on "python@3.11"
+          depends_on "six"
+          uses_from_macos "mandoc"
+          # Python resources should be updated based on setup.cfg. One possible way is:
+          # 1. Run `pipgrip 'awscli @ #{url}' --sort`
+          # 2. Ignore `docutils` and `six`. Update all other PyPI packages
+          def python3
+            which("python3.11")
+          end
+          def install
+            # Temporary workaround for Xcode 14's ld causing build failure (without logging a reason):
+            # ld: fatal warning(s) induced error (-fatal_warnings)
+            # Ref: https://github.com/python/cpython/issues/97524
+            ENV.append "LDFLAGS", "-Wl,-no_fixup_chains" if DevelopmentTools.clang_build_version >= 1400
+            # The `awscrt` package uses its own libcrypto.a on Linux. When building _awscrt.*.so,
+            # Homebrew's default environment causes issues, which may be due to `openssl` flags.
+            # This causes installation to fail while running `scripts/gen-ac-index` with error:
+            # ImportError: _awscrt.cpython-39-x86_64-linux-gnu.so: undefined symbol: EVP_CIPHER_CTX_init
+            # As workaround, add relative path to local libcrypto.a before openssl's so it gets picked.
+            if OS.linux?
+              python_version = Language::Python.major_minor_version(python3)
+              ENV.prepend "CFLAGS", "-I./build/temp.linux-x86_64-#{python_version}/deps/install/include"
+              ENV.prepend "LDFLAGS", "-L./build/temp.linux-x86_64-#{python_version}/deps/install/lib"
+            end
+            # setuptools>=60 prefers its own bundled distutils, which is incompatible with docutils~=0.15
+            # Force the previous behavior of using distutils from the stdlib
+            # Remove when fixed upstream: https://github.com/aws/aws-cli/pull/6011
+            with_env(SETUPTOOLS_USE_DISTUTILS: "stdlib") do
+              virtualenv_install_with_resources
+            end
+            pkgshare.install "awscli/examples"
+            rm Dir[bin/"{aws.cmd,aws_bash_completer,aws_zsh_completer.sh}"]
+            bash_completion.install "bin/aws_bash_completer"
+            zsh_completion.install "bin/aws_zsh_completer.sh"
+            (zsh_completion/"_aws").write <<~EOS
+              #compdef aws
+              _aws () {
+                local e
+                e=$(dirname ${funcsourcetrace[1]%:*})/aws_zsh_completer.sh
+                if [[ -f $e ]]; then source $e; fi
+              }
+            EOS
+          end
+          def caveats
+            <<~EOS
+              The "examples" directory has been installed to:
+                #{HOMEBREW_PREFIX}/share/awscli/examples
+            EOS
+          end
+          test do
+            assert_match "topics", shell_output("#{bin}/aws help")
+            site_packages = libexec/Language::Python.site_packages(python3)
+            assert_includes Dir[site_packages/"awscli/data/*"], "#{site_packages}/awscli/data/ac.index"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project awscli:
+
+
+        distributable:
+          url: https://github.com/aws/aws-cli/archive/{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: aws/aws-cli/tags
+
+        dependencies:
+          python.org: ">=3.7"
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: "*"
+            rust-lang.org: ">=1.48.0" # needed for cryptography
+            rust-lang.org/cargo: "*"
+          script: |
+            python-venv.sh {{prefix}}/bin/aws
+          env:
+            # python includes are subdirectoried under the version
+            # frankly, python's versioning system causes a lot of
+            # issues for us despite its similarities to our own,
+            # due to versioning at the end of the path tree,
+            # instead of the beginning.
+            CPATH: $CPATH:{{deps.python.org.prefix}}/include/python{{deps.python.org.version.marketing}}
+
+        test: |
+          # Pretty much anything else appears to require AWS credentials
+          aws --version
+
+        provides:
+          - bin/aws
+
+
+
+    Here's an example ruby formula for the project sip:
+
+
+        class Sip < Formula
+          include Language::Python::Virtualenv
+          homepage "https://www.riverbankcomputing.com/software/sip/intro"
+          url "https://files.pythonhosted.org/packages/f1/ba/19f9cb16416a3c98bd5969b1bd9bf3c92dd278788d8d949ed66b8e0edf0d/sip-6.7.7.tar.gz"
+          license any_of: ["GPL-2.0-only", "GPL-3.0-only"]
+          head "https://www.riverbankcomputing.com/hg/sip", using: :hg
+          depends_on "python@3.11"
+          def install
+            python3 = "python3.11"
+            venv = virtualenv_create(libexec, python3)
+            venv.pip_install resources
+            # We don't install into venv as sip-install writes the sys.executable in scripts
+            system python3, *Language::Python.setup_install_args(prefix, python3)
+            site_packages = Language::Python.site_packages(python3)
+            pth_contents = "import site; site.addsitedir('#{libexec/site_packages}')\n"
+            (prefix/site_packages/"homebrew-sip.pth").write pth_contents
+          end
+          test do
+            (testpath/"pyproject.toml").write <<~EOS
+              # Specify sip v6 as the build system for the package.
+              [build-system]
+              requires = ["sip >=6, <7"]
+              build-backend = "sipbuild.api"
+              # Specify the PEP 566 metadata for the project.
+              [tool.sip.metadata]
+              name = "fib"
+            EOS
+            (testpath/"fib.sip").write <<~EOS
+              // Define the SIP wrapper to the (theoretical) fib library.
+              %Module(name=fib, language="C")
+              int fib_n(int n);
+              %MethodCode
+                  if (a0 <= 0)
+                  {
+                      sipRes = 0;
+                  }
+                  else
+                  {
+                      int a = 0, b = 1, c, i;
+                      for (i = 2; i <= a0; i++)
+                      {
+                          c = a + b;
+                          a = b;
+                          b = c;
+                      }
+                      sipRes = b;
+                  }
+              %End
+            EOS
+            system "sip-install", "--target-dir", "."
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project sip in the yml format:

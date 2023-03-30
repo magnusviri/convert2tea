@@ -1,0 +1,25 @@
+distributable:
+  url: https://github.com/asciidoc-py/asciidoc-py/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: asciidoc-py/asciidoc-py/tags # reads tags from GitHub releases page
+  strip: /^v/ # remove 'v' prefix from versions
+
+dependencies:
+  python.org: '>=3.7'
+
+build:
+  script: |
+    python-venv.sh {{prefix}}/bin/asciidoc
+    {{prefix}}/venv/bin/pip install .[doc,test]
+    sed -i.bak -e "s|#!.*python$|#!/usr/bin/env python3|" {{prefix}}/bin/asciidoc.py
+    rm -v {{prefix}}/bin/asciidoc.py.bak
+
+test:
+  script: |
+    {{prefix}}/bin/asciidoc.py --version
+    {{prefix}}/bin/asciidoc.py test.adoc
+
+provides:
+  - bin/asciidoc

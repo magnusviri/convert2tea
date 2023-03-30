@@ -1,0 +1,38 @@
+distributable:
+  url: https://github.com/certbot/certbot/archive/refs/tags/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: certbot/certbot/tags
+
+dependencies:
+  python.org: ^3
+  augeas: ""
+  dialog: ""
+  libffi: ""
+  openssl: 1.1.x
+  rust: ""
+
+build:
+  - python-venv.sh {{prefix}}/bin/certbot
+  - run: |
+      if [ -f "tools/venv.sh" ]
+      then
+        ./tools/venv.sh
+      fi
+
+provides:
+  - bin/certbot
+
+test:
+  - run: certbot --version
+  - run: |
+      if [ "$OSTYPE" == "linux-gnu" ]
+      then
+        certbot --help || true
+      fi
+  - run: |
+      if [ "$OSTYPE" == "darwin20.0" ]
+      then
+        certbot --help || true
+      fi

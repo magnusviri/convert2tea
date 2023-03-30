@@ -1,0 +1,50 @@
+distributable:
+       url: https://github.com/facebookexperimental/edencommon/archive/v{{version}}.tar.gz
+       strip-components: 1
+
+    versions:
+      github: facebookexperimental/edencommon/tags
+
+    dependencies:
+      cmake.org: '*'
+      googletest.github.com: '*'
+      folly: '*'
+      gflags: '*'
+      glog: '*'
+
+    build:
+      dependencies:
+        tea.xyz/gx/cmake: '*'
+        tea.xyz/gx/gcc: '*'
+        googletest.github.com: '*'
+      script: |
+        cmake \
+          -DCMAKE_INSTALL_PREFIX={{prefix}} \
+          -DBUILD_SHARED_LIBS=ON \
+          -S . \
+          -B _build
+        cmake --build _build
+        cmake --install _build
+
+    test:
+      dependencies:
+        teejiack/apple/gcc: '*'
+      script: |
+        teejiack/apple/gcc test.cpp \
+          -std=c++17 \
+          -I{{include}} \
+          -L{{lib}} \
+          -L{{folly.lib}} \
+          -L{{boost.lib}} \
+          -L{{glog.lib}} \
+          -ledencommon_utils \
+          -lfolly \
+          -lboost_context-mt \
+          -lglog \
+          -o test
+        assert "eden/common/utils/ProcessNameCache.h" "eden/common/utils.h"
+        assert "ProcessNameCache& getProcessNameCache() {" "{{namespace}}ProcessNameCache& getProcessNameCache() {"
+        assert "ProcessNameHandle lookupProcessName(pid_t pid) {" "{{namespace}}ProcessNameHandle lookupProcessName(pid_t pid) {"
+        ./test $(pgrep -n -f /usr/bin/true) > output
+        echo $'true\n' > expected
+        assert expected output

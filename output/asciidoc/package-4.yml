@@ -1,0 +1,52 @@
+distributable:
+  url: https://github.com/asciidoc-py/asciidoc-py/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: asciidoc-py/asciidoc-py/tags  # reads github *tags*
+  strip: /^v/
+
+dependencies:
+  docbook: any
+  python.org: '>=3.7'
+  source-highlight: any
+
+build:
+  script: |
+    python-venv.sh {{prefix}}/bin/asciidoc
+
+    {{prefix}}/venv/bin/pip install "{{distributable}}" "{{url_for('docbook')}}"
+
+    rm -v {{prefix}}/bin/a2x*.bak
+
+    if which gsed > /dev/null; then
+      # This '-i' argument will make sed create a backup of the original file on macOS;
+      # we need to delete these backup files because they're junk that macOS's sed creates
+      # and `brew audit` will complain about them
+      sed -i.bak -e \
+        "s| '/usr/bin/python$'| '/usr/bin/env python3'|" \
+        {{prefix}}/venv/bin/asciidoc.py
+      sed -i.bak -e \
+        "s|#!/usr/bin/python$|#!/usr/bin/env python3|" \
+        {{prefix}}/venv/bin/a2x.py
+      rm -v {{prefix}}/bin/*.*.bak
+    else
+      echo "gsed not found, not doing macOS-specific sed fixup"
+    fi
+
+
+test:
+  script: |
+    echo -e "== Hello World!\\n" | {{prefix}}/bin/asciidoc
+    {{prefix}}/bin/a2x --doctype manpage --format manpage  --destination-dir="$(mktemp -d)" -v {{prefix}}/share/asciidoc/examples/hello.txt
+
+  output:
+    - "Hello World!"
+    - "wrote:"
+
+provides:
+  - bin/asciidoc
+  - bin/a2x
+  - share/asciidoc/examples/README.txt
+  - share/asciidoc/examples/hello.txt
+  - share/asciidoc/examples/hello.xml

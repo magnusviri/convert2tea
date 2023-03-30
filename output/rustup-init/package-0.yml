@@ -1,0 +1,23 @@
+distributable:
+  url: https://github.com/rust-lang/rustup/archive/{{ version }}.tar.gz
+
+versions:
+  github: rust-lang/rustup/tags
+  strip: v
+
+build:
+  dependencies:
+    rust-lang.org: '>=1.56'
+    rust-lang.org/cargo: '*'
+    freedesktop.org/pkg-config: '*'
+    curl: '*'
+    xz: '*'
+  script:
+    cargo install --features no-self-update --locked --path . --root {{prefix}}
+
+test:
+  - cargo --version
+  - rustc --version
+  - rustup-init -y --version
+  - cd $HOME && echo 'fn main() { println!("Hello World!"); }' > hello.rs && \
+      $HOME/.cargo/bin/rustc hello.rs && ./hello

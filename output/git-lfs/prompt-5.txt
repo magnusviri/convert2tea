@@ -1,0 +1,142 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project fastlane:
+
+
+        class Fastlane < Formula
+          homepage "https://fastlane.tools"
+          url "https://github.com/fastlane/fastlane/archive/2.212.1.tar.gz"
+          head "https://github.com/fastlane/fastlane.git", branch: "master"
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          depends_on "ruby@3.1"
+          on_macos do
+            depends_on "terminal-notifier"
+          end
+          def install
+            ENV["GEM_HOME"] = libexec
+            ENV["GEM_PATH"] = libexec
+            system "gem", "build", "fastlane.gemspec"
+            system "gem", "install", "fastlane-#{version}.gem", "--no-document"
+            (bin/"fastlane").write_env_script libexec/"bin/fastlane",
+              PATH:                            "#{Formula["ruby"].opt_bin}:#{libexec}/bin:$PATH",
+              FASTLANE_INSTALLED_VIA_HOMEBREW: "true",
+              GEM_HOME:                        libexec.to_s,
+              GEM_PATH:                        libexec.to_s
+            # Remove vendored pre-built binary
+            terminal_notifier_dir = libexec.glob("gems/terminal-notifier-*/vendor/terminal-notifier").first
+            (terminal_notifier_dir/"terminal-notifier.app").rmtree
+            if OS.mac?
+              ln_sf(
+                (Formula["terminal-notifier"].opt_prefix/"terminal-notifier.app").relative_path_from(terminal_notifier_dir),
+                terminal_notifier_dir,
+              )
+            end
+          end
+          test do
+            assert_match "fastlane #{version}", shell_output("#{bin}/fastlane --version")
+            actions_output = shell_output("#{bin}/fastlane actions")
+            assert_match "gym", actions_output
+            assert_match "pilot", actions_output
+            assert_match "screengrab", actions_output
+            assert_match "supply", actions_output
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project fastlane:
+
+
+        distributable:
+           url: https://github.com/fastlane/fastlane/archive/{{version}}.tar.gz
+           strip-components: 1
+
+        versions:
+          github: fastlane/fastlane/releases/tags
+
+        dependencies:
+          ruby-lang.org: ^3.1
+          rubygems.org: '*'
+
+        build:
+          dependencies:
+            rubygems.org: '*'
+            tea.xyz/gx/make: '*'
+            tea.xyz/gx/cc: '*'
+          env:
+            GEM_HOME: ${{prefix}}
+            GEM_PATH: ${{prefix}}
+          script: |
+            gem build fastlane.gemspec
+
+            gem install \
+              --no-user-install \
+              --bindir={{prefix}}/gems/bin \
+              --no-document \
+              fastlane-{{version}}.gem
+
+            mkdir "{{prefix}}"/bin
+            mv props/fastlane "{{prefix}}"/bin
+
+            # fails to code sign and non-essential
+            rm -rf "{{prefix}}"/gems/terminal-notifier-*
+
+        provides:
+          - bin/fastlane
+
+        test:
+          env:
+            # or writes a bunch of warnings to stdout
+            LC_ALL: en_US.UTF-8
+            LANG: en_US.UTF-8
+          script: |
+            out="$(fastlane --version 2>/dev/null | tail -n1)"
+            test "$out" = "fastlane {{version}}"
+
+
+
+    Here's an example ruby formula for the project git-lfs:
+
+
+        class GitLfs < Formula
+          homepage "https://git-lfs.github.com/"
+          url "https://github.com/git-lfs/git-lfs/releases/download/v3.3.0/git-lfs-v3.3.0.tar.gz"
+          depends_on "asciidoctor" => :build
+          depends_on "go" => :build
+          depends_on "ronn" => :build
+          depends_on "ruby" => :build
+          def install
+            ENV["GIT_LFS_SHA"] = ""
+            ENV["VERSION"] = version
+            system "make"
+            system "make", "man", "RONN=#{Formula["ronn"].bin}/ronn"
+            bin.install "bin/git-lfs"
+            man1.install Dir["man/man1/*.1"]
+            man5.install Dir["man/man5/*.5"]
+            man7.install Dir["man/man7/*.7"]
+            doc.install Dir["man/html/*.html"]
+          end
+          def caveats
+            <<~EOS
+              Update your git config to finish installation:
+                # Update global git config
+                $ git lfs install
+                # Update system git config
+                $ git lfs install --system
+            EOS
+          end
+          test do
+            system "git", "init"
+            system "git", "lfs", "track", "test"
+            assert_match(/^test filter=lfs/, File.read(".gitattributes"))
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project git-lfs in the yml format:

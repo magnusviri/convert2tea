@@ -1,0 +1,204 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project ansible:
+
+
+        class Ansible < Formula
+          include Language::Python::Virtualenv
+          homepage "https://www.ansible.com/"
+          url "https://files.pythonhosted.org/packages/45/4b/2087a0fe8265828df067e57d7d156426cdc8f7cd94ad3178c6510d81e2c0/ansible-7.4.0.tar.gz"
+          head "https://github.com/ansible/ansible.git", branch: "devel"
+          depends_on "pkg-config" => :build
+          depends_on "rust" => :build
+          depends_on "openssl@1.1"
+          depends_on "python@3.11"
+          depends_on "pyyaml"
+          depends_on "six"
+          uses_from_macos "krb5"
+          uses_from_macos "libffi"
+          uses_from_macos "libxslt"
+          # This will collect requirements from:
+          #   ansible
+          #   docker
+          #   python-neutronclient (OpenStack)
+          #   shade (OpenStack)
+          #   pywinrm (Windows)
+          #   kerberos (Windows)
+          #   boto3 (AWS)
+          #   apache-libcloud (Google GCE)
+          #   passlib (htpasswd core module)
+          #   zabbix-api (Zabbix extras module)
+          #   junos-eznc (Juniper device support)
+          #   jxmlease (Juniper device support)
+          #   dnspython (DNS Lookup - dig)
+          #   pysphere3 (VMware vSphere support)
+          #   python-consul (Consul support)
+          #   requests-credssp (CredSSP support for windows hosts)
+          #   openshift (k8s module support)
+          #   pexpect (expect module support)
+          #   ntc-templates (Parsing semi-structured text)
+          #   proxmoxer (Proxmox VE support)
+          # Automatically updated resources
+          def install
+            venv = virtualenv_create(libexec, "python3.11")
+            # Install all of the resources declared on the formula into the virtualenv.
+            resources.each do |r|
+              # ansible-core provides all ansible binaries
+              if r.name == "ansible-core"
+                venv.pip_install_and_link r
+              else
+                venv.pip_install r
+              end
+            end
+            venv.pip_install_and_link buildpath
+            resource("ansible-core").stage do
+              man1.install Pathname.glob("docs/man/man1/*.1")
+            end
+          end
+          test do
+            ENV["ANSIBLE_REMOTE_TEMP"] = testpath/"tmp"
+            (testpath/"playbook.yml").write <<~EOS
+              ---
+              - hosts: all
+                gather_facts: False
+                tasks:
+                - name: ping
+                  ping:
+            EOS
+            (testpath/"hosts.ini").write [
+              "localhost ansible_connection=local",
+              " ansible_python_interpreter=#{Formula["python@3.11"].opt_bin}/python3.11",
+              "\n",
+            ].join
+            system bin/"ansible-playbook", testpath/"playbook.yml", "-i", testpath/"hosts.ini"
+            # Ensure requests[security] is activated
+            script = "import requests as r; r.get('https://mozilla-modern.badssl.com')"
+            system libexec/"bin/python", "-c", script
+            # Ensure ansible-vault can encrypt/decrypt files.
+            (testpath/"vault-password.txt").write("12345678")
+            (testpath/"vault-test-file.txt").write <<~EOS
+              ---
+              content:
+                hello: world
+            EOS
+            system bin/"ansible-vault", "encrypt",
+                   "--vault-password-file", testpath/"vault-password.txt",
+                   testpath/"vault-test-file.txt"
+            system bin/"ansible-vault", "decrypt",
+                   "--vault-password-file", testpath/"vault-password.txt",
+                   testpath/"vault-test-file.txt"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project ansible:
+
+
+        distributable:
+          url: https://github.com/ansible/ansible/archive/v{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: ansible/ansible/tags  # reads github *tags*
+          strip: /^v/
+
+        dependencies:
+          python.org: '>=3.7'
+
+        build:
+          script: |
+            python-venv.sh {{prefix}}/bin/ansible
+
+            # manually register all the ansible-* executables with tea
+            #FIXME dirty hack, replace with a proper solution
+            for _EXEC in {{prefix}}/venv/bin/ansible-*; do
+              CMD_NAME="${_EXEC##*/}" # get text after the last slash (the command name)
+              TRG_BIN_NAME="{{prefix}}/bin/$CMD_NAME"
+              cp -v  {{prefix}}/bin/ansible $TRG_BIN_NAME # copy the tea-configured executable with the correct name
+              # replace the original 'ansible' with the correct $CMD_NAME
+              sed -i.bak -e \
+                "s|/bin/ansible|/bin/$CMD_NAME|" \
+                $TRG_BIN_NAME
+            done
+
+            # install paramiko, a python ssh library sometimes used with ansible
+            {{prefix}}/venv/bin/pip install paramiko #FIXME should we pin a version?
+
+            rm -v {{prefix}}/bin/ansible-*.bak
+
+
+        test:
+          script: |
+            ansible --version
+            ansible-playbook playbook.yml -i hosts.ini
+
+            #FIXME below is a test from the brew formula, but I'm not sure what it's testing
+            # ^ especially considering that 'requests' is not a part of ansible's dependencies
+            # Ensure requests[security] is activated
+            # py_script="import requests as r; r.get('https://mozilla-modern.badssl.com')"
+            # {{prefix}}/venv/bin/python -c "$py_script"
+
+            # Ensure ansible-vault can encrypt/decrypt files.
+            echo $SECRET_MESSAGE > vault-test-file.txt
+            echo $VAULT_PASSWORD > vault-password.txt
+
+            ansible-vault encrypt --vault-password-file vault-password.txt vault-test-file.txt
+            test "$(cat vault-test-file.txt)" != "$SECRET_MESSAGE" # encrypted
+
+            ansible-vault decrypt --vault-password-file vault-password.txt vault-test-file.txt
+            test "$(cat vault-test-file.txt)" = "$SECRET_MESSAGE" # decrypted
+
+            # ensure paramiko is installed
+            {{prefix}}/venv/bin/python -c "import paramiko"
+
+          env:
+            VAULT_PASSWORD: "123456789"
+            SECRET_MESSAGE: "Hello world!"
+
+
+        provides:
+          - bin/ansible
+          - bin/ansible-config
+          - bin/ansible-connection
+          - bin/ansible-console
+          - bin/ansible-doc
+          - bin/ansible-galaxy
+          - bin/ansible-inventory
+          - bin/ansible-playbook
+          - bin/ansible-pull
+          - bin/ansible-test
+          - bin/ansible-vault
+
+
+
+    Here's an example ruby formula for the project ipython:
+
+
+        class Ipython < Formula
+          include Language::Python::Virtualenv
+          homepage "https://ipython.org/"
+          url "https://files.pythonhosted.org/packages/a7/e1/7c277c1dd0b0520bf07070c3921ff1986a2eb3db704ad91f0ac46fb42d8f/ipython-8.11.0.tar.gz"
+          head "https://github.com/ipython/ipython.git", branch: "master"
+          depends_on "pygments"
+          depends_on "python@3.11"
+          depends_on "six"
+          def install
+            python3 = "python3.11"
+            venv = virtualenv_create(libexec, python3)
+            res = resources.reject { |r| r.name == "appnope" && OS.linux? }
+            venv.pip_install res
+            venv.pip_install_and_link buildpath
+            # Install man page
+            man1.install libexec/"share/man/man1/ipython.1"
+          end
+          test do
+            assert_equal "4", shell_output("#{bin}/ipython -c 'print(2+2)'").chomp
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project ipython in the yml format:

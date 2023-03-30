@@ -1,0 +1,86 @@
+distributable:
+  url: https://github.com/httpie/httpie/archive/refs/tags/{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 3.2.1
+
+dependencies:
+  python.org: 3.11
+  pygments: all
+
+build:
+  script: |
+    mkdir -p {{prefix}}/libexec
+    cp -a . {{prefix}}/libexec/httpie
+    sed -i '' "s|{{prefix}}|PREFIX|" \
+      {{prefix}}/libexec/httpie/httpie/internal/__init__.py
+    sed -i '' "s|{{prefix}}|PREFIX|" \
+      {{prefix}}/libexec/httpie/httpie/__init__.py
+    chmod +x {{prefix}}/libexec/httpie/httpie/__main__.py
+    ln -sf {{prefix}}/libexec/httpie/httpie/__main__.py \
+      {{prefix}}/bin/http
+    ln -sf {{prefix}}/libexec/httpie/httpie/__main__.py \
+      {{prefix}}/bin/https
+    ln -sf {{prefix}}/libexec/httpie/httpie/__main__.py \
+      {{prefix}}/bin/httpie
+
+provides:
+  - bin/http
+  - bin/https
+  - bin/httpie
+
+test:
+  fixture: |
+    GET {{prefix}}/test
+    ACCEPT: text/plain
+
+  script: |
+    cd {{prefix}}
+    http $FIXTURE -v -h Accept:application/json
+    http $FIXTURE --session=test session==test123
+    http $FIXTURE http:==https: --print=h --headers
+    http $FIXTURE HEAD | grep -i ^http.*
+    https $FIXTURE HEAD | grep -i ^http.*
+    http $FIXTURE 'Cookie: foo=bar;baz=bar'
+    http $FIXTURE 'Cookie: foo="bar=123"' 
+    https $FIXTURE --verify=no GET | jq .args
+    http $FIXTURE :443/headers User-Agent:'Mozilla/5.0' Dnt:1 \
+      X-Custom-Header:Test X-Custom-Header:Test2 --ignore-stdin
+    http $FIXTURE -u "user:pass" --auth-type=basic
+    http $FIXTURE --auth-type=digest --auth=user:pass
+    http $FIXTURE --auth-type=netrc -a my-host
+    http $FIXTURE \
+      PUT :8000 'Content-Type: text/plain' < $(brew --prefix)/README.md
+    http $FIXTURE --json :5000/foo?bar=http://test.com/test/test \
+      order_id:=5106 \
+      discounts:='[{"percent": 25, "reason": "End of year promo"}]' \
+      'promo_code==drei' | jq .
+    http $FIXTURE --form POST :8000/foo file@$(brew --prefix)/README.md
+    http $FIXTURE --multipart POST :8000/foo foo=bar \
+      hello=@$(brew --prefix)/README.md Content-Type:image/jpeg
+    https $FIXTURE --stream ::1:8080 h2get \
+      ca-bundle=/usr/local/etc/openssl/cert.pem \
+      ca-path=/usr/local/etc/openssl/certs \
+      stream=10:5:10:5:5:5:5:10:5:10 \
+      http:method='GET'
+    http $FIXTURE --offline POST :5000/parse \
+      @- <<<'{"lang": "json", "code": "print(\"Hello, world!\")"}'
+    http $FIXTURE --verify=no --cert=$(brew --prefix)/etc/openssl/cert.pem \
+      https://httpbin.org/get | jq .
+    http $FIXTURE @- <<< $(brew --prefix)/README.md Accept:text/plain
+    http $FIXTURE --follow --max-redirects 3 :8000/foo | jq .headers
+    http $FIXTURE :8000/foo/42 Cache-Control:max-age=0 \
+      If-None-Match:42 --offline
+    echo '{"requests": [{"method": "GET", "url": "{{prefix}}/test"}]}' \
+      | http $FIXTURE @/dev/stdin | jq .[0].status
+    http $FIXTURE --session=test
+    http $FIXTURE --port {{random.port}} --timeout 2 :$PORT/
+    http $FIXTURE --style=monokai --pretty=format +X GET {{prefix}} | \
+      grep -q "$'<span class=\"hljs-Header\">POST /"
+    http $FIXTURE --style=algolia --json POST {{prefix}} \
+      name=John \ email=j@example.org | grep -q '<span class="algolia-value-string">John'
+    http $FIXTURE --style=arduino --json POST {{prefix}} \
+      name=John \ email=j@example.org | grep -q '\\"name\\": \\"John\\"'
+    http $FIXTURE --style=emacs --json POST {{prefix}} \
+      name=John \ email=j@example.org | grep -q 'name: John'

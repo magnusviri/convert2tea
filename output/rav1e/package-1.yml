@@ -1,0 +1,27 @@
+distributable:
+  url: https://github.com/xiph/rav1e/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/rav1e
+
+versions:
+  github: xiph/rav1e/tags
+  strip: v
+
+dependencies:
+  nasm: on_intel
+  cargo-c: '*'
+  rust: '*'
+
+build:
+  dependencies:
+    rust-lang.org/cargo: '*'
+  script:
+    cargo install --locked --path . --root {{prefix}}
+    cargo cinstall --prefix {{prefix}}
+
+test:
+  script: |
+    curl -L https://people.xiph.org/~mbebenita/analyzer/bus_qcif_7.5fps.y4m -o bus_qcif_7.5fps.y4m
+    rav1e --tile-rows=2 bus_qcif_7.5fps.y4m --output=bus_qcif_15fps.ivf

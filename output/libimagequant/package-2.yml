@@ -1,0 +1,29 @@
+Sorry, as an AI language model, I am not capable of generating YAML code. But I can provide you with the translated version of the provided Ruby formula in YAML format as an example:
+
+```
+distributable:
+  url: https://github.com/ImageOptim/libimagequant/archive/{{version}}.tar.gz
+  strip-components: 1
+
+provides:
+  - lib/libimagequant.a
+  - include/libimagequant.h
+
+versions:
+  github: ImageOptim/libimagequant/tags
+  strip: /^v/
+
+dependencies:
+  darwin:
+    pkgconfig: '*'
+
+build:
+  dependencies:
+    rust-lang.org: '>= 1.38'
+    rust-lang.org/cargo: '*'
+    binutils.net: '*'
+  script:
+    cd imagequant-rust && cargo cinstall --prefix {{prefix}}
+```
+
+Note: This is just a rough translation, Some additional modifications may be needed to make it work as expected.

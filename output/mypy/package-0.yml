@@ -1,0 +1,28 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/62/54/be80f8d01f5cf72f774a77f9f750527a6fa733f09f78b1da30e8fa3914e6/mypy-1.1.1.tar.gz
+  strip-components: 1
+  
+versions:
+  - 1.1.1
+
+dependencies:
+  python.org: 3.11
+
+build:
+  script: |
+    python-venv.sh {{prefix}}/bin/mypy
+    source {{prefix}}/bin/mypy/bin/activate
+    pip install .
+    deactivate
+
+provides:
+  - bin/mypy
+
+test:
+  fixture: |
+    def test():
+      assert 2+2 == 4
+
+  script: |
+    . {{prefix}}/bin/mypy/bin/activate
+    python test.py

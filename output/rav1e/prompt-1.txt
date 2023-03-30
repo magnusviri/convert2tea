@@ -1,0 +1,98 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project dua-cli:
+
+
+        class DuaCli < Formula
+          homepage "https://lib.rs/crates/dua-cli"
+          url "https://github.com/Byron/dua-cli/archive/refs/tags/v2.19.2.tar.gz"
+          depends_on "rust" => :build
+          def install
+            system "cargo", "install", *std_cargo_args
+          end
+          test do
+            # Test that usage is correct for these 2 files.
+            (testpath/"empty.txt").write("")
+            (testpath/"file.txt").write("01")
+            expected = <<~EOS
+              \e[32m      0  B\e[39m #{testpath}/empty.txt
+              \e[32m      2  B\e[39m #{testpath}/file.txt
+              \e[32m      2  B\e[39m total
+            EOS
+            assert_equal expected, shell_output("#{bin}/dua -A #{testpath}/*.txt")
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project dua-cli:
+
+
+        distributable:
+          url: https://github.com/Byron/dua-cli/archive/refs/tags/v{{ version }}.tar.gz
+          strip-components: 1
+
+        provides:
+          - bin/dua
+
+        versions:
+          github: Byron/dua-cli/tags
+          strip: /v/
+
+        dependencies:
+          zlib.net: ^1
+
+        build:
+          dependencies:
+            rust-lang.org: '>=1.60'
+            rust-lang.org/cargo: '*'
+          script:
+            cargo install --locked --path . --root {{prefix}}
+
+        test:
+          script: |
+            for x in foo bar baz bat; do
+              echo $x > $x
+            done
+            dua
+
+
+
+    Here's an example ruby formula for the project rav1e:
+
+
+        class Rav1e < Formula
+          homepage "https://github.com/xiph/rav1e"
+          head "https://github.com/xiph/rav1e.git", branch: "master"
+          stable do
+            url "https://github.com/xiph/rav1e/archive/v0.6.3.tar.gz"
+            # keep the version in sync
+          end
+          livecheck do
+            url :stable
+            regex(/^v?(\d+(?:\.\d+)+)$/i)
+          end
+          depends_on "cargo-c" => :build
+          depends_on "rust" => :build
+          on_intel do
+            depends_on "nasm" => :build
+          end
+          def install
+            buildpath.install resource("Cargo.lock") if build.stable?
+            system "cargo", "install", *std_cargo_args
+            system "cargo", "cinstall", "--prefix", prefix
+          end
+          test do
+            resource("homebrew-bus_qcif_7.5fps.y4m").stage do
+              system "#{bin}/rav1e", "--tile-rows=2",
+                                           "bus_qcif_7.5fps.y4m",
+                                           "--output=bus_qcif_15fps.ivf"
+            end
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project rav1e in the yml format:

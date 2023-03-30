@@ -1,0 +1,32 @@
+distributable:
+  url: https://files.pythonhosted.org/packages/c3/42/3ee6d2da0694d8b71f9a781e81902e7e176448e025376b486172c6f269bd/jupyterlab-{{version}}.tar.gz
+
+versions:
+  pypi: jupyterlab
+
+dependencies:
+  python.org: ">=3.7"
+  nodejs.org: "*"
+  pandoc.org: "*"
+  pyyaml.org: "*"
+  ipython.org: "*"
+  pygments.org: "*"
+  zeromq.org: "*"
+
+build:
+  dependencies:
+    rust-lang.org: ">=1.48.0"
+    tea.xyz/gx/make: "*"
+    tea.xyz/gx/cc: c99
+  script: |
+    npm install -g yarn
+    yar install
+    jupyter lab build
+
+test: |
+  jupyter --version
+  jupyter-lab --version
+
+provides:
+  - bin/jupyter
+  - bin/jupyter-lab

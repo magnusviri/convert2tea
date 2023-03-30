@@ -1,0 +1,32 @@
+distributable:
+  url: https://github.com/ipython/ipython/archive/{version}.tar.gz
+  strip-components: 1
+
+versions:
+  github: ipython/ipython/tags
+  strip: /^rel-/
+
+dependencies:
+  python.org: ">=3.7"
+  pygments: any
+
+build:
+  script: |
+    virtualenv {{prefix}}/venv --python=python3.11
+    {{prefix}}/venv/bin/pip install --ignore-installed --no-deps --no-binary :all: :python-dateutil: :pickleshare: pygments simplegeneric traitlets
+
+    # ipython requires traitlets to be installed first
+    {{prefix}}/venv/bin/pip install --ignore-installed --no-deps --no-binary :all: traitlets
+    {{prefix}}/venv/bin/pip install --ignore-installed --no-deps .
+
+test:
+  script: |
+    {{prefix}}/venv/bin/ipython --version
+
+  env:
+    FOO: BAR
+
+provides:
+  - bin/ipython
+  - bin/ipython3
+  - share/man/man1/ipython.1

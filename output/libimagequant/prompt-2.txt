@@ -1,0 +1,130 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project exa:
+
+
+        class Exa < Formula
+          homepage "https://the.exa.website"
+          url "https://github.com/ogham/exa/archive/v0.10.1.tar.gz"
+          revision 1
+          head "https://github.com/ogham/exa.git", branch: "master"
+          livecheck do
+            url :stable
+            strategy :github_latest
+          end
+          depends_on "pandoc" => :build
+          depends_on "pkg-config" => :build
+          depends_on "rust" => :build
+          depends_on "libgit2"
+          def install
+            system "cargo", "install", *std_cargo_args
+            if build.head?
+              bash_completion.install "completions/bash/exa"
+              zsh_completion.install  "completions/zsh/_exa"
+              fish_completion.install "completions/fish/exa.fish"
+            else
+              # Remove after >0.10.1 build
+              bash_completion.install "completions/completions.bash" => "exa"
+              zsh_completion.install  "completions/completions.zsh"  => "_exa"
+              fish_completion.install "completions/completions.fish" => "exa.fish"
+            end
+            args = %w[
+              --standalone
+              --to=man
+            ]
+            system "pandoc", *args, "man/exa.1.md", "-o", "exa.1"
+            system "pandoc", *args, "man/exa_colors.5.md", "-o", "exa_colors.5"
+            man1.install "exa.1"
+            man5.install "exa_colors.5"
+          end
+          test do
+            testfile = "test.txt"
+            touch testfile
+            assert_match testfile, shell_output(bin/"exa")
+            # Test git integration
+            flags = "--long --git --no-permissions --no-filesize --no-user --no-time"
+            exa_output = proc { shell_output("#{bin}/exa #{flags}").lines.grep(/#{testfile}/).first.split.first }
+            system "git", "init"
+            assert_equal "-N", exa_output.call
+            system "git", "add", testfile
+            assert_equal "N-", exa_output.call
+            system "git", "commit", "-m", "Initial commit"
+            assert_equal "--", exa_output.call
+            linkage_with_libgit2 = (bin/"exa").dynamically_linked_libraries.any? do |dll|
+              next false unless dll.start_with?(HOMEBREW_PREFIX.to_s)
+              File.realpath(dll) == (Formula["libgit2"].opt_lib/shared_library("libgit2")).realpath.to_s
+            end
+            assert linkage_with_libgit2, "No linkage with libgit2! Cargo is likely using a vendored version."
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project exa:
+
+
+        distributable:
+          url: https://github.com/ogham/exa/archive/refs/tags/v{{version}}.tar.gz
+          strip-components: 1
+
+        provides:
+          - bin/exa
+
+        versions:
+          github: ogham/exa/tags
+          strip: /^v/
+
+        dependencies:
+          darwin:
+            zlib.net: ^1
+
+        build:
+          dependencies:
+            rust-lang.org: '>=1.60'
+            rust-lang.org/cargo: '*'
+          script:
+            cargo install --locked --path . --root {{prefix}}
+
+        test:
+          script: |
+            exa --version
+
+
+    Here's an example ruby formula for the project libimagequant:
+
+
+        class Libimagequant < Formula
+          homepage "https://pngquant.org/lib/"
+          url "https://github.com/ImageOptim/libimagequant/archive/4.1.1.tar.gz"
+          license :cannot_represent
+          depends_on "cargo-c" => :build
+          depends_on "rust" => :build
+          def install
+            cd "imagequant-sys" do
+              system "cargo", "cinstall", "--prefix", prefix
+            end
+          end
+          test do
+            (testpath/"test.c").write <<~EOS
+              #include <libimagequant.h>
+              int main()
+              {
+                liq_attr *attr = liq_attr_create();
+                if (!attr) {
+                  return 1;
+                } else {
+                  liq_attr_destroy(attr);
+                  return 0;
+                }
+              }
+            EOS
+            system ENV.cc, "test.c", "-I#{include}", "-L#{lib}", "-limagequant", "-o", "test"
+            system "./test"
+          end
+        end
+
+
+
+    Based on the examples provided, write a formula for the project libimagequant in the yml format:
