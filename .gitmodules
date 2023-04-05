@@ -1,0 +1,6 @@
+[submodule "pantry"]
+	path = pantry
+	url = https://github.com/teaxyz/pantry.git
+[submodule "homebrew-core"]
+	path = homebrew-core
+	url = https://github.com/Homebrew/homebrew-core.git

@@ -11,7 +11,7 @@ def parse(args):
     )
     parser.add_argument("project", type=str, nargs=1, help="Project name")
     parser.add_argument(
-        "url", type=str, nargs=1, help="URL to raw Homebrew project formula"
+        "filepath", type=str, nargs=1, help="Path to Homebrew .rb formula to convert"
     )
     parser.add_argument(
         "-v", "--version", action="store_true", help="print version and exit"

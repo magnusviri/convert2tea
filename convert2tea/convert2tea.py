@@ -6,9 +6,9 @@ Converts a brew formula to tea using a trained AI model.
 
 __author__ = "James Reynolds"
 __email__ = "magnusviri@me.edu"
-__copyright__ = ""
+__copyright__ = "2023"
 __license__ = "MIT"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 from pprint import pprint
 import random
@@ -77,28 +77,12 @@ def cleanupBrewFormula(formula):
                 wait_for = ""
     return cleanedFormula
 
-
-def convertFiles(language, project, url, dry_run):
-    matches = re.match(
-        "^https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/(.*).rb",
-        url,
-    )
-    if matches:
-        source_url = url
-    else:
-        sys.stderr.write(
-            f"Your url must begin with 'https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/' and end with '.rb'\n"
-        )
-        exit(-1)
-
+def convertFiles(language, project, filepath, dry_run):
+    print(language, project, filepath, dry_run)
     # Get source
-    print(source_url)
-    session = requests.Session()
-    response = session.get(source_url)
-    if response.status_code != 200:
-        sys.stderr.write(f"Unable to get source from {source_url}\n")
-        exit(-1)
-    brew_source = cleanupBrewFormula(response.text)
+    print(filepath)
+    brewfile = open(filepath, "r")
+    brew_source = cleanupBrewFormula(brewfile.read())
 
     # Get example files
     if language not in examples.examples:
@@ -108,22 +92,16 @@ def convertFiles(language, project, url, dry_run):
     example_project = random_example["name"]
 
     # brew example
-    example1_url = "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/{}".format(random_example["brew"])
+    example1_url = "homebrew-core/Formula/{}".format(random_example["brew"])
     print(example1_url)
-    response = session.get(example1_url)
-    if response.status_code != 200:
-        sys.stderr.write(f"Unable to get source from {example1_url}\n")
-        exit(-1)
-    brew_example = cleanupBrewFormula(response.text)
+    example1file = open(example1_url, "r")
+    brew_example = cleanupBrewFormula(example1file.read())
 
     # tea example
-    example2_url = "https://raw.githubusercontent.com/teaxyz/pantry/main/projects/{}/package.yml".format(random_example["tea"])
+    example2_url = "pantry/projects/{}/package.yml".format(random_example["tea"])
     print(example2_url)
-    response = session.get(example2_url)
-    if response.status_code != 200:
-        sys.stderr.write(f"Unable to get source from {example2_url}\n")
-        exit(-1)
-    tea_example = response.text
+    example2file = open(example2_url, "r")
+    tea_example = example2file.read()
 
     prompt = getPrompt(brew_example, tea_example, example_project, brew_source, project)
     print(prompt)
@@ -161,7 +139,7 @@ def main():
     if options.version:
         print(__version__)
     else:
-        convertFiles(options.project[0], options.language[0], options.url[0], options.dry_run)
+        convertFiles(options.language[0], options.project[0], options.filepath[0], options.dry_run)
 
 
 if __name__ == "__main__":
