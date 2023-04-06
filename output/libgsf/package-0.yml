@@ -1,0 +1,41 @@
+
+distributable:
+  url: https://download.gnome.org/sources/libgsf/{{ version.major }}.{{ version.minor }}/libgsf-{{ version.raw }}.tar.xz
+
+provides:
+  - bin/gsf
+
+interprets:
+  extensions:
+    - mso
+    - wmf
+    - mse
+    - sxi
+    - stc
+    - wmz
+    - xls
+    - wri
+    - msp
+    - wpd
+    - shw
+    - wmf
+    - vsd
+
+versions:
+  regex: /^libgsf-(\d+(?:\.\d+)+)$/
+
+dependencies:
+  glib: '*'
+
+build:
+  script: |
+    ./configure $ARGS
+    make -j {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --disable-silent-rules
+      - --prefix={{prefix}}
+  fetch:
+    patch:
+      - https://gitlab

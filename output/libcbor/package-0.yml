@@ -1,0 +1,25 @@
+
+distributable:
+  url: https://github.com/PJK/libcbor/archive/v{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: PJK/libcbor/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    cmake: '*'
+  script: |
+    mkdir build
+    cd build
+    cmake .. -DWITH_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON {{ prefix }}
+    make --jobs {{ hw.concurrency }}
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc example.c -L#{lib} -lcbor -o example
+    ./example

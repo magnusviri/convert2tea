@@ -1,0 +1,106 @@
+cpanminus
+
+class Cpanminus < Formula
+  homepage "https://github.com/miyagawa/cpanminus"
+  # Don't use git tags, their naming is misleading
+  url "https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-1.7046.tar.gz"
+  license any_of: ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
+  version_scheme 1
+  head "https://github.com/miyagawa/cpanminus.git", branch: "devel"
+  uses_from_macos "perl"
+  def install
+    cd "App-cpanminus" if build.head?
+    system "perl", "Makefile.PL", "INSTALL_BASE=#{prefix}",
+                                  "INSTALLSITEMAN1DIR=#{man1}",
+                                  "INSTALLSITEMAN3DIR=#{man3}"
+    system "make", "install"
+  end
+  def post_install
+    cpanm_lines = (bin/"cpanm").read.lines
+    return if cpanm_lines.first.match?(%r{^#!/usr/bin/env perl})
+    ohai "Adding `/usr/bin/env perl` shebang to `cpanm`..."
+    cpanm_lines.unshift "#!/usr/bin/env perl\n"
+    (bin/"cpanm").atomic_write cpanm_lines.join
+  end
+  test do
+    assert_match "cpan.metacpan.org", stable.url, "Don't use git tags, their naming is misleading"
+    system "#{bin}/cpanm", "--local-lib=#{testpath}/perl5", "Test::More"
+  end
+end
+
+
+distributable:
+  url: https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: miyagawa/cpanminus/tags
+  ignore:
+    - /^1.9/   # invalid versions in the tags for some reason
+    - /^1.79/  # ^^
+    - /^1.71/  # ^^ like wtf?
+
+dependencies:
+  perl.org: '*'
+
+companions:
+  tea.xyz/gx/make: '*'
+
+provides:
+  - bin/cpanm
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    perl Makefile.PL INSTALL_BASE={{prefix}}
+    make install
+
+    fix-shebangs.ts {{prefix}}/bin/cpanm
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script:
+    cpanm --verbose --local-lib=./out Test::More
+
+
+class Liblqr < Formula
+  homepage "https://liblqr.wikidot.com/"
+  revision 1
+  head "https://github.com/carlobaldassi/liblqr.git", branch: "master"
+  stable do
+    url "https://github.com/carlobaldassi/liblqr/archive/v0.4.2.tar.gz"
+    # Fix -flat_namespace being used on Big Sur and later.
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-pre-0.4.2.418-big_sur.diff"
+    end
+  end
+  depends_on "pkg-config" => :build
+  depends_on "glib"
+  def install
+    system "./configure", *std_configure_args, "--enable-install-man"
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <lqr.h>
+      int main() {
+        guchar* buffer = calloc(1, sizeof(guchar));
+        LqrCarver *carver = lqr_carver_new(buffer, 1, 1, 1);
+        if (carver == NULL) return 1;
+        lqr_carver_destroy(carver);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c",
+                   "-I#{include}/lqr-1",
+                   "-I#{Formula["glib"].opt_include}/glib-2.0",
+                   "-I#{Formula["glib"].opt_lib}/glib-2.0/include",
+                   "-L#{lib}", "-llqr-1"
+    system "./a.out"
+  end
+end
+
+
+liblqr

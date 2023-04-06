@@ -1,0 +1,127 @@
+aria2
+
+class Aria2 < Formula
+  homepage "https://aria2.github.io/"
+  url "https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0.tar.xz"
+  revision 1
+  depends_on "pkg-config" => :build
+  depends_on "gettext"
+  depends_on "libssh2"
+  depends_on "sqlite"
+  uses_from_macos "libxml2"
+  uses_from_macos "zlib"
+  on_linux do
+    depends_on "openssl@1.1"
+  end
+  def install
+    ENV.cxx11
+    args = %W[
+      --disable-dependency-tracking
+      --prefix=#{prefix}
+      --with-libssh2
+      --without-gnutls
+      --without-libgmp
+      --without-libnettle
+      --without-libgcrypt
+    ]
+    if OS.mac?
+      args << "--with-appletls"
+      args << "--without-openssl"
+    else
+      args << "--without-appletls"
+      args << "--with-openssl"
+    end
+    system "./configure", *args
+    system "make", "install"
+    bash_completion.install "doc/bash_completion/aria2c"
+  end
+  test do
+    system "#{bin}/aria2c", "https://brew.sh/"
+    assert_predicate testpath/"index.html", :exist?, "Failed to create index.html!"
+  end
+end
+
+
+distributable:
+  url: https://github.com/aria2/aria2/releases/download/release-{{ version }}/aria2-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: aria2/aria2
+  strip: /^aria2 /
+
+provides:
+  - bin/aria2c
+
+dependencies:
+  zlib.net: ^1
+  openssl.org: ^1
+  libexpat.github.io: '*'
+  sqlite.org: ^3
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnupg.org/libgcrypt: ^1
+    gnupg.org/libgpg-error: ^1
+    freedesktop.org/pkg-config: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --with-openssl
+      - --with-libgcrypt
+
+test: |
+  aria2c -v
+  aria2c https://tea.xyz
+  aria2c --seed-time=0 "magnet:?xt=urn:btih:d984f67af9917b214cd8b6048ab5624c7df6a07a&tr=https%3A%2F%2Facademictorrents.com%2Fannounce.php&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce"
+
+class Capstone < Formula
+  homepage "https://www.capstone-engine.org/"
+  url "https://github.com/capstone-engine/capstone/archive/4.0.2.tar.gz"
+  head "https://github.com/capstone-engine/capstone.git", branch: "next"
+  def install
+    ENV["HOMEBREW_CAPSTONE"] = "1"
+    ENV["PREFIX"] = prefix
+    system "./make.sh"
+    system "make", "install", "PREFIX=#{prefix}"
+  end
+  test do
+    # code comes from https://www.capstone-engine.org/lang_c.html
+    (testpath/"test.c").write <<~EOS
+      #include <stdio.h>
+      #include <inttypes.h>
+      #include <capstone/capstone.h>
+      #define CODE "\\x55\\x48\\x8b\\x05\\xb8\\x13\\x00\\x00"
+      int main()
+      {
+        csh handle;
+        cs_insn *insn;
+        size_t count;
+        if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK)
+          return -1;
+        count = cs_disasm(handle, CODE, sizeof(CODE)-1, 0x1000, 0, &insn);
+        if (count > 0) {
+          size_t j;
+          for (j = 0; j < count; j++) {
+            printf("0x%"PRIx64":\\t%s\\t\\t%s\\n", insn[j].address, insn[j].mnemonic,insn[j].op_str);
+          }
+          cs_free(insn, count);
+        } else
+          printf("ERROR: Failed to disassemble given code!\\n");
+        cs_close(&handle);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-lcapstone", "-o", "test"
+    system "./test"
+  end
+end
+
+
+capstone

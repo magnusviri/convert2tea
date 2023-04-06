@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/gnuplot/gnuplot/{{version}}/gnuplot-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 5.4.6
+
+dependencies:
+  pkg-config.org: '*'
+  gd.freedesktop.org: '*'
+  libcerf.net: '*'
+  lua.org: '*'
+  pango.org: '*'
+  qt.io@5.12: '*'
+  readline.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    tea.xyz/gx/make: '*'
+    autoconf.gnu.org: '*'
+    automake.gnu.org: '*'
+    libtool.gnu.org: '*'
+  script: |
+    ./prepare
+    ./configure --prefix={{prefix}} \
+    --with-readline={{dependencies.

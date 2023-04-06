@@ -1,0 +1,23 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/cscope/cscope/v{{ version.raw }}/cscope-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  stable: https://downloads.sourceforge.net/project/cscope/cscope/
+  regex: /cscope[._-]v?(?<version>[^"],*)\.t/
+
+livecheck:
+  url: https://downloads.sourceforge.net/project/cscope/cscope/
+  regex: /cscope[._-]v?(?<version>[^"],*)\.t/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      ncurses: '*'
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}" --mandir="{{man}}"
+    make --jobs {{ hw

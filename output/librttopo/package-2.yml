@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://git.osgeo.org/gitea/rttopo/librttopo/archive/librttopo-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.1.0
+
+source:
+  git: https://git.osgeo.org/gitea/rttopo/librttopo.git
+  branch: master
+
+build:
+  dependencies:
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+    gnu.org/libtool: '*'
+    geos: '*'
+  script: |
+    ./autogen.sh
+    ./configure --prefix={{ prefix }}
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -o test -I{{ include }} -L{{ lib }} -lrttopo
+    ./test

@@ -1,0 +1,36 @@
+
+distributable:
+  url: https://ftp.gnu.org/gnu/findutils/findutils-{{ version }}.tar.xz
+  mirrors:
+    - https://ftpmirror.gnu.org/findutils/findutils-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: gnu/findutils
+  strip: /^findutils /
+
+provides:
+  - bin/find
+  - bin/xargs
+
+dependencies:
+  openssl.org: ^1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --program-prefix=g # only applies to mac
+
+test: |
+  find . -name HOMEBREW
+
+post_install:
+  (var/"locate").mkpath

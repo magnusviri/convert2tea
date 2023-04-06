@@ -1,0 +1,35 @@
+
+distributable:
+  url: https://github.com/hercules-team/augeas/archive/refs/tags/release-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: hercules-team/augeas/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    autoconf: '*'
+    automake: '*'
+    bison: '*'
+    libtool: '*'
+    pkg-config: '*'
+    readline: '*'
+  working-directory: .
+  script: |
+    ./autogen.sh
+
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }}
+    make install
+
+provides:
+  - bin/augtool
+  - bin/augprint
+
+test:
+  fixture: |
+    192.168.0.1 brew.sh test
+  script: |
+    out="$(

@@ -1,0 +1,24 @@
+
+distributable:
+  url: https://download.open-mpi.org/release/hwloc/v{{ version.raw }}/hwloc-{{ version.raw }}.tar.bz2
+  strip-components: 1
+
+versions:
+  github: open-mpi/hwloc
+  url: https://www.mail-archive.com/hwloc-announce@lists.open-mpi.org/
+  regex: /[\s,>]v?(\d+(?:\.\d+)+)(?:\s*?,|\s*?released)/i
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      pkg-config: '*'
+    darwin:
+      libxml2: '*'
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/make: '*'
+  head_dependencies:
+    linux:
+      gnu.org/autoconf: '*'
+      gnu.org/automake: '*'
+      gnu

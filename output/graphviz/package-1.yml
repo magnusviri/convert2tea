@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://gitlab.com/graphviz/graphviz.git/archive/{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  git:
+    url: https://gitlab.com/graphviz/graphviz.git/tags.atom
+    condition: tag.title
+  ignore: /^v?(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:\.\d+)*(?:[a-z]\d*)?$/
+
+detect:
+  cmd: dot --version
+  regex: (?<version>\d+\.\d+\.\d+)
+
+dependencies:
+  curl.se: '>=7'
+  gd: '*'
+  gts: '*'
+  libpng: '*'
+  librsvg: '*'
+  libtool: '*'
+  pango: '*'
+
+provides:
+  bin/dot
+  bin/gvpack
+  bin/g

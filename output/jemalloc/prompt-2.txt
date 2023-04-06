@@ -1,0 +1,100 @@
+jansson
+
+class Jansson < Formula
+  homepage "https://digip.org/jansson/"
+  url "https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz"
+  def install
+    system "./configure", *std_configure_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <jansson.h>
+      #include <assert.h>
+      int main()
+      {
+        json_t *json;
+        json_error_t error;
+        json = json_loads("\\"foo\\"", JSON_DECODE_ANY, &error);
+        assert(json && json_is_string(json));
+        json_decref(json);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-ljansson", "-o", "test"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://github.com/akheron/jansson/releases/download/v{{ version.raw }}/jansson-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: akheron/jansson/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc fixture.c -ljansson
+    ./a.out
+
+class Jemalloc < Formula
+  homepage "http://jemalloc.net/"
+  url "https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2"
+  head do
+    url "https://github.com/jemalloc/jemalloc.git", branch: "dev"
+    depends_on "autoconf" => :build
+    depends_on "docbook-xsl" => :build
+  end
+  def install
+    args = %W[
+      --disable-debug
+      --prefix=#{prefix}
+      --with-jemalloc-prefix=
+    ]
+    if build.head?
+      args << "--with-xslroot=#{Formula["docbook-xsl"].opt_prefix}/docbook-xsl"
+      system "./autogen.sh", *args
+      system "make", "dist"
+    else
+      system "./configure", *args
+    end
+    system "make"
+    system "make", "check"
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <stdlib.h>
+      #include <jemalloc/jemalloc.h>
+      int main(void) {
+        for (size_t i = 0; i < 1000; i++) {
+            // Leak some memory
+            malloc(i * 100);
+        }
+        // Dump allocator statistics to stderr
+        malloc_stats_print(NULL, NULL, NULL);
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-ljemalloc", "-o", "test"
+    system "./test"
+  end
+end
+
+
+jemalloc

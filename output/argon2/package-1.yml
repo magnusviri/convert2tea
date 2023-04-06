@@ -1,0 +1,22 @@
+
+distributable:
+  url: https://github.com/P-H-C/phc-winner-argon2/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: P-H-C/phc-winner-argon2
+  strip: /^\d{8}/
+
+build:
+  script: |
+    make PREFIX={{prefix}} ARGON2_VERSION={{version}} LIBRARY_REL=lib
+    make test
+    make install PREFIX={{prefix}} ARGON2_VERSION={{version}} LIBRARY_REL=lib
+  test:
+    make test
+
+provides:
+  - bin/argon2
+
+documents:
+  - argon2-specs.pdf

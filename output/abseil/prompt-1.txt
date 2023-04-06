@@ -1,0 +1,79 @@
+direnv
+
+class Direnv < Formula
+  homepage "https://direnv.net/"
+  url "https://github.com/direnv/direnv/archive/v2.32.2.tar.gz"
+  head "https://github.com/direnv/direnv.git", branch: "master"
+  depends_on "go" => :build
+  def install
+    system "make", "install", "PREFIX=#{prefix}"
+  end
+  test do
+    system bin/"direnv", "status"
+  end
+end
+
+
+distributable:
+  url: https://github.com/direnv/direnv/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: direnv/direnv/releases/tags
+
+provides:
+  - bin/direnv
+
+build:
+  dependencies:
+    go.dev: ^1.18
+    tea.xyz/gx/make: '*'
+  script: |
+    make install PREFIX="{{ prefix }}"
+
+test:
+  test "$(direnv --version)" = "{{ version }}"
+
+
+class Abseil < Formula
+  homepage "https://abseil.io"
+  url "https://github.com/abseil/abseil-cpp/archive/refs/tags/20230125.2.tar.gz"
+  head "https://github.com/abseil/abseil-cpp.git", branch: "master"
+  depends_on "cmake" => :build
+  fails_with gcc: "5" # C++17
+  def install
+    system "cmake", "-S", ".", "-B", "build",
+                    "-DCMAKE_INSTALL_RPATH=#{rpath}",
+                    "-DCMAKE_CXX_STANDARD=17",
+                    "-DBUILD_SHARED_LIBS=ON",
+                    "-DABSL_PROPAGATE_CXX_STD=ON",
+                    *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    # Remove bad flags in .pc files.
+    # https://github.com/abseil/abseil-cpp/issues/1408
+    if OS.mac?
+      inreplace lib.glob("pkgconfig/absl_random_internal_randen_hwaes{,_impl}.pc"),
+                "-Xarch_x86_64 -Xarch_x86_64 -Xarch_arm64 ", ""
+    end
+  end
+  test do
+    (testpath/"test.cc").write <<~EOS
+      #include <iostream>
+      #include <string>
+      #include <vector>
+      #include "absl/strings/str_join.h"
+      int main() {
+        std::vector<std::string> v = {"foo","bar","baz"};
+        std::string s = absl::StrJoin(v, "-");
+        std::cout << "Joined string: " << s << "\\n";
+      }
+    EOS
+    system ENV.cxx, "-std=c++17", "-I#{include}", "-L#{lib}", "-labsl_strings",
+                    "test.cc", "-o", "test"
+    assert_equal "Joined string: foo-bar-baz\n", shell_output("#{testpath}/test")
+  end
+end
+
+
+abseil

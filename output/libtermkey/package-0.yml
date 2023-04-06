@@ -1,0 +1,28 @@
+
+distributable:
+   url: https://www.leonerd.org.uk/code/libtermkey/libtermkey-{{version}}.tar.gz
+   strip-components: 1
+
+versions:
+  - 0.22
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    libtool.org: ^2
+    freedesktop.org/pkg-config: '*'
+    unibilium.org: '*'
+    glib.org: '*'
+  working-directory: .
+  script: |
+    make PREFIX="{{prefix}}"
+    make install PREFIX="{{prefix}}"
+
+provides:
+  - lib/libtermkey.a
+  - include/termkey.h
+
+test:
+  script: |
+    make check

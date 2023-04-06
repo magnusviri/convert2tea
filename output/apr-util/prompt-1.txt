@@ -1,0 +1,91 @@
+jansson
+
+class Jansson < Formula
+  homepage "https://digip.org/jansson/"
+  url "https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz"
+  def install
+    system "./configure", *std_configure_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <jansson.h>
+      #include <assert.h>
+      int main()
+      {
+        json_t *json;
+        json_error_t error;
+        json = json_loads("\\"foo\\"", JSON_DECODE_ANY, &error);
+        assert(json && json_is_string(json));
+        json_decref(json);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-ljansson", "-o", "test"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://github.com/akheron/jansson/releases/download/v{{ version.raw }}/jansson-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: akheron/jansson/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc fixture.c -ljansson
+    ./a.out
+
+class AprUtil < Formula
+  homepage "https://apr.apache.org/"
+  url "https://www.apache.org/dyn/closer.lua?path=apr/apr-util-1.6.3.tar.bz2"
+  mirror "https://archive.apache.org/dist/apr/apr-util-1.6.3.tar.bz2"
+  keg_only :shadowed_by_macos, "Apple's CLT provides apr (but not apr-util)"
+  depends_on "apr"
+  depends_on "openssl@1.1"
+  uses_from_macos "expat"
+  uses_from_macos "libxcrypt"
+  uses_from_macos "sqlite"
+  on_linux do
+    depends_on "mawk"
+    depends_on "unixodbc"
+  end
+  def install
+    system "./configure", *std_configure_args,
+                          "--with-apr=#{Formula["apr"].opt_prefix}",
+                          "--with-crypto",
+                          "--with-openssl=#{Formula["openssl@1.1"].opt_prefix}",
+                          "--without-pgsql"
+    system "make"
+    system "make", "install"
+    # Install symlinks so that linkage doesn't break for reverse dependencies.
+    # This should be removed on the next ABI breaking update.
+    (libexec/"lib").install_symlink Dir["#{lib}/#{shared_library("*")}"]
+    rm Dir[lib/"**/*.{la,exp}"]
+    # No need for this to point to the versioned path.
+    inreplace bin/"apu-#{version.major}-config", prefix, opt_prefix
+  end
+  test do
+    assert_match opt_prefix.to_s, shell_output("#{bin}/apu-#{version.major}-config --prefix")
+  end
+end
+
+
+apr-util

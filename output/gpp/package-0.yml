@@ -1,0 +1,19 @@
+distributable:
+  url: https://files.nothingisreal.com/software/gpp/gpp-{{ version }}.tar.bz2
+
+versions:
+  github: logological/gpp
+  strip: /^gpp /
+
+provides:
+  - bin/gpp
+
+build:
+  script: |
+    ./configure --disable-dependency-tracking --prefix={{prefix}} --mandir={{man}}
+    make
+    make check
+    make install
+
+test: |
+  gpp --version

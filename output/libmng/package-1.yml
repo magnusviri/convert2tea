@@ -1,0 +1,26 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/libmng/libmng-devel/{{version}}/libmng-{{version}}.tar.gz
+  strip-components: 1
+
+dependencies:
+  jpeg-turbo.org: ^2.0
+  little-cms.com: ^2.9
+  zlib.net: ^1.2
+
+build:
+  script: |
+    ./configure {{args}}
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --disable-silent-rules
+
+provides:
+  - bin/mngtree
+
+test:
+  c99 {{ pkgshare }}/mngtree.c -DMNG_USE_SO -I{{ opt_include }}/jpeg-turbo -I{{ include }} -L{{ lib }} -lmng -o mngtree
+  resource:
+    sample: https://github.com/cornernotes/libmng/raw/master/test/samples

@@ -1,0 +1,93 @@
+bcrypt
+
+class Bcrypt < Formula
+  homepage "https://bcrypt.sourceforge.io/"
+  url "https://bcrypt.sourceforge.io/bcrypt-1.1.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?bcrypt[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  uses_from_macos "zlib"
+  def install
+    system "make", "CC=#{ENV.cc}",
+                   "CFLAGS=#{ENV.cflags}",
+                   "LDFLAGS=-lz"
+    bin.install "bcrypt"
+    man1.install Utils::Gzip.compress("bcrypt.1")
+  end
+  test do
+    (testpath/"test.txt").write("Hello World!")
+    pipe_output("#{bin}/bcrypt -r test.txt", "12345678\n12345678\n")
+    mv "test.txt.bfe", "test.out.txt.bfe"
+    pipe_output("#{bin}/bcrypt -r test.out.txt.bfe", "12345678\n")
+    assert_equal File.read("test.txt"), File.read("test.out.txt")
+  end
+end
+
+
+distributable:
+  url: https://bcrypt.sourceforge.net/bcrypt-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.1.0
+
+dependencies:
+  zlib.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make LDFLAGS=-lz PREFIX={{prefix}} install
+
+provides:
+  - bin/bcrypt
+
+test:
+  script: |
+    echo "Hello World!" > test.txt
+    printf '12345678\n12345678\n' | bcrypt -r test.txt
+    mv test.txt.bfe test.out.txt.bfe
+    printf '12345678\n' | bcrypt -r test.out.txt.bfe
+    cat test.out.txt
+
+
+
+class Libheif < Formula
+  homepage "https://www.libde265.org/"
+  url "https://github.com/strukturag/libheif/releases/download/v1.15.2/libheif-1.15.2.tar.gz"
+  depends_on "pkg-config" => :build
+  depends_on "aom"
+  depends_on "jpeg-turbo"
+  depends_on "libde265"
+  depends_on "libpng"
+  depends_on "shared-mime-info"
+  depends_on "x265"
+  def install
+    system "./configure", *std_configure_args, "--disable-silent-rules"
+    system "make", "install"
+    pkgshare.install "examples/example.heic"
+    pkgshare.install "examples/example.avif"
+  end
+  def post_install
+    system Formula["shared-mime-info"].opt_bin/"update-mime-database", "#{HOMEBREW_PREFIX}/share/mime"
+  end
+  test do
+    output = "File contains 2 images"
+    example = pkgshare/"example.heic"
+    exout = testpath/"exampleheic.jpg"
+    assert_match output, shell_output("#{bin}/heif-convert #{example} #{exout}")
+    assert_predicate testpath/"exampleheic-1.jpg", :exist?
+    assert_predicate testpath/"exampleheic-2.jpg", :exist?
+    output = "File contains 1 image"
+    example = pkgshare/"example.avif"
+    exout = testpath/"exampleavif.jpg"
+    assert_match output, shell_output("#{bin}/heif-convert #{example} #{exout}")
+    assert_predicate testpath/"exampleavif.jpg", :exist?
+  end
+end
+
+
+libheif

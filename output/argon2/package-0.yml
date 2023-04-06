@@ -1,0 +1,28 @@
+
+distributable:
+   url: https://github.com/P-H-C/phc-winner-argon2/archive/{{version}}.tar.gz
+   strip-components: 1
+
+versions:
+  - 20190702
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  working-directory: .
+  script: |
+    make PREFIX={{prefix}} ARGON2_VERSION={{version}} LIBRARY_REL=lib
+    make test
+    make install PREFIX={{prefix}} ARGON2_VERSION={{version}} LIBRARY_REL=lib
+
+provides:
+  - bin/argon2
+  - lib/libargon2.a
+
+test:
+  script: |
+    argon2 somesalt -t 2 -m 16 -p 4 <<< "password" 
+    grep -q "c29tZXNhbHQ$IMit9qkFULCMA/ViizL57cnTLOa5DiVM9eMwpAvPw" <<< $?
+
+documents:
+ 

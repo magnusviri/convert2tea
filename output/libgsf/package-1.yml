@@ -1,0 +1,25 @@
+
+distributable:
+   url: https://download.gnome.org/sources/libgsf/{{version.major}}/libgsf-{{version.major}}.{{version.minor}}.{{version.patch}}.tar.xz
+
+version:
+  - 1.14.50
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/bison: '*'
+    autoconf.org: ^2
+    automake.org: ^1
+    gnu.org/gettext: '*'
+    gtk-doc.org: '*'
+    gnu.org/libtool: '*'
+    pkg-config.org: '*'
+    glib.org: '*'
+    bzip2.org: '*'
+    libxml2.org: '*'
+    zlib.net: '*'
+  working-directory: build
+  script:
+    - ./configure --disable-silent-rules

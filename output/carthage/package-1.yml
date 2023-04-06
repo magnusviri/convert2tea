@@ -1,0 +1,24 @@
+
+distributable:
+  url: https://github.com/Carthage/Carthage.git
+  revision: 187a78c62811d3d75a9b1d41bfaeff708936125d
+  branch: master
+
+versions:
+  - 0.39.0
+
+build:
+  dependencies:
+    github.com/jspahrsummers/xcconfigs: '*'
+    apple.com/xcode: '10.0'
+    macos: '*'
+  script: |
+    make prefix_install PREFIX={{prefix}}
+    {{prefix}}/bin/carthage-bash-completion > {{bash_completion}}/carthage
+    {{prefix}}/bin/carthage-zsh-completion > {{zsh_completion}}/_carthage
+    {{prefix}}/bin/carthage-fish-completion > {{fish_completion}}/carthage.fish
+
+test:
+  dependencies:
+    github.com/jspahrsummers/xcconfigs: '*'
+  script

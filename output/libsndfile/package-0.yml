@@ -1,0 +1,33 @@
+
+distributable:
+  url: https://github.com/libsndfile/libsndfile/releases/download/{{ version }}/libsndfile-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: libsndfile/libsndfile
+  strip: /^libsndfile-/
+
+provides:
+  - bin/sndfile-info
+
+dependencies:
+  cmake.org: '*'
+  flac.sourceforge.net: '*'
+  lame.sourceforge.net: '*'
+  libogg.org: '*'
+  libvorbis.org: '*'
+  mpg123.org: '*'
+  opus-codec.org: '*'
+
+build:
+  dependencies:
+    python.org: '*'
+  script: |
+    cmake $ARGS
+    cmake --build .
+    cmake --install .
+  env:
+    ARGS:
+      - -S .
+      - -B build
+      - -DBUILD_

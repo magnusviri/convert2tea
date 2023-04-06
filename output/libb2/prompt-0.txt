@@ -1,0 +1,157 @@
+duckdb
+
+class Duckdb < Formula
+  homepage "https://www.duckdb.org"
+  url "https://github.com/duckdb/duckdb.git",
+      tag:      "v0.7.1",
+      revision: "b00b93f0b14bfff869e1facfd86a6b556a6f1c6e"
+  depends_on "cmake" => :build
+  def install
+    mkdir "build"
+    cd "build" do
+      system "cmake", "..", *std_cmake_args, "-DBUILD_ICU_EXTENSION=1", "-DBUILD_JSON_EXTENSION=1",
+             "-DBUILD_PARQUET_EXTENSION=1"
+      system "make"
+      system "make", "install"
+      bin.install "duckdb"
+      # The cli tool was renamed (0.1.8 -> 0.1.9)
+      # Create a symlink to not break compatibility
+      bin.install_symlink bin/"duckdb" => "duckdb_cli"
+    end
+  end
+  test do
+    path = testpath/"weather.sql"
+    path.write <<~EOS
+      CREATE TABLE weather (temp INTEGER);
+      INSERT INTO weather (temp) VALUES (40), (45), (50);
+      SELECT AVG(temp) FROM weather;
+    EOS
+    expected_output = <<~EOS
+      ┌─────────────┐
+      │ avg("temp") │
+      │   double    │
+      ├─────────────┤
+      │        45.0 │
+      └─────────────┘
+    EOS
+    assert_equal expected_output, shell_output("#{bin}/duckdb_cli < #{path}")
+  end
+end
+
+
+distributable:
+  url: https://github.com/duckdb/duckdb/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: duckdb/duckdb/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: ^3
+    git-scm.org: '*'
+  working-directory: build
+  script: |
+    # duckdb uses git to get its version
+    git init ..
+    git config user.email "bot@tea.xyz"
+    git config user.name "teabot"
+    git commit --allow-empty -mnil
+    git tag v{{version}}
+
+    cmake ..
+    make --jobs {{ hw.concurrency }}
+    mkdir -p "{{prefix}}"/bin
+    mv duckdb "{{prefix}}"/bin
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_ICU_EXTENSION=1
+      - -DBUILD_JSON_EXTENSION=1
+      - -DBUILD_PARQUET_EXTENSION=1
+
+provides:
+  - bin/duckdb
+  # ^^ specify the binaries or tea magic won’t work
+
+test:
+  fixture: |
+    CREATE TABLE weather (temp INTEGER);
+    INSERT INTO weather (temp) VALUES (40), (45), (50);
+    SELECT AVG(temp) FROM weather;
+  script: |
+    out="$(duckdb < $FIXTURE)"
+    exp=$(cat <<EOS
+    ┌─────────────┐
+    │ avg("temp") │
+    │   double    │
+    ├─────────────┤
+    │        45.0 │
+    └─────────────┘
+    EOS)
+
+    test "$out" = "$exp"
+
+    if [[ "$(duckdb --version)" != "v{{version}}"* ]]; then
+      echo "invalid version" >&2
+      exit 1
+    fi
+
+
+class Libb2 < Formula
+  homepage "https://blake2.net/"
+  url "https://github.com/BLAKE2/libb2/releases/download/v0.98.1/libb2-0.98.1.tar.gz"
+  # Fix -flat_namespace being used on Big Sur and later.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+  end
+  def install
+    # SSE detection is broken on arm64 macos
+    # https://github.com/BLAKE2/libb2/issues/36
+    extra_args = []
+    extra_args << "--enable-fat" unless Hardware::CPU.arm?
+    system "./configure", "--disable-dependency-tracking",
+                          "--disable-silent-rules",
+                          "--prefix=#{prefix}",
+                          *extra_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"blake2test.c").write <<~EOS
+      #include <blake2.h>
+      #include <stdio.h>
+      #include <string.h>
+      int main(void) {
+          uint8_t out[64];
+          uint8_t expected[64] =
+          {
+            0xb2, 0x02, 0xb4, 0x77, 0xa7, 0x97, 0xe9, 0x84, 0xe6, 0xa2, 0xb9, 0x76,
+            0xca, 0x4c, 0xb7, 0xd3, 0x94, 0x40, 0x04, 0xb3, 0xef, 0x6c, 0xde, 0x80,
+            0x34, 0x1c, 0x78, 0x53, 0xa2, 0xdd, 0x7e, 0x2f, 0x9e, 0x08, 0xcd, 0xa6,
+            0xd7, 0x37, 0x28, 0x12, 0xcf, 0x75, 0xe8, 0xc7, 0x74, 0x1f, 0xb6, 0x56,
+            0xce, 0xc3, 0xa1, 0x19, 0x77, 0x2e, 0x2e, 0x71, 0x5c, 0xeb, 0xc7, 0x64,
+            0x33, 0xfa, 0xfd, 0x4d
+          };
+          int res = blake2b(out, "blake2", "blake2", 64, 6, 6);
+          if (res == 0) {
+            if (memcmp(out, expected, 64) == 0) {
+              return 0;
+            } else {
+              return 1;
+            }
+          } else {
+            return 1;
+          }
+      }
+    EOS
+    system ENV.cc, "blake2test.c", "-L#{lib}", "-lb2", "-o", "b2test"
+    system "./b2test"
+  end
+end
+
+
+libb2

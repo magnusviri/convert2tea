@@ -1,0 +1,26 @@
+
+distributable:
+  url: https://www.freetds.org/files/stable/freetds-{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  url: https://www.freetds.org/files/stable/
+  regex: /href=.*?freetds[._-]v?(\d+(?:\.\d+)+)\.t/i
+  github: FreeTDS/freetds
+  strip: /^FreeTDS /
+
+dependencies:
+  gnu.org/gettext: ^0.19
+  openssl.org: ^1.1
+  unixodbc.org: ^2.3
+  pkg-config.net: ^0.29
+  kubernetes.io/krb5: '*'
+  readline.org: ^8
+
+build:
+  dependencies:
+    gnu.org/autoconf: ^2
+    gnu.org/automake: ^1
+    gnu.org/libtool: ^2
+  script: |
+    ./configure

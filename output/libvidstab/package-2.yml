@@ -1,0 +1,14 @@
+
+distributable:
+  url: https://github.com/georgmartius/vid.stab/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.1.1
+
+build:
+  dependencies:
+    cmake: '*'
+  script: |
+    cmake . -DUSE_OMP=OFF {{ build.args }}
+    make --jobs {{hw.concurrency}} install

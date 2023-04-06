@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/gnuplot/gnuplot/{{version}}/gnuplot-{{version}}.tar.gz
+
+versions:
+  - 5.4.6
+
+head:
+  url: https://git.code.sf.net/p/gnuplot/gnuplot-main.git
+  branch: master
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    tea.xyz/gx/make: '*'
+    gd: '^2.2.3'
+    libcerf:'*'
+    lua: '^5.1.4'
+    pango: '^1.40'
+    qt@5: '^5.12'
+    readline: '*'
+  script: |
+    ./prepare
+    ./configure --disable-dependency-tracking --disable-silent-rules --prefix={{prefix}} --with

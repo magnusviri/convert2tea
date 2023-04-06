@@ -1,0 +1,27 @@
+
+distributable:
+   url: https://downloads.sourceforge.net/project/gts/gts/{{version.major}}.{{version.minor}}.{{version.patch}}/gts-{{version.major}}.{{version.minor}}.{{version.patch}}.tar.gz
+   strip-components: 1
+
+versions:
+  - 0.7.6
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    autoconf.org: '*'
+    automake.org: '*'
+    libtool.org: '*'
+    pkg-config.org: '*'
+    glib.org: ^2 
+    netpbm.org: '*'
+    gettext.org: '*'
+  script: |
+    autoreconf --force --install --verbose
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }}
+    make install
+  env:
+    ARGS:
+      - --

@@ -1,0 +1,79 @@
+wumpus
+
+class Wumpus < Formula
+  homepage "http://www.catb.org/~esr/wumpus/"
+  url "http://www.catb.org/~esr/wumpus/wumpus-1.9.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?wumpus[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "make"
+    system "make", "prefix=#{prefix}", "install"
+  end
+  test do
+    assert_match("HUNT THE WUMPUS",
+                 pipe_output(bin/"wumpus", "^C"))
+  end
+end
+
+
+distributable:
+  url: https://gitlab.com/esr/wumpus/-/archive/{{ version.raw }}/wumpus-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.9
+
+provides:
+  - bin/wumpus
+  - bin/superhack
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    #pagure.io/xmlto: '*'
+
+  script: |
+    make wumpus superhack
+    # When xmlto is packaged then switch the to `make ... install`
+    mkdir -p "{{prefix}}"/bin
+    mv wumpus superhack "{{prefix}}"/bin
+    # make prefix={{prefix}} install
+
+test:
+  script: |
+    wumpus > wumpus.out &
+    superhack > superhack.out &
+    sleep 1
+    test "x$(head -n1 wumpus.out)" = "xINSTRUCTIONS (Y-N)" && \
+    test "x$(head -n1 superhack.out)" = "xHunt the Superhack"
+
+
+class Libvterm < Formula
+  homepage "http://www.leonerd.org.uk/code/libvterm/"
+  url "http://www.leonerd.org.uk/code/libvterm/libvterm-0.3.1.tar.gz"
+  version_scheme 1
+  livecheck do
+    url :homepage
+    regex(/href=.*?libvterm[._-]v?(\d+(?:\.\d+)+)\./i)
+  end
+  depends_on "libtool" => :build
+  def install
+    system "make", "install", "PREFIX=#{prefix}"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <vterm.h>
+      int main() {
+        vterm_free(vterm_new(1, 1));
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-lvterm", "-o", "test"
+    system "./test"
+  end
+end
+
+
+libvterm

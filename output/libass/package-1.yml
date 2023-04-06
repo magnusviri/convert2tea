@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://github.com/libass/libass/releases/download/{{version.raw}}/libass-{{version.raw}}.tar.xz
+
+versions:
+  github: libass/libass/tags
+
+dependencies:
+  freetype.org: '*'
+  fribidi.org: '*'
+  harfbuzz.org: '*'
+  libunibreak.org: '*'
+
+provides:
+  - lib/libass.a
+  - include/ass/ass.h
+
+build:
+  dependencies:
+    pkg-config.org: '*'
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/make: '*'
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+    gnu.org/libtool: '*'
+    nasm.us: '*'
+  on_linux:
+    dependencies:
+      fontconfig.org: '*'

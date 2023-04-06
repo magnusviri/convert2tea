@@ -1,0 +1,29 @@
+
+distributable:
+  url: http://download.osgeo.org/gdal/{{version}}/gdal-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  - 3.6.3
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+    pkg-config.org: '^0.29'
+    apache-arrow: '*'
+    cfitsio: '*'
+    epsilon: '*'
+    expat: '*'
+    freexl: '*'
+    geos: '*'
+    giflib: '*'
+    hdf5: '*'
+    jpeg-turbo: '*'
+    jpeg-xl: '*'
+    json-c: '*'
+    libdap: '*'
+    libgeotiff: '*'
+    libheif: '*'

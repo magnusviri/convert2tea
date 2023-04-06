@@ -1,0 +1,27 @@
+  distributable:
+    url: https://github.com/jemalloc/jemalloc/releases/download/{{ version.raw }}/jemalloc-{{ version.raw }}.tar.bz2
+    strip-components: 1
+  head:
+    url: https://github.com/jemalloc/jemalloc.git
+    branch: dev
+
+versions:
+  github: jemalloc/jemalloc/tags
+  strip: /^v/
+
+dependencies:
+  build:
+    linux:
+      gnu.org/gcc: '*'
+      autoconf: '*'
+      docbook-xsl: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+      autoconf: '*'
+      docbook-xsl: '*'
+    tea.xyz/gx/make: '*'
+
+build:
+  script: |
+    if {{ version.by_head }}
+      ./autogen.sh --disable-debug --prefix="{{prefix}}" --with-jemalloc-prefix=""

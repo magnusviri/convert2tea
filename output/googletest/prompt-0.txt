@@ -1,0 +1,119 @@
+aom
+
+class Aom < Formula
+  homepage "https://aomedia.googlesource.com/aom"
+  url "https://aomedia.googlesource.com/aom.git",
+      tag:      "v3.6.0",
+      revision: "3c65175b1972da4a1992c1dae2365b48d13f9a8d"
+  depends_on "cmake" => :build
+  # `jpeg-xl` is currently not bottled on Linux
+  on_macos do
+    depends_on "pkg-config" => :build
+    depends_on "jpeg-xl"
+    depends_on "libvmaf"
+  end
+  on_intel do
+    depends_on "yasm" => :build
+  end
+  def install
+    ENV.runtime_cpu_detection unless Hardware::CPU.arm?
+    args = std_cmake_args + [
+      "-DCMAKE_INSTALL_RPATH=#{rpath}",
+      "-DENABLE_DOCS=off",
+      "-DENABLE_EXAMPLES=on",
+      "-DENABLE_TESTDATA=off",
+      "-DENABLE_TESTS=off",
+      "-DENABLE_TOOLS=off",
+      "-DBUILD_SHARED_LIBS=on",
+    ]
+    # Runtime CPU detection is not currently enabled for ARM on macOS.
+    args << "-DCONFIG_RUNTIME_CPU_DETECT=0" if Hardware::CPU.arm?
+    # Make unconditional when `jpeg-xl` is bottled on Linux
+    if OS.mac?
+      args += [
+        "-DCONFIG_TUNE_BUTTERAUGLI=1",
+        "-DCONFIG_TUNE_VMAF=1",
+      ]
+    end
+    system "cmake", "-S", ".", "-B", "brewbuild", *args
+    system "cmake", "--build", "brewbuild"
+    system "cmake", "--install", "brewbuild"
+  end
+  test do
+    resource("homebrew-bus_qcif_15fps.y4m").stage do
+      system "#{bin}/aomenc", "--webm",
+                              "--tile-columns=2",
+                              "--tile-rows=2",
+                              "--cpu-used=8",
+                              "--output=bus_qcif_15fps.webm",
+                              "bus_qcif_15fps.y4m"
+      system "#{bin}/aomdec", "--output=bus_qcif_15fps_decode.y4m",
+                              "bus_qcif_15fps.webm"
+    end
+  end
+end
+
+
+distributable:
+  url: https://aomedia.googlesource.com/aom/+archive/v{{version}}.tar.gz
+
+versions:
+  - 3.5.0
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    tea.xyz/gx/cc: c99
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+  working-directory:
+    out
+  script: |
+    cmake .. $ARGS
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+    linux:
+      CFLAGS: -fPIC
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+test: |
+  aomenc --help
+  aomdec --help
+
+provides:
+  - bin/aomenc
+  - bin/aomdec
+
+
+class Googletest < Formula
+  homepage "https://github.com/google/googletest"
+  url "https://github.com/google/googletest/archive/v1.13.0.tar.gz"
+  depends_on "cmake" => :build
+  def install
+    system "cmake", ".", *std_cmake_args
+    system "make", "install"
+    # for use case like `#include "googletest/googletest/src/gtest-all.cc"`
+    (include/"googlemock/googlemock/src").install Dir["googlemock/src/*"]
+    (include/"googletest/googletest/src").install Dir["googletest/src/*"]
+  end
+  test do
+    (testpath/"test.cpp").write <<~EOS
+      #include <gtest/gtest.h>
+      #include <gtest/gtest-death-test.h>
+      TEST(Simple, Boolean)
+      {
+        ASSERT_TRUE(true);
+      }
+    EOS
+    system ENV.cxx, "test.cpp", "-std=c++14", "-L#{lib}", "-lgtest", "-lgtest_main", "-pthread", "-o", "test"
+    system "./test"
+  end
+end
+
+
+googletest

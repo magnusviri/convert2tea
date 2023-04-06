@@ -1,0 +1,39 @@
+
+distributable:
+  url: https://github.com/lima-vm/lima/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: lima-vm/lima
+  strip: /^v/
+
+dependencies:
+  go.dev: '*'
+  qemu.org: '*'
+
+build:
+  dependencies:
+    macos.os/compiler: clang
+  script: |
+    make VERSION={{version}} clean binaries
+  env:
+    PATH:
+      - {{opt/go/bin}}
+
+install:
+  binaries:
+    - _output/bin/*
+  share:
+    - _output/share/*
+  completion:
+    limactl:
+      bin: limactl
+
+provides:
+  - bin/lima-run
+  - bin/lima-init
+  - bin/limactl
+
+test:
+  limactl info | jq '.["vmTypes"]' | grep -qE '(qemu|vz)' && \
+   

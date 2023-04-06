@@ -1,0 +1,174 @@
+duckdb
+
+class Duckdb < Formula
+  homepage "https://www.duckdb.org"
+  url "https://github.com/duckdb/duckdb.git",
+      tag:      "v0.7.1",
+      revision: "b00b93f0b14bfff869e1facfd86a6b556a6f1c6e"
+  depends_on "cmake" => :build
+  def install
+    mkdir "build"
+    cd "build" do
+      system "cmake", "..", *std_cmake_args, "-DBUILD_ICU_EXTENSION=1", "-DBUILD_JSON_EXTENSION=1",
+             "-DBUILD_PARQUET_EXTENSION=1"
+      system "make"
+      system "make", "install"
+      bin.install "duckdb"
+      # The cli tool was renamed (0.1.8 -> 0.1.9)
+      # Create a symlink to not break compatibility
+      bin.install_symlink bin/"duckdb" => "duckdb_cli"
+    end
+  end
+  test do
+    path = testpath/"weather.sql"
+    path.write <<~EOS
+      CREATE TABLE weather (temp INTEGER);
+      INSERT INTO weather (temp) VALUES (40), (45), (50);
+      SELECT AVG(temp) FROM weather;
+    EOS
+    expected_output = <<~EOS
+      ┌─────────────┐
+      │ avg("temp") │
+      │   double    │
+      ├─────────────┤
+      │        45.0 │
+      └─────────────┘
+    EOS
+    assert_equal expected_output, shell_output("#{bin}/duckdb_cli < #{path}")
+  end
+end
+
+
+distributable:
+  url: https://github.com/duckdb/duckdb/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: duckdb/duckdb/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: ^3
+    git-scm.org: '*'
+  working-directory: build
+  script: |
+    # duckdb uses git to get its version
+    git init ..
+    git config user.email "bot@tea.xyz"
+    git config user.name "teabot"
+    git commit --allow-empty -mnil
+    git tag v{{version}}
+
+    cmake ..
+    make --jobs {{ hw.concurrency }}
+    mkdir -p "{{prefix}}"/bin
+    mv duckdb "{{prefix}}"/bin
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_ICU_EXTENSION=1
+      - -DBUILD_JSON_EXTENSION=1
+      - -DBUILD_PARQUET_EXTENSION=1
+
+provides:
+  - bin/duckdb
+  # ^^ specify the binaries or tea magic won’t work
+
+test:
+  fixture: |
+    CREATE TABLE weather (temp INTEGER);
+    INSERT INTO weather (temp) VALUES (40), (45), (50);
+    SELECT AVG(temp) FROM weather;
+  script: |
+    out="$(duckdb < $FIXTURE)"
+    exp=$(cat <<EOS
+    ┌─────────────┐
+    │ avg("temp") │
+    │   double    │
+    ├─────────────┤
+    │        45.0 │
+    └─────────────┘
+    EOS)
+
+    test "$out" = "$exp"
+
+    if [[ "$(duckdb --version)" != "v{{version}}"* ]]; then
+      echo "invalid version" >&2
+      exit 1
+    fi
+
+
+class Augeas < Formula
+  homepage "https://augeas.net/"
+  revision 1
+  head "https://github.com/hercules-team/augeas.git", branch: "master"
+  # Remove stable block when patch is no longer needed.
+  stable do
+    url "https://github.com/hercules-team/augeas/releases/download/release-1.14.0/augeas-1.14.0.tar.gz"
+    # Remove `#include <malloc.h>`, add `#include <libgen.h>`.
+    # Remove on next release.
+    patch do
+      url "https://github.com/hercules-team/augeas/commit/7b26cbb74ed634d886ed842e3d5495361d8fd9b1.patch?full_index=1"
+    end
+  end
+  livecheck do
+    url :stable
+    regex(%r{href=["']?[^"' >]*?/tag/\D*?(\d+(?:\.\d+)+)["' >]}i)
+    strategy :github_latest
+  end
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "bison" => :build
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
+  depends_on "readline"
+  uses_from_macos "libxml2"
+  def install
+    if build.head?
+      system "./autogen.sh", *std_configure_args
+    else
+      # autoreconf is needed to work around
+      # https://debbugs.gnu.org/cgi/bugreport.cgi?bug=44605.
+      system "autoreconf", "--force", "--install"
+      system "./configure", *std_configure_args
+    end
+    system "make", "install"
+  end
+  def caveats
+    <<~EOS
+      Lenses have been installed to:
+        #{HOMEBREW_PREFIX}/share/augeas/lenses/dist
+    EOS
+  end
+  test do
+    assert_match version.to_s, shell_output("#{bin}/augtool --version 2>&1")
+    (testpath/"etc/hosts").write <<~EOS
+      192.168.0.1 brew.sh test
+    EOS
+    expected_augtool_output = <<~EOS
+      /files/etc/hosts/1
+      /files/etc/hosts/1/ipaddr = "192.168.0.1"
+      /files/etc/hosts/1/canonical = "brew.sh"
+      /files/etc/hosts/1/alias = "test"
+    EOS
+    assert_equal expected_augtool_output,
+                 shell_output("#{bin}/augtool --root #{testpath} 'print /files/etc/hosts/1'")
+    expected_augprint_output = <<~EOS
+      setm /augeas/load/*[incl='/etc/hosts' and label() != 'hosts']/excl '/etc/hosts'
+      transform hosts incl /etc/hosts
+      load-file /etc/hosts
+      set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/ipaddr '192.168.0.1'
+      set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/canonical 'brew.sh'
+      set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/alias 'test'
+    EOS
+    assert_equal expected_augprint_output,
+                 shell_output("#{bin}/augprint --lens=hosts --target=/etc/hosts #{testpath}/etc/hosts")
+  end
+end
+
+
+augeas

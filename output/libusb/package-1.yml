@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://github.com/libusb/libusb/archive/refs/tags/v{version}.tar.bz2
+
+versions:
+  - 1.0.26
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+    gnu.org/libtool: '*'
+  working-directory: build
+  script: |
+    ./autogen.sh
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} 
+    make install
+  env:
+    ARGS:
+      - --disable-dependency-tracking
+      - --prefix={{prefix}}
+
+provides:
+  - lib/libusb-1.0.dylib
+  - include/libusb-1.0/libus
+
+test:
+  script: |
+    gcc listdevs.c -L{{lib}} -I{{include}}/libusb-1.0 -lusb-1

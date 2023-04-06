@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/graphicsmagick/graphicsmagick/{{version}}/GraphicsMagick-{{version}}.tar.xz
+  strip-components: 1
+
+versions:
+  - 1.3.40
+
+dependencies:
+  pkg-config.se: '*'
+  freetype.org: '*'
+  jasper.sourceforge.net: '*'
+  jpeg-turbo.org: '*'
+  jpeg-xl.io: '*'
+  libpng.org: '*'
+  libtiff.org: '*'
+  libtool.org: '*'
+  little-cms.com: '*'
+  webp.google.com: '*'
+  bzip2.org: '*'
+  libxml2.github.io: '*'
+  zlib.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make:

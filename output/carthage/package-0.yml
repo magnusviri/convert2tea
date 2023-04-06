@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://github.com/Carthage/Carthage/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: Carthage/Carthage/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  working-directory: .
+  script: make prefix_install prefix="{{prefix}}"
+  env:
+    ARGS: []
+
+provides:
+  - bin/carthage
+  - completions/bash/carthage.bash
+  - completions/fish/carthage.fish
+  - completions/zsh/_carthage
+
+test:
+  fixture: |
+    github "jspahrsummers/xcconfigs"
+  script: carthage update < $FIXTURE

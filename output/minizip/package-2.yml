@@ -1,0 +1,24 @@
+
+distributable: 
+  url: https://zlib.net/zlib-{{version}}.tar.gz
+  mirror: https://downloads.sourceforge.net/project/libpng/zlib/{{version}}/zlib-{{version}}.tar.gz
+  strip-components: 1
+  
+versions:
+  github:
+    - project: libpng
+    - path: zlib
+    - strip: /^zlib /
+
+dependencies:
+  autoconf: '*'
+  automake: '*'
+  libtool: '*'
+  zlib.net: '*'
+
+build:
+  script: |
+    # edits to statically link to libz.a
+    sed -i '' -e 's!-L$(zlib_top_builddir)!$(zlib_top_builddir)/libz.a!' \
+            -e 's!-version-info 1:0:0 -lz!-version-info 1:0:0!' \
+            -e 's!libminizip.la -lz!libminizip

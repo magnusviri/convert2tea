@@ -1,0 +1,87 @@
+direnv
+
+class Direnv < Formula
+  homepage "https://direnv.net/"
+  url "https://github.com/direnv/direnv/archive/v2.32.2.tar.gz"
+  head "https://github.com/direnv/direnv.git", branch: "master"
+  depends_on "go" => :build
+  def install
+    system "make", "install", "PREFIX=#{prefix}"
+  end
+  test do
+    system bin/"direnv", "status"
+  end
+end
+
+
+distributable:
+  url: https://github.com/direnv/direnv/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: direnv/direnv/releases/tags
+
+provides:
+  - bin/direnv
+
+build:
+  dependencies:
+    go.dev: ^1.18
+    tea.xyz/gx/make: '*'
+  script: |
+    make install PREFIX="{{ prefix }}"
+
+test:
+  test "$(direnv --version)" = "{{ version }}"
+
+
+class Libdap < Formula
+  homepage "https://www.opendap.org/"
+  stable do
+    url "https://www.opendap.org/pub/source/libdap-3.20.11.tar.gz"
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+    end
+  end
+  livecheck do
+    url "https://www.opendap.org/pub/source/"
+    regex(/href=.*?libdap[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  head do
+    url "https://github.com/OPENDAP/libdap4.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+  depends_on "bison" => :build
+  depends_on "pkg-config" => :build
+  depends_on "libxml2"
+  depends_on "openssl@1.1"
+  uses_from_macos "flex" => :build
+  uses_from_macos "curl"
+  on_linux do
+    depends_on "util-linux"
+  end
+  def install
+    args = %W[
+      --prefix=#{prefix}
+      --disable-dependency-tracking
+      --disable-debug
+      --with-included-regex
+    ]
+    system "autoreconf", "-fvi" if build.head?
+    system "./configure", *args
+    system "make"
+    system "make", "check"
+    system "make", "install"
+    # Ensure no Cellar versioning of libxml2 path in dap-config entries
+    xml2 = Formula["libxml2"]
+    inreplace bin/"dap-config", xml2.opt_prefix.realpath, xml2.opt_prefix
+  end
+  test do
+    assert_match version.to_s, shell_output("#{bin}/dap-config --version")
+  end
+end
+
+
+libdap

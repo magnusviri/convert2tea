@@ -1,0 +1,107 @@
+doxygen
+
+class Doxygen < Formula
+  homepage "https://www.doxygen.nl/"
+  url "https://doxygen.nl/files/doxygen-1.9.6.src.tar.gz"
+  mirror "https://downloads.sourceforge.net/project/doxygen/rel-1.9.6/doxygen-1.9.6.src.tar.gz"
+  head "https://github.com/doxygen/doxygen.git", branch: "master"
+  livecheck do
+    url "https://www.doxygen.nl/download.html"
+    regex(/href=.*?doxygen[._-]v?(\d+(?:\.\d+)+)[._-]src\.t/i)
+  end
+  depends_on "bison" => :build
+  depends_on "cmake" => :build
+  uses_from_macos "flex" => :build, since: :big_sur
+  uses_from_macos "python" => :build
+  fails_with :gcc do
+    version "6"
+    cause "Need gcc>=7.2. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66297"
+  end
+  def install
+    system "cmake", "-S", ".", "-B", "build",
+                    "-DPYTHON_EXECUTABLE=#{which("python3") || which("python")}",
+                    *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    system "cmake", "-S", ".", "-B", "build", "-Dbuild_doc=1", *std_cmake_args
+    man1.install buildpath.glob("build/man/*.1")
+  end
+  test do
+    system bin/"doxygen", "-g"
+    system bin/"doxygen", "Doxyfile"
+  end
+end
+
+
+
+distributable:
+   url: https://github.com/doxygen/doxygen/archive/refs/tags/Release_{{version.major}}_{{version.minor}}_{{version.patch}}.tar.gz
+   strip-components: 1
+
+versions:
+  - 1.9.6 # FIXME: the versions are "Release_1_9_6" but no idea how I can parse this without regex
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/bison: ^3
+    cmake.org: ^3
+    github.com/westes/flex: 2
+    python.org: ^3
+  working-directory: build
+  script: |
+    cmake $ARGS -G "Unix Makefiles" ..
+    make --jobs {{ hw.concurrency }} 
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+    
+
+provides:
+  - bin/doxygen
+
+test:
+  script: |
+    doxygen -g
+    doxygen Doxyfile
+
+
+class AwsSdkCpp < Formula
+  homepage "https://github.com/aws/aws-sdk-cpp"
+  # aws-sdk-cpp should only be updated every 10 releases on multiples of 10
+  url "https://github.com/aws/aws-sdk-cpp.git",
+      tag:      "1.11.50",
+      revision: "8cd5eceaf258432a25d4fc32d55b59bb4336121c"
+  head "https://github.com/aws/aws-sdk-cpp.git", branch: "main"
+  depends_on "cmake" => :build
+  uses_from_macos "curl"
+  fails_with gcc: "5"
+  def install
+    ENV.append "LDFLAGS", "-Wl,-rpath,#{rpath}"
+    # Avoid OOM failure on Github runner
+    ENV.deparallelize if OS.linux? && ENV["HOMEBREW_GITHUB_ACTIONS"]
+    system "cmake", "-S", ".", "-B", "build", *std_cmake_args, "-DENABLE_TESTING=OFF"
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    lib.install Dir[lib/"mac/Release/*"].select { |f| File.file? f }
+  end
+  test do
+    (testpath/"test.cpp").write <<~EOS
+      #include <aws/core/Version.h>
+      #include <iostream>
+      int main() {
+          std::cout << Aws::Version::GetVersionString() << std::endl;
+          return 0;
+      }
+    EOS
+    system ENV.cxx, "-std=c++11", "test.cpp", "-L#{lib}", "-laws-cpp-sdk-core",
+           "-o", "test"
+    system "./test"
+  end
+end
+
+
+aws-sdk-cpp

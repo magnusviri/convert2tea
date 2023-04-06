@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://github.com/grpc/grpc/archive/{{ version.rev }}/grpc-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  - rev: 358bfb581feeda5bf17dd3b96da1074d84a6ef8d
+    raw: 1.53.0
+    major: 1
+    minor: 53
+    patch: 0
+
+provides:
+  - include/grpc
+  - include/grpc++
+  - bin/grpc_cli
+
+build:
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    cmake: '*'
+    libtool: '*'
+    abseil: '*'
+    c-ares: '*'
+    openssl@1.1: '*'
+    protobuf: '*'
+    re2: '*'
+    macos/zlib: '*'
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx

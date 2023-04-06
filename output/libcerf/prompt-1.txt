@@ -1,0 +1,75 @@
+direnv
+
+class Direnv < Formula
+  homepage "https://direnv.net/"
+  url "https://github.com/direnv/direnv/archive/v2.32.2.tar.gz"
+  head "https://github.com/direnv/direnv.git", branch: "master"
+  depends_on "go" => :build
+  def install
+    system "make", "install", "PREFIX=#{prefix}"
+  end
+  test do
+    system bin/"direnv", "status"
+  end
+end
+
+
+distributable:
+  url: https://github.com/direnv/direnv/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: direnv/direnv/releases/tags
+
+provides:
+  - bin/direnv
+
+build:
+  dependencies:
+    go.dev: ^1.18
+    tea.xyz/gx/make: '*'
+  script: |
+    make install PREFIX="{{ prefix }}"
+
+test:
+  test "$(direnv --version)" = "{{ version }}"
+
+
+class Libcerf < Formula
+  homepage "https://jugit.fz-juelich.de/mlz/libcerf"
+  url "https://jugit.fz-juelich.de/mlz/libcerf/-/archive/v2.3/libcerf-v2.3.tar.gz"
+  version_scheme 1
+  head "https://jugit.fz-juelich.de/mlz/libcerf.git", branch: "master"
+  livecheck do
+    url "https://jugit.fz-juelich.de/api/v4/projects/269/releases"
+    regex(/libcerf[._-]v?((?!2\.0)\d+(?:\.\d+)+)/i)
+  end
+  depends_on "cmake" => :build
+  def install
+    mkdir "build" do
+      system "cmake", "..", *std_cmake_args
+      system "make", "install"
+    end
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <cerf.h>
+      #include <complex.h>
+      #include <math.h>
+      #include <stdio.h>
+      #include <stdlib.h>
+      int main (void) {
+        double _Complex a = 1.0 - 0.4I;
+        a = cerf(a);
+        if (fabs(creal(a)-0.910867) > 1.e-6) abort();
+        if (fabs(cimag(a)+0.156454) > 1.e-6) abort();
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-I#{include}", "-L#{lib}", "-lcerf", "-o", "test"
+    system "./test"
+  end
+end
+
+
+libcerf

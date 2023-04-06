@@ -1,0 +1,24 @@
+distributable:
+  url: https://downloads.sourceforge.net/project/glew/glew/{{version}}/glew-{{version}}.tgz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: nigels-com/glew/releases/tags
+
+# check git
+# https://github.com/Homebrew/brew/blob/master/docs/Formula-Cookbook.md#check-if-there-is-a-git-head
+head:
+  github: nigels-com/glew/archive/master.tar.gz
+  ref: master
+
+build:
+  dependencies:
+    cmake.org: '*'
+    mesa-glu: '*'
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  working-directory: _build
+  script: |
+    cmake  -S ../build/cmake -B . \
+      -DCMAKE_INST

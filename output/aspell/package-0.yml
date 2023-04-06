@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://ftp.gnu.org/gnu/aspell/aspell-{{ version.raw }}.tar.gz
+  mirror: https://ftpmirror.gnu.org/aspell/aspell-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/aspell
+  - bin/prezip
+
+interprets:
+  extensions: asp
+  args: -a
+
+versions:
+  home_page: http://aspell.net/
+  strip: /^aspell-/
+
+dependencies:
+  ncurses: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    patch: '*'
+  patch: |
+    diff --git a/interfaces/cc/aspell.h b/interfaces/cc/aspell.h
+    index 9c8e81b..2cd00d4 100644
+    --- a/interfaces/cc/aspell

@@ -1,0 +1,22 @@
+
+distributable:
+  url: https://mandoc.bsd.lv/snapshots/mandoc-{{version}}.tar.gz
+  strip-components: 0
+
+versions:
+  - 1.14.6
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: *
+    cmake.org: ^3
+    perl.org: *
+    zlib.net: *
+  env:
+    osname: 'Mac OS X {{macos_version}}' 
+  script: |
+    mv cgi.h.example cgi.h
+    cp configure.local.example configure.local
+    sed -i -e 's|PREFIX=|PREFIX={{prefix}}|' -e 's|WWWPREFIX=|WWWPREFIX={{prefix}}/var/www|' -e 's|EXAMPLEDIR=|EXAMPLEDIR={{share}}/examples|' -e 's|MANPATH_DEFAULT=|

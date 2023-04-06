@@ -1,0 +1,28 @@
+
+distributable:
+  url: http://www.leonerd.org.uk/code/libvterm/libvterm-{{version}}.tar.gz
+
+versions:
+  homepage:
+    url: http://www.leonerd.org.uk/code/libvterm/
+    regex: 'libvterm[._-]v?(\d+(?:\.\d+)+)\.
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99 # assume gx/cc
+    tea.xyz/gx/make: '*'
+    libtool.org: '*'
+  script: |
+    make
+    mkdir -p "{{prefix}}"
+    make install PREFIX="{{prefix}}"
+
+provides:
+  - lib/libvterm.a
+  - lib/libvterm.dylib
+  - include/vterm.h
+
+test:
+  script: |
+    gcc test.c -o test -L"{{prefix}}"/lib -lvterm
+    ./test

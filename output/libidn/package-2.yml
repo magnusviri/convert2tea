@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://ftp.gnu.org/gnu/libidn/libidn-{{ version }}.tar.gz
+  mirror: https://ftpmirror.gnu.org/libidn/libidn-{{ version }}.tar.gz
+
+license:
+  any_of:
+    - GPL-2.0-or-later
+    - LGPL-3.0-or-later
+
+provides:
+  - bin/idn
+
+build:
+  dependencies:
+    freedesktop.org/pkg-config: '*'
+  script: |
+    ./configure \
+        --disable-dependency-tracking \
+        --prefix="{{ prefix }}" \
+        --disable-csharp \
+        --with-lispdir="{{ elisp }}"
+    make install
+
+test:
+  ENV:
+    CHARSET: UTF-8
+  script: | 
+    idn räksmörgås.se blåbærgrød.no

@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://gitlab.freedesktop.org/dbus/dbus/-/archive/{{ version.raw }}/dbus-{{ version.raw }}.tar.xz
+  mirror: https://deb.debian.org/debian/pool/main/d/dbus/dbus_1.14.6.orig.tar.xz
+  strip-components: 1
+
+provides:
+  - bin/dbus-daemon
+  - bin/dbus-uuidgen
+  - bin/dbus-send
+  - bin/dbus-launch
+  - lib/libdbus-1.dylib
+  - lib/libdbus-1.a
+  - lib/pkgconfig/dbus-1.pc
+  - include/dbus-1.0
+  - etc/dbus-1
+
+versions:
+  - ~> 1.14
+
+license:
+  - AFL-2.1
+  - GPL-2.0-or-later
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'

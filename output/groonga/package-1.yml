@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://packages.groonga.org/source/groonga/groonga-{{version}}.tar.gz
+
+versions:
+  - 13.0.1
+
+head_versions:
+  - master
+
+head:
+  url: https://github.com/groonga/groonga.git
+  dependencies:
+    autoconf.org: '*'
+    automake.org: '*'
+    gnu.org/libtool: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    gnu.org/make: '*'
+    pkg-config.freedesktop.org: '*'
+    mecab.org: '*'
+    mecab.sourceforge.jp/mecab-ipadic: '*'
+    msgpack.org/msgpack: '*'
+    openssl.org: ^1.1
+    pcre.org: '*'
+  script: |
+    autogen.sh
+    ./configure $ARGS
+    make
+    make

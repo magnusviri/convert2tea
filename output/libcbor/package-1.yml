@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://github.com/PJK/libcbor/archive/v{{version}}.tar.gz
+
+versions:
+  - 0.10.2
+
+build:
+  dependencies:
+    cmake.org: ^3.0
+  working-directory: out
+  script: |
+    cmake .. -DWITH_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON $ARGS
+    make -j$(nproc)
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+test: |
+  example
+  puts `./example`
+
+provides:
+  - lib/libcbor.so
+  - include/cbor.h
+  - include/cbor/cbor.h

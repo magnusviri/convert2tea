@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/gnuplot/gnuplot/{{ version }}/gnuplot-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 5.4.6
+
+head:
+  url: https://git.code.sf.net/p/gnuplot/gnuplot-main.git
+  branch: master
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+
+build:
+  dependencies:
+    pkg-config: '*'
+  script: |
+    ./prepare # only when building from head
+    ./configure \
+      --disable-dependency-tracking \
+      --disable-silent-rules \
+      --prefix={{ prefix }} \
+      --with-readline={{dep.readline.opt_prefix}} \
+      --without-tutorial \
+      --disable-wxwidgets \
+      --with-qt \
+      --without-x \
+      --without-latex
+    make --jobs {{

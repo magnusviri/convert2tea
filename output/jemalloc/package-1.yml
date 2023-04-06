@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://github.com/jemalloc/jemalloc/releases/download/{{ version.raw }}/jemalloc-{{ version.raw }}.tar.bz2
+  strip-components: 1
+
+versions:
+  github: jemalloc/jemalloc/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/make: '*'
+      docbook-xsl: '*'
+      autoconf: '*'
+  script: |
+    ./configure --prefix="{{ prefix }}" \
+      --disable-debug \
+      --with-jemalloc-prefix=
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc fixture.c -ljemalloc
+    ./a.out

@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/libmng/libmng-devel/{{ version }}/libmng-{{ version }}.tar.gz
+  using: homebrew_curl
+  patch:
+    - type: diff
+      url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-pre-0.4.2.418-big_sur.diff
+
+versions:
+  strip: /^libmng-/
+
+provides:
+  - lib/libmng.a
+
+dependencies:
+  jpeg-turbo.org: '*'
+  littel-cms2.net: '*'
+  zlib.net: ^1
+
+build:
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --disable-silent-rules
+

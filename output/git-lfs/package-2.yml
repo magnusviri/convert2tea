@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://github.com/git-lfs/git-lfs/releases/download/v{{ version }}/git-lfs-v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: git-lfs/git-lfs/releases/tags
+  ignore: /-rc\d/
+
+detect:
+  cmd: git lfs version
+  regex: git-lfs/v(\v)
+
+dependencies:
+  asciidoctor: '*'
+  go: '*'
+  ronn: '*'
+  ruby: '*'
+
+provides:
+  - bin/git-lfs
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/make: '*'
+  script: |-
+    make VERSION={{ version }}
+    make man RONN={{ deps.ronn.prefix }}/bin/ronn
+    install -m 0755 bin/git-lfs {{ prefix

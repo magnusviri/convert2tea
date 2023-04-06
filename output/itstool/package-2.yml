@@ -1,0 +1,24 @@
+
+distributable:
+  url: http://files.itstool.org/itstool/itstool-{{version}}.tar.bz2
+
+versions:
+  git: itstool/itstool
+
+dependencies:
+  libxml2.org: '*'
+  python.org: ^3.11
+
+build:
+  dependencies:
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+  script: |
+    ./configure --prefix={{prefix}} PYTHON={{python.executable}}
+    make --jobs {{ hw.concurrency }} install
+
+provides:
+  - bin/itstool
+
+test:
+  itstool -o test.pot test.xml && cat test.pot

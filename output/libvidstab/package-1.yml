@@ -1,0 +1,23 @@
+
+distributable: 
+  url: https://github.com/georgmartius/vid.stab/archive/v{{version}}.tar.gz
+
+versions:
+  - 1.1.1
+
+build:
+  dependencies:
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake . -DUSE_OMP=OFF $ARGS
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+
+provides:
+  - lib/libvidstab.a
+  - lib/libvidstab.dylib
+  - lib/libvidstab.so

@@ -1,0 +1,125 @@
+mpdecimal
+
+class Mpdecimal < Formula
+  homepage "https://www.bytereef.org/mpdecimal/"
+  url "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-2.5.1.tar.gz"
+  livecheck do
+    url "https://www.bytereef.org/mpdecimal/download.html"
+    regex(/href=.*?mpdecimal[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "./configure", "--prefix=#{prefix}"
+    system "make"
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <assert.h>
+      #include <mpdecimal.h>
+      #include <string.h>
+      int main() {
+        mpd_context_t ctx;
+        mpd_t *a, *b, *result;
+        char *rstring;
+        mpd_defaultcontext(&ctx);
+        a = mpd_new(&ctx);
+        b = mpd_new(&ctx);
+        result = mpd_new(&ctx);
+        mpd_set_string(a, "0.1", &ctx);
+        mpd_set_string(b, "0.2", &ctx);
+        mpd_add(result, a, b, &ctx);
+        rstring = mpd_to_sci(result, 1);
+        assert(strcmp(rstring, "0.3") == 0);
+        mpd_del(a);
+        mpd_del(b);
+        mpd_del(result);
+        mpd_free(rstring);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-o", "test", "-L#{lib}", "-lmpdec"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2.5.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{ prefix }}
+    make --jobs {{hw.concurrency}} install
+    rm -rf {{prefix}}/share  # docs are online
+
+    if test {{hw.platform}} = darwin; then
+      install_name_tool -change \
+        @rpath/libmpdec.3.dylib \
+        @loader_path/libmpdec.3.dylib \
+        {{prefix}}/lib/libmpdec++.dylib
+    fi
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -o test -lmpdec
+    ./test
+
+
+class Gnuplot < Formula
+  homepage "http://www.gnuplot.info/"
+  url "https://downloads.sourceforge.net/project/gnuplot/gnuplot/5.4.6/gnuplot-5.4.6.tar.gz"
+  head do
+    url "https://git.code.sf.net/p/gnuplot/gnuplot-main.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+  depends_on "pkg-config" => :build
+  depends_on "gd"
+  depends_on "libcerf"
+  depends_on "lua"
+  depends_on "pango"
+  depends_on "qt@5"
+  depends_on "readline"
+  fails_with gcc: "5"
+  def install
+    # Qt5 requires c++11 (and the other backends do not care)
+    ENV.cxx11
+    args = %W[
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --prefix=#{prefix}
+      --with-readline=#{Formula["readline"].opt_prefix}
+      --without-tutorial
+      --disable-wxwidgets
+      --with-qt
+      --without-x
+      --without-latex
+    ]
+    system "./prepare" if build.head?
+    system "./configure", *args
+    ENV.deparallelize # or else emacs tries to edit the same file with two threads
+    system "make"
+    system "make", "install"
+  end
+  test do
+    system "#{bin}/gnuplot", "-e", <<~EOS
+      set terminal dumb;
+      set output "#{testpath}/graph.txt";
+      plot sin(x);
+    EOS
+    assert_predicate testpath/"graph.txt", :exist?
+  end
+end
+
+
+gnuplot

@@ -1,0 +1,91 @@
+jansson
+
+class Jansson < Formula
+  homepage "https://digip.org/jansson/"
+  url "https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz"
+  def install
+    system "./configure", *std_configure_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <jansson.h>
+      #include <assert.h>
+      int main()
+      {
+        json_t *json;
+        json_error_t error;
+        json = json_loads("\\"foo\\"", JSON_DECODE_ANY, &error);
+        assert(json && json_is_string(json));
+        json_decref(json);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-ljansson", "-o", "test"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://github.com/akheron/jansson/releases/download/v{{ version.raw }}/jansson-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: akheron/jansson/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc fixture.c -ljansson
+    ./a.out
+
+class GitLfs < Formula
+  homepage "https://git-lfs.github.com/"
+  url "https://github.com/git-lfs/git-lfs/releases/download/v3.3.0/git-lfs-v3.3.0.tar.gz"
+  depends_on "asciidoctor" => :build
+  depends_on "go" => :build
+  depends_on "ronn" => :build
+  depends_on "ruby" => :build
+  def install
+    ENV["GIT_LFS_SHA"] = ""
+    ENV["VERSION"] = version
+    system "make"
+    system "make", "man", "RONN=#{Formula["ronn"].bin}/ronn"
+    bin.install "bin/git-lfs"
+    man1.install Dir["man/man1/*.1"]
+    man5.install Dir["man/man5/*.5"]
+    man7.install Dir["man/man7/*.7"]
+    doc.install Dir["man/html/*.html"]
+  end
+  def caveats
+    <<~EOS
+      Update your git config to finish installation:
+        # Update global git config
+        $ git lfs install
+        # Update system git config
+        $ git lfs install --system
+    EOS
+  end
+  test do
+    system "git", "init"
+    system "git", "lfs", "track", "test"
+    assert_match(/^test filter=lfs/, File.read(".gitattributes"))
+  end
+end
+
+
+git-lfs

@@ -1,0 +1,22 @@
+
+distributable:
+  url: https://github.com/BLAKE2/libb2/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: BLAKE2/libb2/releases/tags
+
+patches:
+  - url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    git-scm.org: '*'
+  working-directory: .
+  script: |
+    export DISABLE_SSE=1
+    if [[ "$({{ hw.arch }})" =~ ^arm ]]; then
+      ./configure --disable-dependency-tracking --disable-silent-rules

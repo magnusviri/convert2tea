@@ -1,0 +1,199 @@
+cmake
+
+class Cmake < Formula
+  homepage "https://www.cmake.org/"
+  url "https://github.com/Kitware/CMake/releases/download/v3.26.3/cmake-3.26.3.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/cmake-3.26.3.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/legacy/cmake-3.26.3.tar.gz"
+  head "https://gitlab.kitware.com/cmake/cmake.git", branch: "master"
+  # The "latest" release on GitHub has been an unstable version before, so we
+  # check the Git tags instead.
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
+  uses_from_macos "ncurses"
+  on_linux do
+    depends_on "openssl@3"
+  end
+  # The completions were removed because of problems with system bash
+  # The `with-qt` GUI option was removed due to circular dependencies if
+  # CMake is built with Qt support and Qt is built with MySQL support as MySQL uses CMake.
+  # For the GUI application please instead use `brew install --cask cmake`.
+  def install
+    args = %W[
+      --prefix=#{prefix}
+      --no-system-libs
+      --parallel=#{ENV.make_jobs}
+      --datadir=/share/cmake
+      --docdir=/share/doc/cmake
+      --mandir=/share/man
+    ]
+    if OS.mac?
+      args += %w[
+        --system-zlib
+        --system-bzip2
+        --system-curl
+      ]
+    end
+    system "./bootstrap", *args, "--", *std_cmake_args,
+                                       "-DCMake_INSTALL_BASH_COMP_DIR=#{bash_completion}",
+                                       "-DCMake_INSTALL_EMACS_DIR=#{elisp}",
+                                       "-DCMake_BUILD_LTO=ON"
+    system "make"
+    system "make", "install"
+  end
+  def caveats
+    <<~EOS
+      To install the CMake documentation, run:
+        brew install cmake-docs
+    EOS
+  end
+  test do
+    (testpath/"CMakeLists.txt").write("find_package(Ruby)")
+    system bin/"cmake", "."
+    # These should be supplied in a separate cmake-docs formula.
+    refute_path_exists doc/"html"
+    refute_path_exists man
+  end
+end
+
+
+distributable:
+  url: https://github.com/Kitware/CMake/releases/download/v{{ version }}/cmake-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: Kitware/CMake/releases/tags
+  ignore: /-rc\d/
+
+detect:
+  cmd: cmake --version
+  regex: cmake version \v
+
+dependencies:
+  curl.se: '>=5'
+  zlib.net: 1
+  sourceware.org/bzip2: 1
+
+provides:
+  darwin:
+  - bin/cmake
+  - bin/ccmake
+  - bin/cpack
+  - bin/ctest
+  linux:
+  - bin/cmake
+  - bin/cpack
+  - bin/ctest
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |-
+    ./bootstrap $ARGS
+    make --jobs {{ hw.concurrency }} install
+    rm -rf {{prefix}}/share/doc  # docs are online
+  env:
+    V: 1
+    ARGS:
+      - --prefix={{ prefix }}
+      - --parallel={{ hw.concurrency }}
+      - --datadir=/var
+      - --docdir=/share/doc
+      - --mandir=/share/man
+      - --system-zlib
+      - --system-bzip2
+      - --system-curl
+      - --
+      - -DCMake_BUILD_LTO=ON
+      - -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+    darwin:
+      ARGS:
+      - -DZLIB_LIBRARY={{deps.zlib.net.prefix}}/lib/libz.dylib
+      - -DZLIB_INCLUDE_DIR={{deps.zlib.net.prefix}}/include
+      - -DCURL_LIBRARY={{deps.curl.se.prefix}}/lib/libcurl.dylib
+      - -DCURL_INCLUDE_DIR={{deps.curl.se.prefix}}/include
+      - -DBZIP2_LIBRARIES={{deps.sourceware.org/bzip2.prefix}}/lib/libbz2.a
+      - -DBZIP2_INCLUDE_DIR={{deps.sourceware.org/bzip2.prefix}}/include
+    linux:
+      ARGS:
+      - -DZLIB_LIBRARY={{deps.zlib.net.prefix}}/lib/libz.so
+      - -DZLIB_INCLUDE_DIR={{deps.zlib.net.prefix}}/include
+      - -DCURL_LIBRARY={{deps.curl.se.prefix}}/lib/libcurl.so
+      - -DCURL_INCLUDE_DIR={{deps.curl.se.prefix}}/include
+      - -DBZIP2_LIBRARIES={{deps.sourceware.org/bzip2.prefix}}/lib/libbz2.so
+      - -DBZIP2_INCLUDE_DIR={{deps.sourceware.org/bzip2.prefix}}/include
+
+  error-log:
+    Bootstrap.cmk/cmake_bootstrap.log
+
+test:
+  script:
+    cmake --version
+
+
+class Dbus < Formula
+  # releases: even (1.12.x) = stable, odd (1.13.x) = development
+  homepage "https://wiki.freedesktop.org/www/Software/dbus"
+  url "https://dbus.freedesktop.org/releases/dbus/dbus-1.14.6.tar.xz"
+  mirror "https://deb.debian.org/debian/pool/main/d/dbus/dbus_1.14.6.orig.tar.xz"
+  license any_of: ["AFL-2.1", "GPL-2.0-or-later"]
+  livecheck do
+    url "https://dbus.freedesktop.org/releases/dbus/"
+    regex(/href=.*?dbus[._-]v?(\d+\.\d*?[02468](?:\.\d+)*)\.t/i)
+  end
+  head do
+    url "https://gitlab.freedesktop.org/dbus/dbus.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "autoconf-archive" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+  depends_on "pkg-config" => :build
+  depends_on "xmlto" => :build
+  uses_from_macos "expat"
+  # Patch applies the config templating fixed in https://bugs.freedesktop.org/show_bug.cgi?id=94494
+  # Homebrew pr/issue: 50219
+  patch do
+    on_macos do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/0a8a55872e/d-bus/org.freedesktop.dbus-session.plist.osx.diff"
+    end
+  end
+  def install
+    # Fix the TMPDIR to one D-Bus doesn't reject due to odd symbols
+    ENV["TMPDIR"] = "/tmp"
+    ENV["XML_CATALOG_FILES"] = "#{etc}/xml/catalog"
+    system "./autogen.sh", "--no-configure" if build.head?
+    args = [
+      "--disable-dependency-tracking",
+      "--prefix=#{prefix}",
+      "--localstatedir=#{var}",
+      "--sysconfdir=#{etc}",
+      "--enable-xml-docs",
+      "--disable-doxygen-docs",
+      "--without-x",
+      "--disable-tests",
+    ]
+    if OS.mac?
+      args << "--enable-launchd"
+      args << "--with-launchd-agent-dir=#{prefix}"
+    end
+    system "./configure", *args
+    system "make", "install"
+  end
+  def plist_name
+    "org.freedesktop.dbus-session"
+  end
+  def post_install
+    # Generate D-Bus's UUID for this machine
+    system "#{bin}/dbus-uuidgen", "--ensure=#{var}/lib/dbus/machine-id"
+  end
+  test do
+    system "#{bin}/dbus-daemon", "--version"
+  end
+end
+
+
+dbus

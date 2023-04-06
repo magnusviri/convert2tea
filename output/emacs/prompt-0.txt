@@ -1,0 +1,143 @@
+mpdecimal
+
+class Mpdecimal < Formula
+  homepage "https://www.bytereef.org/mpdecimal/"
+  url "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-2.5.1.tar.gz"
+  livecheck do
+    url "https://www.bytereef.org/mpdecimal/download.html"
+    regex(/href=.*?mpdecimal[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "./configure", "--prefix=#{prefix}"
+    system "make"
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <assert.h>
+      #include <mpdecimal.h>
+      #include <string.h>
+      int main() {
+        mpd_context_t ctx;
+        mpd_t *a, *b, *result;
+        char *rstring;
+        mpd_defaultcontext(&ctx);
+        a = mpd_new(&ctx);
+        b = mpd_new(&ctx);
+        result = mpd_new(&ctx);
+        mpd_set_string(a, "0.1", &ctx);
+        mpd_set_string(b, "0.2", &ctx);
+        mpd_add(result, a, b, &ctx);
+        rstring = mpd_to_sci(result, 1);
+        assert(strcmp(rstring, "0.3") == 0);
+        mpd_del(a);
+        mpd_del(b);
+        mpd_del(result);
+        mpd_free(rstring);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-o", "test", "-L#{lib}", "-lmpdec"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2.5.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{ prefix }}
+    make --jobs {{hw.concurrency}} install
+    rm -rf {{prefix}}/share  # docs are online
+
+    if test {{hw.platform}} = darwin; then
+      install_name_tool -change \
+        @rpath/libmpdec.3.dylib \
+        @loader_path/libmpdec.3.dylib \
+        {{prefix}}/lib/libmpdec++.dylib
+    fi
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -o test -lmpdec
+    ./test
+
+
+class Emacs < Formula
+  homepage "https://www.gnu.org/software/emacs/"
+  url "https://ftp.gnu.org/gnu/emacs/emacs-28.2.tar.xz"
+  mirror "https://ftpmirror.gnu.org/emacs/emacs-28.2.tar.xz"
+  head do
+    url "https://github.com/emacs-mirror/emacs.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "gnu-sed" => :build
+    depends_on "texinfo" => :build
+  end
+  depends_on "pkg-config" => :build
+  depends_on "gnutls"
+  depends_on "jansson"
+  uses_from_macos "libxml2"
+  uses_from_macos "ncurses"
+  on_linux do
+    depends_on "jpeg-turbo"
+  end
+  def install
+    # Mojave uses the Catalina SDK which causes issues like
+    # https://github.com/Homebrew/homebrew-core/issues/46393
+    # https://github.com/Homebrew/homebrew-core/pull/70421
+    ENV["ac_cv_func_aligned_alloc"] = "no" if MacOS.version == :mojave
+    args = %W[
+      --disable-silent-rules
+      --enable-locallisppath=#{HOMEBREW_PREFIX}/share/emacs/site-lisp
+      --infodir=#{info}/emacs
+      --prefix=#{prefix}
+      --with-gnutls
+      --without-x
+      --with-xml2
+      --without-dbus
+      --with-modules
+      --without-ns
+      --without-imagemagick
+      --without-selinux
+    ]
+    if build.head?
+      ENV.prepend_path "PATH", Formula["gnu-sed"].opt_libexec/"gnubin"
+      system "./autogen.sh"
+    end
+    File.write "lisp/site-load.el", <<~EOS
+      (setq exec-path (delete nil
+        (mapcar
+          (lambda (elt)
+            (unless (string-match-p "Homebrew/shims" elt) elt))
+          exec-path)))
+    EOS
+    system "./configure", *args
+    system "make"
+    system "make", "install"
+    # Follow MacPorts and don't install ctags from Emacs. This allows Vim
+    # and Emacs and ctags to play together without violence.
+    (bin/"ctags").unlink
+    (man1/"ctags.1.gz").unlink
+  end
+  service do
+    run [opt_bin/"emacs", "--fg-daemon"]
+    keep_alive true
+  end
+  test do
+    assert_equal "4", shell_output("#{bin}/emacs --batch --eval=\"(print (+ 2 2))\"").strip
+  end
+end
+
+
+emacs

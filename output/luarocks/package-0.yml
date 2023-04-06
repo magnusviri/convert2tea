@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://luarocks.org/releases/luarocks-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: luarocks/luarocks
+  strip: /^luarocks /
+
+dependencies:
+  lua.org: ^5.3
+  luajit.org: '*'
+  lua: '*'
+
+build:
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --prefix={{prefix}}
+    - --sysconfdir={{etc}}
+    - --rocks-tree={{HOMEBREW_PREFIX}}
+
+provides:
+  - bin/luarocks
+
+caveats: |
+  LuaRocks supports multiple versions of Lua. By default it is configured
+  to use Lua{{ lua.version.major_minor }}, but you can require it to use another version at runtime
+  with the `--lua-dir` flag, like this

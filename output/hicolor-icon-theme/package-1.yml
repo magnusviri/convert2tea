@@ -1,0 +1,26 @@
+
+distributable:
+  url: https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-{{ version }}.tar.xz
+
+versions:
+  homepage: https://wiki.freedesktop.org/www/Software/icon-theme/
+  strip: /^hicolor-icon-theme-/
+
+license:
+  all_of: ["FSFUL", "FSFULLR", "GPL-2.0-only", "X11"]
+
+head:
+  url: https://gitlab.freedesktop.org/xdg/default-icon-theme.git
+  branch: master
+  dependencies:
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+
+build:
+  script: |
+    ./configure --prefix={{ prefix }}
+    make install
+
+test:
+  script: |
+    [ -e {{ share }}/icons/hicolor/index.theme ]

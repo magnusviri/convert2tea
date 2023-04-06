@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://gitlab.com/graphviz/graphviz.git/releases/download/{{ version }}/graphviz-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  git: graphviz/graphviz
+
+dependencies:
+  autoconf: '*'
+  automake: '*'
+  bison: '*'
+  pkg-config: '*'
+  gd: '*'
+  gts: '*'
+  libpng: '*'
+  librsvg: '*'
+  libtool: '*'
+  pango: '*'
+
+build:
+  dependencies:
+    flex: '*'
+    python: '*'
+  script: |
+    ./autogen.sh
+    ./configure --without-x --without-freetype2 --without-gdk --without-gdk-pixbuf --without-gtk --without-poppler --without-qt --with-gts --with-quartz --prefix={{prefix}}

@@ -1,0 +1,75 @@
+wumpus
+
+class Wumpus < Formula
+  homepage "http://www.catb.org/~esr/wumpus/"
+  url "http://www.catb.org/~esr/wumpus/wumpus-1.9.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?wumpus[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "make"
+    system "make", "prefix=#{prefix}", "install"
+  end
+  test do
+    assert_match("HUNT THE WUMPUS",
+                 pipe_output(bin/"wumpus", "^C"))
+  end
+end
+
+
+distributable:
+  url: https://gitlab.com/esr/wumpus/-/archive/{{ version.raw }}/wumpus-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.9
+
+provides:
+  - bin/wumpus
+  - bin/superhack
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    #pagure.io/xmlto: '*'
+
+  script: |
+    make wumpus superhack
+    # When xmlto is packaged then switch the to `make ... install`
+    mkdir -p "{{prefix}}"/bin
+    mv wumpus superhack "{{prefix}}"/bin
+    # make prefix={{prefix}} install
+
+test:
+  script: |
+    wumpus > wumpus.out &
+    superhack > superhack.out &
+    sleep 1
+    test "x$(head -n1 wumpus.out)" = "xINSTRUCTIONS (Y-N)" && \
+    test "x$(head -n1 superhack.out)" = "xHunt the Superhack"
+
+
+class Carthage < Formula
+  homepage "https://github.com/Carthage/Carthage"
+  url "https://github.com/Carthage/Carthage.git",
+      tag:      "0.39.0",
+      revision: "187a78c62811d3d75a9b1d41bfaeff708936125d"
+  head "https://github.com/Carthage/Carthage.git", branch: "master"
+  depends_on xcode: ["10.0", :build]
+  depends_on :macos
+  def install
+    system "make", "prefix_install", "PREFIX=#{prefix}"
+    bash_completion.install "Source/Scripts/carthage-bash-completion" => "carthage"
+    zsh_completion.install "Source/Scripts/carthage-zsh-completion" => "_carthage"
+    fish_completion.install "Source/Scripts/carthage-fish-completion" => "carthage.fish"
+  end
+  test do
+    (testpath/"Cartfile").write 'github "jspahrsummers/xcconfigs"'
+    system bin/"carthage", "update"
+  end
+end
+
+
+carthage

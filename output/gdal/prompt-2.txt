@@ -1,0 +1,197 @@
+eigen
+
+class Eigen < Formula
+  homepage "https://eigen.tuxfamily.org/"
+  url "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz"
+  revision 1
+  head "https://gitlab.com/libeigen/eigen.git", branch: "master"
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
+  depends_on "cmake" => :build
+  conflicts_with "freeling", because: "freeling ships its own copy of eigen"
+  def install
+    mkdir "eigen-build" do
+      args = std_cmake_args
+      args << "-Dpkg_config_libdir=#{lib}" << ".."
+      system "cmake", *args
+      system "make", "install"
+    end
+    (share/"cmake/Modules").install "cmake/FindEigen3.cmake"
+  end
+  test do
+    (testpath/"test.cpp").write <<~EOS
+      #include <iostream>
+      #include <Eigen/Dense>
+      using Eigen::MatrixXd;
+      int main()
+      {
+        MatrixXd m(2,2);
+        m(0,0) = 3;
+        m(1,0) = 2.5;
+        m(0,1) = -1;
+        m(1,1) = m(1,0) + m(0,1);
+        std::cout << m << std::endl;
+      }
+    EOS
+    system ENV.cxx, "test.cpp", "-I#{include}/eigen3", "-o", "test"
+    assert_equal %w[3 -1 2.5 1.5], shell_output("./test").split
+  end
+end
+
+
+distributable:
+  url: https://gitlab.com/libeigen/eigen/-/archive/{{version}}/eigen-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 3.4.0
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+  script: |
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}}
+    make install
+
+    # stuff expects `Eigen` to be in `include` rather than namespaced
+    cd "{{prefix}}"
+    mv include/eigen3/* include
+    cd include
+    rmdir eigen3
+    # but work for stuff that expects the namespace too
+    ln -s eigen3 .
+  test:
+    make test
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    freedesktop.org/pkg-config: ^0.29
+  env:
+    cxxflags: $(pkg-config --cflags eigen3)
+  fixture: |
+    #include <iostream>
+    #include <Eigen/Dense>
+    using Eigen::MatrixXd;
+    int main()
+    {
+      MatrixXd m(2,2);
+      m(0,0) = 3;
+      m(1,0) = 2.5;
+      m(0,1) = -1;
+      m(1,1) = m(1,0) + m(0,1);
+      std::cout << m << std::endl;
+    }
+  script: |
+    mv $FIXTURE test.cpp
+    g++ test.cpp ${cxxflags} -o test
+    ./test > output.txt
+    out=$(./test)
+    if test "$out" = $'  3  -1\n2.5 1.5'; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi
+
+
+class Gdal < Formula
+  homepage "https://www.gdal.org/"
+  url "http://download.osgeo.org/gdal/3.6.3/gdal-3.6.3.tar.xz"
+  revision 1
+  livecheck do
+    url "https://download.osgeo.org/gdal/CURRENT/"
+    regex(/href=.*?gdal[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  head do
+    url "https://github.com/OSGeo/gdal.git", branch: "master"
+    depends_on "doxygen" => :build
+  end
+  depends_on "cmake" => :build
+  depends_on "pkg-config" => :build
+  depends_on "apache-arrow"
+  depends_on "cfitsio"
+  depends_on "epsilon"
+  depends_on "expat"
+  depends_on "freexl"
+  depends_on "geos"
+  depends_on "giflib"
+  depends_on "hdf5"
+  depends_on "jpeg-turbo"
+  depends_on "jpeg-xl"
+  depends_on "json-c"
+  depends_on "libdap"
+  depends_on "libgeotiff"
+  depends_on "libheif"
+  depends_on "liblerc"
+  depends_on "libpng"
+  depends_on "libpq"
+  depends_on "libspatialite"
+  depends_on "libtiff"
+  depends_on "libxml2"
+  depends_on "netcdf"
+  depends_on "numpy"
+  depends_on "openexr"
+  depends_on "openjpeg"
+  depends_on "pcre2"
+  depends_on "poppler"
+  depends_on "proj"
+  depends_on "python@3.11"
+  depends_on "qhull"
+  depends_on "sqlite"
+  depends_on "unixodbc"
+  depends_on "webp"
+  depends_on "xerces-c"
+  depends_on "xz"
+  depends_on "zstd"
+  uses_from_macos "curl"
+  on_linux do
+    depends_on "util-linux"
+  end
+  conflicts_with "avce00", because: "both install a cpl_conv.h header"
+  conflicts_with "cpl", because: "both install cpl_error.h"
+  fails_with gcc: "5"
+  def python3
+    "python3.11"
+  end
+  def install
+    site_packages = prefix/Language::Python.site_packages(python3)
+    # Work around Homebrew's "prefix scheme" patch which causes non-pip installs
+    # to incorrectly try to write into HOMEBREW_PREFIX/lib since Python 3.10.
+    inreplace "swig/python/CMakeLists.txt",
+              'set(INSTALL_ARGS "--single-version-externally-managed --record=record.txt',
+              "\\0 --install-lib=#{site_packages} --install-scripts=#{bin}"
+    osgeo_ext = site_packages/"osgeo"
+    rpaths = [rpath, rpath(source: osgeo_ext)]
+    ENV.append "LDFLAGS", "-Wl,#{rpaths.map { |rp| "-rpath,#{rp}" }.join(",")}"
+    # keep C++ standard in sync with `abseil.rb`
+    args = %W[
+      -DENABLE_PAM=ON
+      -DBUILD_PYTHON_BINDINGS=ON
+      -DCMAKE_INSTALL_RPATH=#{rpaths.join(";")}
+      -DPython_EXECUTABLE=#{which(python3)}
+      -DGDAL_PYTHON_INSTALL_LIB=#{site_packages}
+      -DCMAKE_CXX_STANDARD=17
+    ]
+    # JavaVM.framework in SDK causing Java bindings to be built
+    args << "-DBUILD_JAVA_BINDINGS=OFF" if MacOS.version <= :catalina
+    system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    bash_completion.install (share/"bash-completion/completions").children
+  end
+  test do
+    # basic tests to see if third-party dylibs are loading OK
+    system bin/"gdalinfo", "--formats"
+    system bin/"ogrinfo", "--formats"
+    # Changed Python package name from "gdal" to "osgeo.gdal" in 3.2.0.
+    system python3, "-c", "import osgeo.gdal"
+  end
+end
+
+
+gdal

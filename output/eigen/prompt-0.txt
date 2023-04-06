@@ -1,0 +1,99 @@
+bcrypt
+
+class Bcrypt < Formula
+  homepage "https://bcrypt.sourceforge.io/"
+  url "https://bcrypt.sourceforge.io/bcrypt-1.1.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?bcrypt[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  uses_from_macos "zlib"
+  def install
+    system "make", "CC=#{ENV.cc}",
+                   "CFLAGS=#{ENV.cflags}",
+                   "LDFLAGS=-lz"
+    bin.install "bcrypt"
+    man1.install Utils::Gzip.compress("bcrypt.1")
+  end
+  test do
+    (testpath/"test.txt").write("Hello World!")
+    pipe_output("#{bin}/bcrypt -r test.txt", "12345678\n12345678\n")
+    mv "test.txt.bfe", "test.out.txt.bfe"
+    pipe_output("#{bin}/bcrypt -r test.out.txt.bfe", "12345678\n")
+    assert_equal File.read("test.txt"), File.read("test.out.txt")
+  end
+end
+
+
+distributable:
+  url: https://bcrypt.sourceforge.net/bcrypt-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.1.0
+
+dependencies:
+  zlib.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make LDFLAGS=-lz PREFIX={{prefix}} install
+
+provides:
+  - bin/bcrypt
+
+test:
+  script: |
+    echo "Hello World!" > test.txt
+    printf '12345678\n12345678\n' | bcrypt -r test.txt
+    mv test.txt.bfe test.out.txt.bfe
+    printf '12345678\n' | bcrypt -r test.out.txt.bfe
+    cat test.out.txt
+
+
+
+class Eigen < Formula
+  homepage "https://eigen.tuxfamily.org/"
+  url "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz"
+  revision 1
+  head "https://gitlab.com/libeigen/eigen.git", branch: "master"
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
+  depends_on "cmake" => :build
+  conflicts_with "freeling", because: "freeling ships its own copy of eigen"
+  def install
+    mkdir "eigen-build" do
+      args = std_cmake_args
+      args << "-Dpkg_config_libdir=#{lib}" << ".."
+      system "cmake", *args
+      system "make", "install"
+    end
+    (share/"cmake/Modules").install "cmake/FindEigen3.cmake"
+  end
+  test do
+    (testpath/"test.cpp").write <<~EOS
+      #include <iostream>
+      #include <Eigen/Dense>
+      using Eigen::MatrixXd;
+      int main()
+      {
+        MatrixXd m(2,2);
+        m(0,0) = 3;
+        m(1,0) = 2.5;
+        m(0,1) = -1;
+        m(1,1) = m(1,0) + m(0,1);
+        std::cout << m << std::endl;
+      }
+    EOS
+    system ENV.cxx, "test.cpp", "-I#{include}/eigen3", "-o", "test"
+    assert_equal %w[3 -1 2.5 1.5], shell_output("./test").split
+  end
+end
+
+
+eigen

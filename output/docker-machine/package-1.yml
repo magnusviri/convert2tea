@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://gitlab.com/gitlab-org/ci-cd/docker-machine.git
+  revision: 9e9d6baf7eda8b6569f92e777ae7f496599fb297
+  tag: v{{version}}-gitlab.20
+
+versions:
+  gitlab: gitlab-org/ci-cd/docker-machine/releases/tags
+
+provides:
+  - bin/docker-machine
+  - bin/docker-machine-driver-*
+  - bin/docker-machine-profile
+  - bin/docker-machine-prompt
+  - bin/docker-machine-wrapper
+
+build:
+  dependencies:
+    go.dev: ^1.11
+    automake.org: ^1.13
+  script: |
+    export GOPATH="{{ buildpath }}"
+    export GO111MODULE="auto"
+    make build
+
+test:
+  test "$(docker-machine --version)" = "{{ version }}"
+
+completions:
+  bash:
+    - contrib/completion/bash/*.

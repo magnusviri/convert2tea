@@ -1,0 +1,27 @@
+distributable:
+  url: https://github.com/strukturag/libde265/archive/v{{version}}.tar.gz
+
+versions:
+  - 1.0.11
+
+patches:
+  - url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff
+
+build:
+  script: |
+    ./configure --build=aarch64-apple-darwin{{OS.kernel_version}} --prefix={{prefix}} --disable-dependency-tracking --disable-silent-rules --disable-sherlock265 --disable-dec265
+    make
+    make install
+  env:
+    linux:
+      CFLAGS: -fPIC
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+
+provides:
+  - bin/acceleration_speed
+  - bin/block-rate-estim
+  - bin/tests
+
+test: |
+  {{

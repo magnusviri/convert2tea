@@ -1,0 +1,23 @@
+
+distributable:
+  url: https://github.com/google/googletest/archive/v{{ version }}.tar.gz
+
+dependencies:
+  cmake.org: ^3
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake . {{ cmake_args }}
+    make install
+    (include/googlemock/googlemock/src).install Dir["googlemock/src/*"]
+    (include/googletest/googletest/src).install Dir["googletest/src/*"]
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    c++ test.cpp -std=c++14 -L{{ lib }} -lgtest -lgtest_main -pthread
+    ./a.out

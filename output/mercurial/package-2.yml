@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://www.mercurial-scm.org/release/mercurial-{{version}}.tar.gz
+
+versions:
+  - 6.4
+
+build:
+  working-directory: src
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    python@3.11: '^3'
+  env:
+    HGPYTHON3: "1"
+    PYTHON: $(which python3.11)
+  script: |
+    make install-bin PREFIX={{prefix}}
+    make -C contrib/chg install PREFIX={{prefix}} HGPATH={{bin}}/hg HG={{bin}}/hg
+
+post-install:
+  fixture: |
+    [pager]
+    pager = less -FRX
+  script: |
+    mv $FIXTURE {{etc}}/mercurial/hgrc
+
+test:
+  dependencies:
+    freedesktop.org/pkg-config: ^0.

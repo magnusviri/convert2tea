@@ -1,0 +1,96 @@
+jansson
+
+class Jansson < Formula
+  homepage "https://digip.org/jansson/"
+  url "https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz"
+  def install
+    system "./configure", *std_configure_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <jansson.h>
+      #include <assert.h>
+      int main()
+      {
+        json_t *json;
+        json_error_t error;
+        json = json_loads("\\"foo\\"", JSON_DECODE_ANY, &error);
+        assert(json && json_is_string(json));
+        json_decref(json);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-ljansson", "-o", "test"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://github.com/akheron/jansson/releases/download/v{{ version.raw }}/jansson-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: akheron/jansson/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc fixture.c -ljansson
+    ./a.out
+
+class MecabIpadic < Formula
+  homepage "https://taku910.github.io/mecab/"
+  # Canonical url is https://drive.google.com/uc?export=download&id=0B4y35FiV1wh7MWVlSDBCSXZMTXM
+  url "https://deb.debian.org/debian/pool/main/m/mecab-ipadic/mecab-ipadic_2.7.0-20070801+main.orig.tar.gz"
+  version "2.7.0-20070801"
+  # We check the Debian index page because the first-party website uses a Google
+  # Drive download URL and doesn't list the version in any other way, so we
+  # can't identify the newest version there.
+  livecheck do
+    url "https://deb.debian.org/debian/pool/main/m/mecab-ipadic/"
+    regex(/href=.*?mecab-ipadic[._-]v?(\d+(?:\.\d+)+(?:-\d+)?)(?:\+main)?\.orig\.t/i)
+  end
+  depends_on "mecab"
+  link_overwrite "lib/mecab/dic"
+  def install
+    args = %W[
+      --disable-debug
+      --disable-dependency-tracking
+      --prefix=#{prefix}
+      --with-charset=utf8
+      --with-dicdir=#{lib}/mecab/dic/ipadic
+    ]
+    system "./configure", *args
+    system "make", "install"
+  end
+  def caveats
+    <<~EOS
+      To enable mecab-ipadic dictionary, add to #{HOMEBREW_PREFIX}/etc/mecabrc:
+        dicdir = #{HOMEBREW_PREFIX}/lib/mecab/dic/ipadic
+    EOS
+  end
+  test do
+    (testpath/"mecabrc").write <<~EOS
+      dicdir = #{HOMEBREW_PREFIX}/lib/mecab/dic/ipadic
+    EOS
+    pipe_output("mecab --rcfile=#{testpath}/mecabrc", "すもももももももものうち\n", 0)
+  end
+end
+
+
+mecab-ipadic

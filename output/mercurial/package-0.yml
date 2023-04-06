@@ -1,0 +1,24 @@
+
+distributable:
+  url: https://www.mercurial-scm.org/release/mercurial-{{ version }}.tar.gz
+
+versions:
+  strip: /^mercurial-/
+
+dependencies:
+  python@3.11: '*'
+
+build:
+  script: |
+    HGPYTHON3=1 PYTHON=$(which python3.11) \
+    make install-bin \
+    PREFIX={{ prefix }} \
+    HGPATH={{ bin }}/hg HG={{ bin }}/hg \
+    --install-lib="{{ prefix/Language::Python.site_packages(python3) }}" \
+    --install-scripts="{{ bin }}" \
+    --install-data="{{ prefix }}"
+
+test:
+  script: |
+    {{  bin }}/hg init
+    {{  bin }}/hg --version

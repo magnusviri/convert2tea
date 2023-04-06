@@ -1,0 +1,97 @@
+jansson
+
+class Jansson < Formula
+  homepage "https://digip.org/jansson/"
+  url "https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz"
+  def install
+    system "./configure", *std_configure_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <jansson.h>
+      #include <assert.h>
+      int main()
+      {
+        json_t *json;
+        json_error_t error;
+        json = json_loads("\\"foo\\"", JSON_DECODE_ANY, &error);
+        assert(json && json_is_string(json));
+        json_decref(json);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-ljansson", "-o", "test"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://github.com/akheron/jansson/releases/download/v{{ version.raw }}/jansson-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: akheron/jansson/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc fixture.c -ljansson
+    ./a.out
+
+class Aspell < Formula
+  homepage "http://aspell.net/"
+  url "https://ftp.gnu.org/gnu/aspell/aspell-0.60.8.tar.gz"
+  mirror "https://ftpmirror.gnu.org/aspell/aspell-0.60.8.tar.gz"
+  uses_from_macos "ncurses"
+  # const problems with llvm: https://www.freebsd.org/cgi/query-pr.cgi?pr=180565&cat=
+  patch :DATA
+  def install
+    system "./configure", "--prefix=#{prefix}"
+    system "make", "install"
+    ENV.prepend_path "PATH", bin
+    resources.each do |r|
+      r.stage do
+        system "./configure", "--vars", "ASPELL=#{bin}/aspell", "PREZIP=#{bin}/prezip"
+        system "make", "install"
+      end
+    end
+  end
+  test do
+    assert_equal "worrd", pipe_output("#{bin}/aspell list -d en_US", "misspell worrd").strip
+  end
+end
+__END__
+diff --git a/interfaces/cc/aspell.h b/interfaces/cc/aspell.h
+index 9c8e81b..2cd00d4 100644
+--- a/interfaces/cc/aspell.h
++++ b/interfaces/cc/aspell.h
+@@ -237,6 +237,7 @@ void delete_aspell_can_have_error(struct AspellCanHaveError * ths);
+ /******************************** errors ********************************/
++#ifndef __cplusplus
+ extern const struct AspellErrorInfo * const aerror_other;
+ extern const struct AspellErrorInfo * const aerror_operation_not_supported;
+ extern const struct AspellErrorInfo * const   aerror_cant_copy;
+@@ -322,6 +323,7 @@ extern const struct AspellErrorInfo * const   aerror_missing_magic;
+ extern const struct AspellErrorInfo * const   aerror_bad_magic;
+ extern const struct AspellErrorInfo * const aerror_expression;
+ extern const struct AspellErrorInfo * const   aerror_invalid_expression;
++#endif
+ /******************************* speller *******************************/
+
+
+aspell

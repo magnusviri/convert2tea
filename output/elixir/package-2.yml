@@ -1,0 +1,26 @@
+
+distributable:
+  url: https://github.com/elixir-lang/elixir/archive/{{version}}.tar.gz
+
+versions:
+  - 1.14.4
+
+build:
+  dependencies:
+    erlang.org: ^25
+  script: |
+    make
+  install:
+    bin:
+      - bin/*
+    lib:
+      - lib/{{name}}/ebin
+    man: |
+      make install_man PREFIX={{prefix}}
+
+provides:
+  - bin/elixir
+
+test:
+  script: |
+    elixir -v | grep -E "(compiled with Erlang/OTP 25)"

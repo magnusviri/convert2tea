@@ -1,0 +1,141 @@
+mpdecimal
+
+class Mpdecimal < Formula
+  homepage "https://www.bytereef.org/mpdecimal/"
+  url "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-2.5.1.tar.gz"
+  livecheck do
+    url "https://www.bytereef.org/mpdecimal/download.html"
+    regex(/href=.*?mpdecimal[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "./configure", "--prefix=#{prefix}"
+    system "make"
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <assert.h>
+      #include <mpdecimal.h>
+      #include <string.h>
+      int main() {
+        mpd_context_t ctx;
+        mpd_t *a, *b, *result;
+        char *rstring;
+        mpd_defaultcontext(&ctx);
+        a = mpd_new(&ctx);
+        b = mpd_new(&ctx);
+        result = mpd_new(&ctx);
+        mpd_set_string(a, "0.1", &ctx);
+        mpd_set_string(b, "0.2", &ctx);
+        mpd_add(result, a, b, &ctx);
+        rstring = mpd_to_sci(result, 1);
+        assert(strcmp(rstring, "0.3") == 0);
+        mpd_del(a);
+        mpd_del(b);
+        mpd_del(result);
+        mpd_free(rstring);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-o", "test", "-L#{lib}", "-lmpdec"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2.5.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{ prefix }}
+    make --jobs {{hw.concurrency}} install
+    rm -rf {{prefix}}/share  # docs are online
+
+    if test {{hw.platform}} = darwin; then
+      install_name_tool -change \
+        @rpath/libmpdec.3.dylib \
+        @loader_path/libmpdec.3.dylib \
+        {{prefix}}/lib/libmpdec++.dylib
+    fi
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -o test -lmpdec
+    ./test
+
+
+class Libpq < Formula
+  homepage "https://www.postgresql.org/docs/15/libpq.html"
+  url "https://ftp.postgresql.org/pub/source/v15.2/postgresql-15.2.tar.bz2"
+  livecheck do
+    url "https://ftp.postgresql.org/pub/source/"
+    regex(%r{href=["']?v?(\d+(?:\.\d+)+)/?["' >]}i)
+  end
+  keg_only "conflicts with postgres formula"
+  # GSSAPI provided by Kerberos.framework crashes when forked.
+  # See https://github.com/Homebrew/homebrew-core/issues/47494.
+  depends_on "krb5"
+  depends_on "openssl@1.1"
+  uses_from_macos "zlib"
+  on_linux do
+    depends_on "readline"
+  end
+  def install
+    system "./configure", "--disable-debug",
+                          "--prefix=#{prefix}",
+                          "--with-gssapi",
+                          "--with-openssl",
+                          "--libdir=#{opt_lib}",
+                          "--includedir=#{opt_include}"
+    dirs = %W[
+      libdir=#{lib}
+      includedir=#{include}
+      pkgincludedir=#{include}/postgresql
+      includedir_server=#{include}/postgresql/server
+      includedir_internal=#{include}/postgresql/internal
+    ]
+    system "make"
+    system "make", "-C", "src/bin", "install", *dirs
+    system "make", "-C", "src/include", "install", *dirs
+    system "make", "-C", "src/interfaces", "install", *dirs
+    system "make", "-C", "src/common", "install", *dirs
+    system "make", "-C", "src/port", "install", *dirs
+    system "make", "-C", "doc", "install", *dirs
+  end
+  test do
+    (testpath/"libpq.c").write <<~EOS
+      #include <stdlib.h>
+      #include <stdio.h>
+      #include <libpq-fe.h>
+      int main()
+      {
+          const char *conninfo;
+          PGconn     *conn;
+          conninfo = "dbname = postgres";
+          conn = PQconnectdb(conninfo);
+          if (PQstatus(conn) != CONNECTION_OK) // This should always fail
+          {
+              printf("Connection to database attempted and failed");
+              PQfinish(conn);
+              exit(0);
+          }
+          return 0;
+        }
+    EOS
+    system ENV.cc, "libpq.c", "-L#{lib}", "-I#{include}", "-lpq", "-o", "libpqtest"
+    assert_equal "Connection to database attempted and failed", shell_output("./libpqtest")
+  end
+end
+
+
+libpq

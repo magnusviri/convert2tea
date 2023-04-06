@@ -1,0 +1,30 @@
+
+distributable:
+   url: https://ftp.postgresql.org/pub/source/v{{version}}/postgresql-{{version}}.tar.bz2
+   strip-components: 1
+
+versions:
+  - 15.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    openssl@1.1: '*'
+    krb5: '*'
+    zlib: '*'
+    readline: '*'
+  working-directory: build
+  script: |
+    ./configure --disable-debug --prefix={{prefix}} \
+                --with-gssapi --with-openssl --libdir={{opt_lib}} \
+                --includedir={{opt_include}}
+    make 
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+
+provides:
+  - lib

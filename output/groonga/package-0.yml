@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://packages.groonga.org/source/groonga/groonga-{{ version }}.tar.gz
+
+versions:
+  homepage:
+    url: https://groonga.org/
+    regex: >-
+      v?(\d+(?:\.\d+)+)</a> is the latest release
+    strip: /^v/
+  source:
+    git:
+      url: https://github.com/groonga/groonga.git
+      branch: master
+
+dependencies:
+  pkg-config: '*'
+  mecab: '*'
+  mecab-ipadic: '*'
+  msgpack: '*'
+  openssl@1.1: '*'
+  pcre: '*'
+  glib: '*'
+  libxcrypt:
+    macos: '*'
+
+build:
+  script: |
+    if build.head?
+      ./autogen.sh
+    fi
+    ./configure --disable-zeromq --disable-apache-arrow --with-luajit=no --with-

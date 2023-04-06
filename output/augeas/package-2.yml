@@ -1,0 +1,22 @@
+
+distributable:
+  url:
+    stable: https://github.com/hercules-team/augeas/releases/download/release-{{ version.raw }}/augeas-{{ version.raw }}.tar.gz
+    head: https://github.com/hercules-team/augeas.git
+  move-directory: augeas
+  patch:
+    stable: https://github.com/hercules-team/augeas/commit/{{ patch.sha }}/augeas-{{ patch.version }}.patch?full_index=1
+
+versions:
+  stable: 
+    url: https://github.com/hercules-team/augeas/releases
+    regex: /^release-(\d+(?:\.\d+)+)$/
+    strip: /^release-/
+  head:
+    github: hercules-team/augeas/tags
+
+build:
+  dependencies:
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+    gnu.org/m4: '*

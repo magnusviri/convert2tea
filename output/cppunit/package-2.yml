@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://dev-www.libreoffice.org/src/cppunit-{{version}}.tar.gz
+  strip-components: 0
+
+versions:
+  - 1.15.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --disable-dependency-tracking --prefix="{{prefix}}"
+    make install
+  test:
+    make test
+
+test:
+  script: |
+    #{{bin}}/DllPlugInTester > output.txt
+    out=$(#{{bin}}/DllPlugInTester)
+    if grep 'Usage' output.txt; then
+      echo "PASS"
+    else
+      echo "FAIL"
+    fi

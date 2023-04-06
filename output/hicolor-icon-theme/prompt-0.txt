@@ -1,0 +1,100 @@
+doxygen
+
+class Doxygen < Formula
+  homepage "https://www.doxygen.nl/"
+  url "https://doxygen.nl/files/doxygen-1.9.6.src.tar.gz"
+  mirror "https://downloads.sourceforge.net/project/doxygen/rel-1.9.6/doxygen-1.9.6.src.tar.gz"
+  head "https://github.com/doxygen/doxygen.git", branch: "master"
+  livecheck do
+    url "https://www.doxygen.nl/download.html"
+    regex(/href=.*?doxygen[._-]v?(\d+(?:\.\d+)+)[._-]src\.t/i)
+  end
+  depends_on "bison" => :build
+  depends_on "cmake" => :build
+  uses_from_macos "flex" => :build, since: :big_sur
+  uses_from_macos "python" => :build
+  fails_with :gcc do
+    version "6"
+    cause "Need gcc>=7.2. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66297"
+  end
+  def install
+    system "cmake", "-S", ".", "-B", "build",
+                    "-DPYTHON_EXECUTABLE=#{which("python3") || which("python")}",
+                    *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    system "cmake", "-S", ".", "-B", "build", "-Dbuild_doc=1", *std_cmake_args
+    man1.install buildpath.glob("build/man/*.1")
+  end
+  test do
+    system bin/"doxygen", "-g"
+    system bin/"doxygen", "Doxyfile"
+  end
+end
+
+
+
+distributable:
+   url: https://github.com/doxygen/doxygen/archive/refs/tags/Release_{{version.major}}_{{version.minor}}_{{version.patch}}.tar.gz
+   strip-components: 1
+
+versions:
+  - 1.9.6 # FIXME: the versions are "Release_1_9_6" but no idea how I can parse this without regex
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/bison: ^3
+    cmake.org: ^3
+    github.com/westes/flex: 2
+    python.org: ^3
+  working-directory: build
+  script: |
+    cmake $ARGS -G "Unix Makefiles" ..
+    make --jobs {{ hw.concurrency }} 
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+    
+
+provides:
+  - bin/doxygen
+
+test:
+  script: |
+    doxygen -g
+    doxygen Doxyfile
+
+
+class HicolorIconTheme < Formula
+  homepage "https://wiki.freedesktop.org/www/Software/icon-theme/"
+  url "https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-0.17.tar.xz"
+  license all_of: ["FSFUL", "FSFULLR", "GPL-2.0-only", "X11"]
+  livecheck do
+    url :homepage
+    regex(/href=.*?hicolor-icon-theme[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  head do
+    url "https://gitlab.freedesktop.org/xdg/default-icon-theme.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+  end
+  def install
+    args = %W[--prefix=#{prefix} --disable-silent-rules]
+    if build.head?
+      system "./autogen.sh", *args
+    else
+      system "./configure", *args
+    end
+    system "make", "install"
+  end
+  test do
+    assert_predicate share/"icons/hicolor/index.theme", :exist?
+  end
+end
+
+
+hicolor-icon-theme

@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://mandoc.bsd.lv/snapshots/mandoc-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: akheron/mandoc/tags
+  strip: /^v/
+  revision: 1
+  
+head:
+  url: anoncvs@mandoc.bsd.lv:/cvs
+  using: cvs
+
+livecheck:
+  url: https://mandoc.bsd.lv/snapshots/
+  regex: /href=.*?mandoc[._-]v?(\d+(?:\.\d+)+)\.t/i
+
+uses_from_macos:
+  - zlib
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/make: '*'
+    zlib.net: '*'
+  script: |
+    echo {{ build.config }} >> configure.local

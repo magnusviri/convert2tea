@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/epsilon-project/epsilon/{{ version }}/epsilon-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  stable: https://downloads.sourceforge.net/project/epsilon-project/epsilon
+  ignore: /-rc\d/
+
+detect:
+  cmd: epsilon --version
+  regex: Epsilon (\d+\.\d+\.\d+)
+
+dependencies:
+  popt: '*'
+
+build:
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |-
+    autoreconf --force --install --verbose
+    ./configure --disable-debug --disable-dependency-tracking --prefix={{ prefix }}
+    make install
+
+provides:
+  bin/epsilon
+
+test:
+  script: epsilon --version

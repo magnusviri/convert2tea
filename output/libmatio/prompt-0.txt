@@ -1,0 +1,120 @@
+doxygen
+
+class Doxygen < Formula
+  homepage "https://www.doxygen.nl/"
+  url "https://doxygen.nl/files/doxygen-1.9.6.src.tar.gz"
+  mirror "https://downloads.sourceforge.net/project/doxygen/rel-1.9.6/doxygen-1.9.6.src.tar.gz"
+  head "https://github.com/doxygen/doxygen.git", branch: "master"
+  livecheck do
+    url "https://www.doxygen.nl/download.html"
+    regex(/href=.*?doxygen[._-]v?(\d+(?:\.\d+)+)[._-]src\.t/i)
+  end
+  depends_on "bison" => :build
+  depends_on "cmake" => :build
+  uses_from_macos "flex" => :build, since: :big_sur
+  uses_from_macos "python" => :build
+  fails_with :gcc do
+    version "6"
+    cause "Need gcc>=7.2. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66297"
+  end
+  def install
+    system "cmake", "-S", ".", "-B", "build",
+                    "-DPYTHON_EXECUTABLE=#{which("python3") || which("python")}",
+                    *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    system "cmake", "-S", ".", "-B", "build", "-Dbuild_doc=1", *std_cmake_args
+    man1.install buildpath.glob("build/man/*.1")
+  end
+  test do
+    system bin/"doxygen", "-g"
+    system bin/"doxygen", "Doxyfile"
+  end
+end
+
+
+
+distributable:
+   url: https://github.com/doxygen/doxygen/archive/refs/tags/Release_{{version.major}}_{{version.minor}}_{{version.patch}}.tar.gz
+   strip-components: 1
+
+versions:
+  - 1.9.6 # FIXME: the versions are "Release_1_9_6" but no idea how I can parse this without regex
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/bison: ^3
+    cmake.org: ^3
+    github.com/westes/flex: 2
+    python.org: ^3
+  working-directory: build
+  script: |
+    cmake $ARGS -G "Unix Makefiles" ..
+    make --jobs {{ hw.concurrency }} 
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+    
+
+provides:
+  - bin/doxygen
+
+test:
+  script: |
+    doxygen -g
+    doxygen Doxyfile
+
+
+class Libmatio < Formula
+  homepage "https://matio.sourceforge.io/"
+  url "https://downloads.sourceforge.net/project/matio/matio/1.5.23/matio-1.5.23.tar.gz"
+  depends_on "hdf5"
+  def install
+    args = %W[
+      --prefix=#{prefix}
+      --enable-extended-sparse=yes
+      --enable-mat73=yes
+      --with-hdf5=#{Formula["hdf5"].opt_prefix}
+      --with-zlib=/usr
+    ]
+    system "./configure", *args
+    system "make", "install"
+  end
+  test do
+    testpath.install resource("homebrew-test_mat_file")
+    (testpath/"mat.c").write <<~EOS
+      #include <stdlib.h>
+      #include <matio.h>
+      size_t dims[2] = {5, 5};
+      double data[25] = {0.0, };
+      mat_t *mat;
+      matvar_t *matvar;
+      int main(int argc, char **argv) {
+        if (!(mat = Mat_Open(argv[1], MAT_ACC_RDONLY)))
+          abort();
+        Mat_Close(mat);
+        mat = Mat_CreateVer("test_writenan.mat", NULL, MAT_FT_DEFAULT);
+        if (mat) {
+          matvar = Mat_VarCreate("foo", MAT_C_DOUBLE, MAT_T_DOUBLE, 2,
+                                 dims, data, MAT_F_DONT_COPY_DATA);
+          Mat_VarWrite(mat, matvar, MAT_COMPRESSION_NONE);
+          Mat_VarFree(matvar);
+          Mat_Close(mat);
+        } else {
+          abort();
+        }
+        mat = Mat_CreateVer("foo", NULL, MAT_FT_MAT73);
+        return EXIT_SUCCESS;
+      }
+    EOS
+    system ENV.cc, "mat.c", "-o", "mat", "-I#{include}", "-L#{lib}", "-lmatio"
+    system "./mat", "poc_data.mat.sfx"
+  end
+end
+
+
+libmatio

@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: https://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html
+  regex: /href=.*?cfitsio[._-]v?(\d+(?:\.\d+)+)\.t/i
+
+detect:
+  cmd: cfitsio-config --version
+  regex: CFITSIO version \v
+
+dependencies:
+  zlib.net: 1
+
+provides:
+  darwin:
+  - include/fitsio.h
+  - lib/libcfitsio.a
+  - lib/libcfitsio.dylib
+  linux:
+  - include/fitsio.h
+  - lib/libcfitsio.a
+  - lib/libcfitsio.so
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99

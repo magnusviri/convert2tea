@@ -1,0 +1,25 @@
+
+distributable:
+  url: https://downloads.xiph.org/releases/vorbis/libvorbis-{{version}}.tar.xz
+  mirrors:
+    - https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-{{version}}.tar.xz
+
+versions:
+  homepage: https://xiph.org/vorbis/
+  regex: /href=.*?libvorbis[._-]v?(\d+(?:\.\d+)+)\.t/
+  head:
+    url: https://gitlab.xiph.org/xiph/vorbis.git
+
+dependencies:
+  libogg.org: ^1
+
+build:
+  dependencies:
+    gnu.org/autoconf: ^2
+    gnu.org/automake: ^1
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/libtool: ^2
+  script: |
+    ./autogen.sh
+   

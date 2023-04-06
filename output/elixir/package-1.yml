@@ -1,0 +1,20 @@
+
+distributable:
+   url: https://github.com/elixir-lang/elixir/archive/v{{version.major}}.{{version.minor}}.{{version.patch}}.tar.gz
+
+versions: 1.14.4
+
+build:
+  dependencies:
+    erlang.org: '*'
+  script: |
+    make
+  env:
+    PREFIX: {{prefix}}
+
+provides:
+  - bin/elixir
+
+test:
+  script: |
+    elixir -v | grep 'compiled with Erlang/OTP'

@@ -1,0 +1,21 @@
+
+distributable:
+  url: https://github.com/google/googletest/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+# if there's a github then we can parse the versions
+versions:
+  github: google/googletest/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++14
+    tea.xyz/gx/make: '*'
+    cmake.org: ^3
+  script: |
+    cmake . -DCMAKE_INSTALL_PREFIX={{prefix}}
+    make --jobs {{ hw.concurrency }}
+    mkdir -p "{{prefix}}"/include/googlemock/googlemock/src
+    mkdir -p "{{prefix}}"/include/googletest/googletest/src
+    mv googlemock/src/* "{{prefix}}"/include/googlemock/googlemock/src
+    mv googletest/src/* "{{prefix}}"/include/googletest/go

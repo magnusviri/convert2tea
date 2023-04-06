@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://geuz.org/gl2ps/src/gl2ps-{{version}}.tgz
+  strip-components: 0
+
+# if there’s a github then we can parse the versions
+versions:
+  url: https://geuz.org/gl2ps/src/
+  regex: 'href=.*?gl2ps[._-]v?(\d+(?:\.\d+)+)\.t'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: ^3
+    libpng.org: '*'
+    # this dep varies per os
+    on_linux:
+      freeglut.org: '*'
+  script: |
+    cmake ..
+    make --jobs {{ hw.concurrency }}
+    mkdir -p "{{prefix}}"/lib
+    mv libgl2ps.dylib "{{prefix}}"/lib
+
+provides:
+  - lib/libgl2ps.dylib

@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://gitlab.com/gitlab-org/ci-cd/docker-machine.git
+  tag: {{version.raw}}
+  revision: 9e9d6baf7eda8b6569f92e777ae7f496599fb297
+  strip-components: 0
+
+versions:
+  github: gitlab-org/ci-cd/docker-machine/tags
+
+dependencies:
+  automake.org: '*'
+  go.dev: '*'
+
+conflicts:
+  - docker-machine-completion
+
+provides:
+  - bin/docker-machine
+  - bash-completion/docker-machine
+  - zsh-completion/_docker-machine
+
+services:
+  start: [ opt_bin/docker-machine, start, default ]
+  env:
+    PATH: {{std_service_path_env}}
+  run_type: immediate
+  working_dir: {{prefix}}
+
+test:
+  script:
+    assert_match {{version.raw}}, shell_output(bin/docker-machine --version

@@ -1,0 +1,35 @@
+
+distributable:
+  url: https://www.csie.ntu.edu.tw/~cjlin/liblinear/oldfiles/liblinear-{{version}}.tar.gz
+
+versions:
+  - 2.46
+
+build:
+  working-directory: .
+  dependencies:
+    tea.xyz/gx/make: '*'
+    git-scm.org: '2.0'
+  script: |
+    GIT_COMMIT_HASH=$(git rev-parse HEAD)
+    make all
+    make all so
+    sed -i '' -e 's/^SHVER =.*\$/SHVER = #{GIT_COMMIT_HASH}/' Makefile
+    make all
+  patch:
+    sed -i '' -e 's/soname/install_name/' Makefile
+
+bin:
+  - predict
+  - train
+
+libs:
+  - name: liblinear
+    so-version: {{soname_verify_string}}
+
+includes:
+  - linear.h
+
+test:
+  script: |
+   

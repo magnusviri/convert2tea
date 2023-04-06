@@ -1,0 +1,163 @@
+aom
+
+class Aom < Formula
+  homepage "https://aomedia.googlesource.com/aom"
+  url "https://aomedia.googlesource.com/aom.git",
+      tag:      "v3.6.0",
+      revision: "3c65175b1972da4a1992c1dae2365b48d13f9a8d"
+  depends_on "cmake" => :build
+  # `jpeg-xl` is currently not bottled on Linux
+  on_macos do
+    depends_on "pkg-config" => :build
+    depends_on "jpeg-xl"
+    depends_on "libvmaf"
+  end
+  on_intel do
+    depends_on "yasm" => :build
+  end
+  def install
+    ENV.runtime_cpu_detection unless Hardware::CPU.arm?
+    args = std_cmake_args + [
+      "-DCMAKE_INSTALL_RPATH=#{rpath}",
+      "-DENABLE_DOCS=off",
+      "-DENABLE_EXAMPLES=on",
+      "-DENABLE_TESTDATA=off",
+      "-DENABLE_TESTS=off",
+      "-DENABLE_TOOLS=off",
+      "-DBUILD_SHARED_LIBS=on",
+    ]
+    # Runtime CPU detection is not currently enabled for ARM on macOS.
+    args << "-DCONFIG_RUNTIME_CPU_DETECT=0" if Hardware::CPU.arm?
+    # Make unconditional when `jpeg-xl` is bottled on Linux
+    if OS.mac?
+      args += [
+        "-DCONFIG_TUNE_BUTTERAUGLI=1",
+        "-DCONFIG_TUNE_VMAF=1",
+      ]
+    end
+    system "cmake", "-S", ".", "-B", "brewbuild", *args
+    system "cmake", "--build", "brewbuild"
+    system "cmake", "--install", "brewbuild"
+  end
+  test do
+    resource("homebrew-bus_qcif_15fps.y4m").stage do
+      system "#{bin}/aomenc", "--webm",
+                              "--tile-columns=2",
+                              "--tile-rows=2",
+                              "--cpu-used=8",
+                              "--output=bus_qcif_15fps.webm",
+                              "bus_qcif_15fps.y4m"
+      system "#{bin}/aomdec", "--output=bus_qcif_15fps_decode.y4m",
+                              "bus_qcif_15fps.webm"
+    end
+  end
+end
+
+
+distributable:
+  url: https://aomedia.googlesource.com/aom/+archive/v{{version}}.tar.gz
+
+versions:
+  - 3.5.0
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    tea.xyz/gx/cc: c99
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+  working-directory:
+    out
+  script: |
+    cmake .. $ARGS
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+    linux:
+      CFLAGS: -fPIC
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+test: |
+  aomenc --help
+  aomdec --help
+
+provides:
+  - bin/aomenc
+  - bin/aomdec
+
+
+class Groonga < Formula
+  homepage "https://groonga.org/"
+  url "https://packages.groonga.org/source/groonga/groonga-13.0.1.tar.gz"
+  livecheck do
+    url :homepage
+    regex(%r{>v?(\d+(?:\.\d+)+)</a> is the latest release}i)
+  end
+  head do
+    url "https://github.com/groonga/groonga.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+  depends_on "pkg-config" => :build
+  depends_on "mecab"
+  depends_on "mecab-ipadic"
+  depends_on "msgpack"
+  depends_on "openssl@1.1"
+  depends_on "pcre"
+  uses_from_macos "libxcrypt"
+  on_linux do
+    depends_on "glib"
+  end
+  link_overwrite "lib/groonga/plugins/normalizers/"
+  link_overwrite "share/doc/groonga-normalizer-mysql/"
+  link_overwrite "lib/pkgconfig/groonga-normalizer-mysql.pc"
+  def install
+    args = %w[
+      --disable-zeromq
+      --disable-apache-arrow
+      --with-luajit=no
+      --with-ssl
+      --with-zlib
+      --without-libstemmer
+      --with-mecab
+    ]
+    system "./autogen.sh" if build.head?
+    mkdir "builddir" do
+      system "../configure", *args, *std_configure_args
+      system "make", "install"
+    end
+    resource("groonga-normalizer-mysql").stage do
+      ENV.prepend_path "PATH", bin
+      ENV.prepend_path "PKG_CONFIG_PATH", lib/"pkgconfig"
+      system "./configure", "--prefix=#{prefix}"
+      system "make"
+      system "make", "install"
+    end
+  end
+  test do
+    IO.popen("#{bin}/groonga -n #{testpath}/test.db", "r+") do |io|
+      io.puts("table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText")
+      sleep 2
+      io.puts("shutdown")
+      # expected returned result is like this:
+      # [[0,1447502555.38667,0.000824928283691406],true]\n
+      assert_match(/\[\[0,\d+.\d+,\d+.\d+\],true\]/, io.read)
+    end
+    IO.popen("#{bin}/groonga -n #{testpath}/test-normalizer-mysql.db", "r+") do |io|
+      io.puts "register normalizers/mysql"
+      sleep 2
+      io.puts("shutdown")
+      # expected returned result is like this:
+      # [[0,1447502555.38667,0.000824928283691406],true]\n
+      assert_match(/\[\[0,\d+.\d+,\d+.\d+\],true\]/, io.read)
+    end
+  end
+end
+
+
+groonga

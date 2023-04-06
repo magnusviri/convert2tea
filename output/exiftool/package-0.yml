@@ -1,0 +1,26 @@
+
+distributable:
+  url: https://exiftool.org/Image-ExifTool-{{version}}.tar.gz
+  mirror: https://cpan.metacpan.org/authors/id/E/EX/EXIFTOOL/Image-ExifTool-{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  url: https://exiftool.org/history.html
+  regexp: production release is.*?href=.*?Image[._-]ExifTool[._-]v?(\d+(?:\.\d+)+)\.t
+
+depends_on:
+  perl: '*'
+
+build:
+  working-directory: .
+  script: |
+    perl Makefile.PL
+    make --jobs {{ hw.concurrency }}
+  env:
+    ARGS:
+      - LargeFileSupport => 1
+
+# Create a symlink to not break compatibility
+post_install:
+  script: ln -sf exiftool {{prefix}}/bin/exiftool

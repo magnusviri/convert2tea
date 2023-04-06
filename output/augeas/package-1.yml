@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://github.com/hercules-team/augeas/releases/download/release-{{version.stable}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.14.1
+  - 1.14.0
+
+dependencies:
+  readline.org: '*'
+  libxml2.github.io: '*'
+  tea.xyz/gx/cc: c99
+  tea.xyz/gx/make: '*'
+  autoconf.org: '*'
+  automake.org: '*'
+  bison.gnu.org: '*'
+  libtool.org: '*'
+  pkg-config.org: '*'
+
+build:
+  script: |
+    if {{version.type}} = head
+      ./autogen.sh {{std.configure_args}}
+    else
+      autoreconf --force --install
+      ./configure {{std.configure_args}}
+    fi
+    make install
+
+provides:
+  - bin/

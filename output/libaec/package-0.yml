@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://gitlab.dkrz.de/k202009/libaec/-/archive/v{{ version }}/libaec-v{{ version }}.tar.bz2
+  strip-components: 2
+
+versions:
+  github: k202009/libaec
+  strip: /^v/
+
+provides:
+  - bin/aec
+  - include/szlib.h
+  - lib/libaec.a
+  - lib/libaec.1.dylib
+  - lib/libaec.dylib
+  - lib/libaec.so
+  - lib/libaec.so.1
+  - lib/libsz.a
+  - lib/libsz.2.dylib
+  - lib/libsz.dylib
+  - lib/libsz.so
+  - lib/libsz.so.2
+
+dependencies:
+  cmake.org: ^3
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    mk

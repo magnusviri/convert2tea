@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://github.com/strukturag/libheif/releases/download/v{{version.marketing}}/libheif-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.15.2
+
+dependencies:
+  pkg-config.org: '*'
+  aom: '*'
+  jpeg-turbo.org: '*'
+  libde265.org: '*'
+  libpng.org: '*'
+  shared-mime-info.org: '*'
+  x265.org: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --disable-silent-rules {{std.configure_args}}
+    make install -j {{jobs}}
+
+provides:
+  - bin/heif-convert
+
+files:
+  - pkgshare/example.heic
+  - pkgshare/example.avif
+
+test:

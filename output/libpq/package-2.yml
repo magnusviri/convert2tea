@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://ftp.postgresql.org/pub/source/v{{ version }}/postgresql-{{ version }}.tar.bz2
+  strip-components: 1
+
+versions:
+  - 15.2
+
+dependencies:
+  krb5: '*'
+  openssl@1.1: '*'
+  readline: '*'
+  zlib: '*'
+
+build:
+  script: |
+    ./configure --disable-debug \
+      --prefix={{ prefix }} \
+      --with-gssapi \
+      --with-openssl \
+      --libdir={{ opt_lib }} \
+      --includedir={{ opt_include }}
+    make --jobs {{hw.concurrency}}
+
+    # src/bin
+    make -C src/bin install \
+      libdir={{ lib }} \
+      includedir={{ include }} \
+      pkgincludedir={{ include }}/postgresql \
+      includedir_server={{ include }}/postgresql/server \
+      includedir_internal=

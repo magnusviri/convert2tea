@@ -1,0 +1,25 @@
+
+distributable:
+  url: https://src.fedoraproject.org/repo/pkgs/bash-completion/bash-completion-{{ version }}.tar.bz2/a1262659b4bbf44dc9e59d034de505ec/bash-completion-{{ version }}.tar.bz2
+  strip-components: 1
+
+versions:
+  url: https://src.fedoraproject.org/repo/pkgs/bash-completion/
+  regex: bash-completion-(\d+.\d+.\d+)\.tar\.bz2
+  ignore: /bash-completion-2/
+
+detect:
+  cmd: bash --version
+  regex: GNU bash, version \v
+
+provides:
+  darwin:
+  - bin/bash-completion
+  linux:
+  - bin/bash-completion
+  - etc/bash_completion.d
+  - etc/profile.d/bash_completion.sh
+
+conflicts:
+  bash-completion@2: '*'
+  util

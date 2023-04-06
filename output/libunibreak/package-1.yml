@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://github.com/adah1972/libunibreak/releases/download/libunibreak_{{version}}/libunibreak-{{version}}.tar.gz
+
+versions:
+  - 5.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/make: '*'
+  working-directory:
+    out
+  script: |
+    ./configure $ARGS
+    make install
+  env:
+    ARGS:
+      - --disable-silent-rules
+
+test: |
+  test/test
+
+provides:
+  - lib/libunibreak.a
+  - include/unibreakbase.h
+  - include/linebreak.h

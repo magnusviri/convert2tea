@@ -1,0 +1,21 @@
+
+distributable:
+  url: https://fftw.org/fftw-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: https://fftw.org
+  regex: %r{latest official release.*? <b>v?(\d+(?:\.\d+)+)</b>}i
+
+dependencies:
+  open-mpi: '*'
+  gcc: '*'
+
+build:
+  script: |
+    {% if os == "linux" %}
+    ./configure --enable-shared --disable-debug --prefix="{{prefix}}" --enable-threads
+    --disable-dependency-tracking --enable-mpi --enable-openmp --enable-sse2 --enable-avx --enable-avx2
+    {% elsif os == "darwin" %}
+    ./configure --enable-shared --disable-debug --prefix="{{prefix}}" --enable-threads
+    --disable-dependency-tracking --enable-mpi --enable-openmp --enable-avx --enable-avx2

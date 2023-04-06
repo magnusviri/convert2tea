@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://luarocks.org/releases/luarocks-{{ version.raw }}.tar.gz
+  strip-components: 1
+  source-commit: {{ version.commit }}
+
+versions:
+  github: luarocks/luarocks/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}" \
+        --sysconfdir="{{etc}}" \
+        --rocks-tree="{{HOMEBREW_PREFIX}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  depends_on:
+    lua@5.3:
+      url: https://www.lua.org/ftp/lua-{{ version.major_minor.raw }}.tar.gz
+      strip-components:

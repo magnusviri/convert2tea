@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio-{{version.raw}}.tar.gz
+
+dependencies:
+  zlib.net: '*'
+
+provides:
+  lib/libcfitsio.a
+  include/fitsio.h
+
+build:
+  script: |
+    ./configure --enable-reentrant --prefix={{prefix}}
+    make shared
+    make install
+
+components:
+  - pkgshare/testprog
+
+test:
+  script: 
+    # Compile the test suite
+    ${CC} testprog.c -o testprog -I{{include}} -L{{lib}} -lcfitsio
+
+    # Run the test suite
+    ./testprog > testprog.lis
+
+    # Check the results
+    cmp testprog.lis testprog.out
+    cmp testprog.fit testprog.std

@@ -1,0 +1,25 @@
+distributable:
+  url: https://github.com/ivmai/libatomic_ops/releases/download/v{{version}}/libatomic_ops-{{version}}.tar.gz
+
+# if there’s a github then we can parse the versions
+versions:
+  github: ivmai/libatomic_ops/releases/tags
+
+build:
+  working-directory: .
+  script: |
+    ./configure --disable-dependency-tracking --prefix="{{prefix}}"
+    make
+    make check
+    make install
+
+provides:
+  - lib/libatomic_ops.a
+  # ^^ specify the libraries or tea magic won’t work
+  - include/atomic_ops.h
+  # ^^ specify the headers or tea magic won’t work
+
+test:
+  script: |
+    test -f "{{prefix}}/lib/libatomic_ops.a"
+    test -f "{{prefix}}/include/atomic_ops.h"

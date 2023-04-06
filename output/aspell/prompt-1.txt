@@ -1,0 +1,146 @@
+duckdb
+
+class Duckdb < Formula
+  homepage "https://www.duckdb.org"
+  url "https://github.com/duckdb/duckdb.git",
+      tag:      "v0.7.1",
+      revision: "b00b93f0b14bfff869e1facfd86a6b556a6f1c6e"
+  depends_on "cmake" => :build
+  def install
+    mkdir "build"
+    cd "build" do
+      system "cmake", "..", *std_cmake_args, "-DBUILD_ICU_EXTENSION=1", "-DBUILD_JSON_EXTENSION=1",
+             "-DBUILD_PARQUET_EXTENSION=1"
+      system "make"
+      system "make", "install"
+      bin.install "duckdb"
+      # The cli tool was renamed (0.1.8 -> 0.1.9)
+      # Create a symlink to not break compatibility
+      bin.install_symlink bin/"duckdb" => "duckdb_cli"
+    end
+  end
+  test do
+    path = testpath/"weather.sql"
+    path.write <<~EOS
+      CREATE TABLE weather (temp INTEGER);
+      INSERT INTO weather (temp) VALUES (40), (45), (50);
+      SELECT AVG(temp) FROM weather;
+    EOS
+    expected_output = <<~EOS
+      ┌─────────────┐
+      │ avg("temp") │
+      │   double    │
+      ├─────────────┤
+      │        45.0 │
+      └─────────────┘
+    EOS
+    assert_equal expected_output, shell_output("#{bin}/duckdb_cli < #{path}")
+  end
+end
+
+
+distributable:
+  url: https://github.com/duckdb/duckdb/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: duckdb/duckdb/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: ^3
+    git-scm.org: '*'
+  working-directory: build
+  script: |
+    # duckdb uses git to get its version
+    git init ..
+    git config user.email "bot@tea.xyz"
+    git config user.name "teabot"
+    git commit --allow-empty -mnil
+    git tag v{{version}}
+
+    cmake ..
+    make --jobs {{ hw.concurrency }}
+    mkdir -p "{{prefix}}"/bin
+    mv duckdb "{{prefix}}"/bin
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_ICU_EXTENSION=1
+      - -DBUILD_JSON_EXTENSION=1
+      - -DBUILD_PARQUET_EXTENSION=1
+
+provides:
+  - bin/duckdb
+  # ^^ specify the binaries or tea magic won’t work
+
+test:
+  fixture: |
+    CREATE TABLE weather (temp INTEGER);
+    INSERT INTO weather (temp) VALUES (40), (45), (50);
+    SELECT AVG(temp) FROM weather;
+  script: |
+    out="$(duckdb < $FIXTURE)"
+    exp=$(cat <<EOS
+    ┌─────────────┐
+    │ avg("temp") │
+    │   double    │
+    ├─────────────┤
+    │        45.0 │
+    └─────────────┘
+    EOS)
+
+    test "$out" = "$exp"
+
+    if [[ "$(duckdb --version)" != "v{{version}}"* ]]; then
+      echo "invalid version" >&2
+      exit 1
+    fi
+
+
+class Aspell < Formula
+  homepage "http://aspell.net/"
+  url "https://ftp.gnu.org/gnu/aspell/aspell-0.60.8.tar.gz"
+  mirror "https://ftpmirror.gnu.org/aspell/aspell-0.60.8.tar.gz"
+  uses_from_macos "ncurses"
+  # const problems with llvm: https://www.freebsd.org/cgi/query-pr.cgi?pr=180565&cat=
+  patch :DATA
+  def install
+    system "./configure", "--prefix=#{prefix}"
+    system "make", "install"
+    ENV.prepend_path "PATH", bin
+    resources.each do |r|
+      r.stage do
+        system "./configure", "--vars", "ASPELL=#{bin}/aspell", "PREZIP=#{bin}/prezip"
+        system "make", "install"
+      end
+    end
+  end
+  test do
+    assert_equal "worrd", pipe_output("#{bin}/aspell list -d en_US", "misspell worrd").strip
+  end
+end
+__END__
+diff --git a/interfaces/cc/aspell.h b/interfaces/cc/aspell.h
+index 9c8e81b..2cd00d4 100644
+--- a/interfaces/cc/aspell.h
++++ b/interfaces/cc/aspell.h
+@@ -237,6 +237,7 @@ void delete_aspell_can_have_error(struct AspellCanHaveError * ths);
+ /******************************** errors ********************************/
++#ifndef __cplusplus
+ extern const struct AspellErrorInfo * const aerror_other;
+ extern const struct AspellErrorInfo * const aerror_operation_not_supported;
+ extern const struct AspellErrorInfo * const   aerror_cant_copy;
+@@ -322,6 +323,7 @@ extern const struct AspellErrorInfo * const   aerror_missing_magic;
+ extern const struct AspellErrorInfo * const   aerror_bad_magic;
+ extern const struct AspellErrorInfo * const aerror_expression;
+ extern const struct AspellErrorInfo * const   aerror_invalid_expression;
++#endif
+ /******************************* speller *******************************/
+
+
+aspell

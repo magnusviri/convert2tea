@@ -1,0 +1,24 @@
+
+distributable:
+  url: https://github.com/capstone-engine/capstone/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: capstone-engine/capstone
+  strip: /^capstone /
+
+provides:
+  - lib/libcapstone.{dylib,so}
+
+dependencies:
+  libexpat.github.io: '*'
+
+build:
+  script: |
+    ./make.sh
+    make install PREFIX="{{prefix}}"
+  env:
+    HOMEBREW_CAPSTONE: 1
+
+test: |
+  ./test

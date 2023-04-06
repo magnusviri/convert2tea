@@ -1,0 +1,25 @@
+
+distributable:
+  url: {{branch.url}}/archive/v{{version.raw}}.tar.gz
+  strip-components: 1
+  patches:
+    - url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-pre-{{version.raw}}-big_sur.diff
+
+versions:
+  github: carlobaldassi/liblqr.git
+
+dependencies:
+  pkg-config.se: '*'
+  glib.org: '*'
+
+provides:
+  - include/lqr-1/lqr.h
+  - liblqr-1.a
+  - liblqr-1.0.dylib
+  - liblqr-1.dylib
+
+build:
+  dependencies:
+    glib.org: '*'
+  script: |
+    ./configure {{std_configure_args.join(" ")}} --enable-install-man

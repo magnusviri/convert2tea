@@ -1,0 +1,86 @@
+wumpus
+
+class Wumpus < Formula
+  homepage "http://www.catb.org/~esr/wumpus/"
+  url "http://www.catb.org/~esr/wumpus/wumpus-1.9.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?wumpus[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "make"
+    system "make", "prefix=#{prefix}", "install"
+  end
+  test do
+    assert_match("HUNT THE WUMPUS",
+                 pipe_output(bin/"wumpus", "^C"))
+  end
+end
+
+
+distributable:
+  url: https://gitlab.com/esr/wumpus/-/archive/{{ version.raw }}/wumpus-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.9
+
+provides:
+  - bin/wumpus
+  - bin/superhack
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    #pagure.io/xmlto: '*'
+
+  script: |
+    make wumpus superhack
+    # When xmlto is packaged then switch the to `make ... install`
+    mkdir -p "{{prefix}}"/bin
+    mv wumpus superhack "{{prefix}}"/bin
+    # make prefix={{prefix}} install
+
+test:
+  script: |
+    wumpus > wumpus.out &
+    superhack > superhack.out &
+    sleep 1
+    test "x$(head -n1 wumpus.out)" = "xINSTRUCTIONS (Y-N)" && \
+    test "x$(head -n1 superhack.out)" = "xHunt the Superhack"
+
+
+class Itstool < Formula
+  homepage "http://itstool.org/"
+  url "http://files.itstool.org/itstool/itstool-2.0.7.tar.bz2"
+  revision 1
+  head do
+    url "https://github.com/itstool/itstool.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+  end
+  depends_on "libxml2"
+  depends_on "python@3.11"
+  def install
+    python3 = "python3.11"
+    ENV.append_path "PYTHONPATH", Formula["libxml2"].opt_prefix/Language::Python.site_packages(python3)
+    configure = build.head? ? "./autogen.sh" : "./configure"
+    system configure, "--prefix=#{libexec}", "PYTHON=#{which(python3)}"
+    system "make", "install"
+    bin.install Dir[libexec/"bin/*"]
+    bin.env_script_all_files libexec/"bin", PYTHONPATH: ENV["PYTHONPATH"]
+    pkgshare.install_symlink libexec/"share/itstool/its"
+    man1.install_symlink libexec/"share/man/man1/itstool.1"
+  end
+  test do
+    (testpath/"test.xml").write <<~EOS
+      <tag>Homebrew</tag>
+    EOS
+    system bin/"itstool", "-o", "test.pot", "test.xml"
+    assert_match "msgid \"Homebrew\"", File.read("test.pot")
+  end
+end
+
+
+itstool

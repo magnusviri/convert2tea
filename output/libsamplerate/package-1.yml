@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://github.com/libsndfile/libsamplerate/archive/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: libsndfile/libsamplerate/releases/tags
+
+detect:
+  cmd: ls ./libsamplerate.a
+
+dependencies:
+  cmake.org: '*'
+  pkg-config.org: '*'
+
+provides:
+  - lib/libsamplerate.a
+  - lib/libsamplerate.so
+  - include/libsamplerate.h
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |-
+    cmake -S . -B build/shared \
+    -DBUILD_SHARED_LIBS=ON \
+    -DLIBSAMPLERATE_EXAMPLES=OFF \
+    -DBUILD_TESTING=OFF \
+    $ARGS

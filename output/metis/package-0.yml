@@ -1,0 +1,28 @@
+distributable:
+  url: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/metis-{{version}}.tar.gz
+  strip_components: 1
+
+versions:
+  url: http://glaros.dtc.umn.edu/gkhome/metis/metis/download
+  regex: /href=.*?/metis[._-]v?(\d+(?:\.\d+)+)\.t/i
+
+dependencies:
+  cmake.org: ^3
+
+build:
+  script: |
+    make config prefix={{prefix}} shared=1
+    make install
+
+provides:
+  - bin/graphchk
+  - bin/gpmetis
+  - bin/mpmetis
+  - bin/ndmetis
+
+test:
+  graphchk 4elt.graph
+  gpmetis 4elt.graph 2
+  ndmetis 4elt.graph
+  gpmetis test.mgraph 2
+  mpmetis metis.mesh 2

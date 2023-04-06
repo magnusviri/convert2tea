@@ -1,0 +1,136 @@
+doxygen
+
+class Doxygen < Formula
+  homepage "https://www.doxygen.nl/"
+  url "https://doxygen.nl/files/doxygen-1.9.6.src.tar.gz"
+  mirror "https://downloads.sourceforge.net/project/doxygen/rel-1.9.6/doxygen-1.9.6.src.tar.gz"
+  head "https://github.com/doxygen/doxygen.git", branch: "master"
+  livecheck do
+    url "https://www.doxygen.nl/download.html"
+    regex(/href=.*?doxygen[._-]v?(\d+(?:\.\d+)+)[._-]src\.t/i)
+  end
+  depends_on "bison" => :build
+  depends_on "cmake" => :build
+  uses_from_macos "flex" => :build, since: :big_sur
+  uses_from_macos "python" => :build
+  fails_with :gcc do
+    version "6"
+    cause "Need gcc>=7.2. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66297"
+  end
+  def install
+    system "cmake", "-S", ".", "-B", "build",
+                    "-DPYTHON_EXECUTABLE=#{which("python3") || which("python")}",
+                    *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    system "cmake", "-S", ".", "-B", "build", "-Dbuild_doc=1", *std_cmake_args
+    man1.install buildpath.glob("build/man/*.1")
+  end
+  test do
+    system bin/"doxygen", "-g"
+    system bin/"doxygen", "Doxyfile"
+  end
+end
+
+
+
+distributable:
+   url: https://github.com/doxygen/doxygen/archive/refs/tags/Release_{{version.major}}_{{version.minor}}_{{version.patch}}.tar.gz
+   strip-components: 1
+
+versions:
+  - 1.9.6 # FIXME: the versions are "Release_1_9_6" but no idea how I can parse this without regex
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/bison: ^3
+    cmake.org: ^3
+    github.com/westes/flex: 2
+    python.org: ^3
+  working-directory: build
+  script: |
+    cmake $ARGS -G "Unix Makefiles" ..
+    make --jobs {{ hw.concurrency }} 
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+    
+
+provides:
+  - bin/doxygen
+
+test:
+  script: |
+    doxygen -g
+    doxygen Doxyfile
+
+
+class Libpq < Formula
+  homepage "https://www.postgresql.org/docs/15/libpq.html"
+  url "https://ftp.postgresql.org/pub/source/v15.2/postgresql-15.2.tar.bz2"
+  livecheck do
+    url "https://ftp.postgresql.org/pub/source/"
+    regex(%r{href=["']?v?(\d+(?:\.\d+)+)/?["' >]}i)
+  end
+  keg_only "conflicts with postgres formula"
+  # GSSAPI provided by Kerberos.framework crashes when forked.
+  # See https://github.com/Homebrew/homebrew-core/issues/47494.
+  depends_on "krb5"
+  depends_on "openssl@1.1"
+  uses_from_macos "zlib"
+  on_linux do
+    depends_on "readline"
+  end
+  def install
+    system "./configure", "--disable-debug",
+                          "--prefix=#{prefix}",
+                          "--with-gssapi",
+                          "--with-openssl",
+                          "--libdir=#{opt_lib}",
+                          "--includedir=#{opt_include}"
+    dirs = %W[
+      libdir=#{lib}
+      includedir=#{include}
+      pkgincludedir=#{include}/postgresql
+      includedir_server=#{include}/postgresql/server
+      includedir_internal=#{include}/postgresql/internal
+    ]
+    system "make"
+    system "make", "-C", "src/bin", "install", *dirs
+    system "make", "-C", "src/include", "install", *dirs
+    system "make", "-C", "src/interfaces", "install", *dirs
+    system "make", "-C", "src/common", "install", *dirs
+    system "make", "-C", "src/port", "install", *dirs
+    system "make", "-C", "doc", "install", *dirs
+  end
+  test do
+    (testpath/"libpq.c").write <<~EOS
+      #include <stdlib.h>
+      #include <stdio.h>
+      #include <libpq-fe.h>
+      int main()
+      {
+          const char *conninfo;
+          PGconn     *conn;
+          conninfo = "dbname = postgres";
+          conn = PQconnectdb(conninfo);
+          if (PQstatus(conn) != CONNECTION_OK) // This should always fail
+          {
+              printf("Connection to database attempted and failed");
+              PQfinish(conn);
+              exit(0);
+          }
+          return 0;
+        }
+    EOS
+    system ENV.cc, "libpq.c", "-L#{lib}", "-I#{include}", "-lpq", "-o", "libpqtest"
+    assert_equal "Connection to database attempted and failed", shell_output("./libpqtest")
+  end
+end
+
+
+libpq

@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/cscope/cscope/v{{ version.raw }}/cscope-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  url: https://cscope.sourceforge.io/
+  regex: /cscope[._-]v?(\d+(?:\.\d+)+[a-z]?)\.t/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      apple.com/xcode/clt: '*'
+      ncurses: '*'
+  script: |
+    ./configure --prefix="{{prefix}}" --mandir="{{prefix}}/man"
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c
+    ./a.out
+    cscope -b -k
+    cscope -L1func

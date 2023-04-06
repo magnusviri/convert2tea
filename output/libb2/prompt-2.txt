@@ -1,0 +1,155 @@
+bitcoin
+
+class Bitcoin < Formula
+  homepage "https://bitcoincore.org/"
+  url "https://bitcoincore.org/bin/bitcoin-core-24.0.1/bitcoin-24.0.1.tar.gz"
+  head "https://github.com/bitcoin/bitcoin.git", branch: "master"
+  livecheck do
+    url "https://bitcoincore.org/en/download/"
+    regex(/latest version.*?v?(\d+(?:\.\d+)+)/i)
+  end
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
+  # berkeley db should be kept at version 4
+  # https://github.com/bitcoin/bitcoin/blob/master/doc/build-osx.md
+  # https://github.com/bitcoin/bitcoin/blob/master/doc/build-unix.md
+  depends_on "berkeley-db@4"
+  depends_on "boost"
+  depends_on "libevent"
+  depends_on macos: :catalina
+  depends_on "miniupnpc"
+  depends_on "zeromq"
+  uses_from_macos "sqlite"
+  on_linux do
+    depends_on "util-linux" => :build # for `hexdump`
+  end
+  fails_with :gcc do
+    version "7" # fails with GCC 7.x and earlier
+    cause "Requires std::filesystem support"
+  end
+  def install
+    system "./autogen.sh"
+    system "./configure", *std_configure_args,
+                          "--disable-silent-rules",
+                          "--with-boost-libdir=#{Formula["boost"].opt_lib}"
+    system "make", "install"
+    pkgshare.install "share/rpcauth"
+  end
+  service do
+    run opt_bin/"bitcoind"
+  end
+  test do
+    system "#{bin}/test_bitcoin"
+    # Test that we're using the right version of `berkeley-db`.
+    port = free_port
+    bitcoind = spawn bin/"bitcoind", "-regtest", "-rpcport=#{port}", "-listen=0", "-datadir=#{testpath}"
+    sleep 15
+    # This command will fail if we have too new a version.
+    system bin/"bitcoin-cli", "-regtest", "-datadir=#{testpath}", "-rpcport=#{port}",
+                              "createwallet", "test-wallet", "false", "false", "", "false", "false"
+  ensure
+    Process.kill "TERM", bitcoind
+  end
+end
+
+
+distributable:
+  url: https://bitcoincore.org/bin/bitcoin-core-{{version}}/bitcoin-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: bitcoin/bitcoin
+  strip: /^Bitcoin Core /
+
+dependencies:
+  oracle.com/berkeley-db: ^18
+  boost.org: ^1
+  libevent.org: ^2
+  zeromq.org: ^4
+  sqlite.org: ^3
+
+build:
+  dependencies:
+    gnu.org/autoconf: ^2
+    gnu.org/automake: ^1
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    freedesktop.org/pkg-config: ^0.29
+    gnu.org/libtool: ^2
+  script: |
+    ./autogen.sh
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --disable-debug
+      - --disable-tests  # needs: `hexedit`
+      - --disable-bench  # fails: linux/aarch64/v24.0.1
+
+provides:
+  - bin/bitcoin-cli
+  - bin/bitcoin-tx
+  - bin/bitcoin-util
+  - bin/bitcoin-wallet
+  - bin/bitcoind
+
+test:
+  bitcoind -version
+
+
+class Libb2 < Formula
+  homepage "https://blake2.net/"
+  url "https://github.com/BLAKE2/libb2/releases/download/v0.98.1/libb2-0.98.1.tar.gz"
+  # Fix -flat_namespace being used on Big Sur and later.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+  end
+  def install
+    # SSE detection is broken on arm64 macos
+    # https://github.com/BLAKE2/libb2/issues/36
+    extra_args = []
+    extra_args << "--enable-fat" unless Hardware::CPU.arm?
+    system "./configure", "--disable-dependency-tracking",
+                          "--disable-silent-rules",
+                          "--prefix=#{prefix}",
+                          *extra_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"blake2test.c").write <<~EOS
+      #include <blake2.h>
+      #include <stdio.h>
+      #include <string.h>
+      int main(void) {
+          uint8_t out[64];
+          uint8_t expected[64] =
+          {
+            0xb2, 0x02, 0xb4, 0x77, 0xa7, 0x97, 0xe9, 0x84, 0xe6, 0xa2, 0xb9, 0x76,
+            0xca, 0x4c, 0xb7, 0xd3, 0x94, 0x40, 0x04, 0xb3, 0xef, 0x6c, 0xde, 0x80,
+            0x34, 0x1c, 0x78, 0x53, 0xa2, 0xdd, 0x7e, 0x2f, 0x9e, 0x08, 0xcd, 0xa6,
+            0xd7, 0x37, 0x28, 0x12, 0xcf, 0x75, 0xe8, 0xc7, 0x74, 0x1f, 0xb6, 0x56,
+            0xce, 0xc3, 0xa1, 0x19, 0x77, 0x2e, 0x2e, 0x71, 0x5c, 0xeb, 0xc7, 0x64,
+            0x33, 0xfa, 0xfd, 0x4d
+          };
+          int res = blake2b(out, "blake2", "blake2", 64, 6, 6);
+          if (res == 0) {
+            if (memcmp(out, expected, 64) == 0) {
+              return 0;
+            } else {
+              return 1;
+            }
+          } else {
+            return 1;
+          }
+      }
+    EOS
+    system ENV.cc, "blake2test.c", "-L#{lib}", "-lb2", "-o", "b2test"
+    system "./b2test"
+  end
+end
+
+
+libb2

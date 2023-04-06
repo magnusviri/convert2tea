@@ -1,0 +1,29 @@
+ 
+distributable:
+  url: https://github.com/strukturag/libheif/releases/download/v{{ version.raw }}/libheif-{{ version.raw }}.tar.gz
+
+versions:
+  - 1.15.2
+
+provides:
+  - bin/heif-convert
+
+build:
+  dependencies:
+    pkg-config: '*'
+    aom: '*'
+    jpeg-turbo: '*'
+    libde265: '*'
+    libpng: '*'
+    shared-mime-info: '*'
+    x265: '*'
+  script: './configure {{ std_configure_args | join(" ") }} --disable-silent-rules && make install'
+
+test:
+  dependencies:
+    shared-mime-info: '*'
+  script: |
+    output="File contains 2 images"
+    example={{ pkgshare }}/example.heic
+    exout=$(pwd)/exampleheic.jpg
+    test "$output" = "$(#{{

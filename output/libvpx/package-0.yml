@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://github.com/webmproject/libvpx/archive/v{{version}}.tar.gz
+
+# if there’s a github then we can parse the versions
+versions:
+  github: webmproject/libvpx/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/make: '*'
+    yasm.tortall.net: '*'
+  working-directory: macbuild
+  script: |
+    ../configure \
+      --prefix="{{prefix}}" \
+      --disable-dependency-tracking \
+      --disable-examples \
+      --disable-unit-tests \
+      --enable-pic \
+      --enable-shared \
+      --enable-vp9-highbitdepth \
+      {{#hw.cpu.intel?}} \
+      --enable-runtime-cpu-detect \
+      {{/hw.cpu.intel?}}
+    make --jobs {{ hw.concurrency }}
+    make install
+

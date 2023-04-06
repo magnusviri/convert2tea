@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://ftp.gnu.org/gnu/groff/groff-{{version}}.tar.gz
+  mirror: https://ftpmirror.gnu.org/groff/groff-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  ftp: gnu/groff
+
+provides:
+  - bin/groff
+
+build:
+  dependencies:
+    pkg-config.org: '*'
+    bison.gnu.org: '*'
+    texinfo.org: '*'
+    perl.org: '*'
+  script: |
+    ./configure --prefix="{{ prefix }}" --without-x --with-uchardet
+    make
+    make install
+
+test:
+  test "$(groff -a | grep homebrew)" = "homebrew"
+
+dependencies:
+  ghostscript.com: '*'
+  netpbm.sourceforge.net: '*'
+  psutils.sourceforge.net: '*'
+  uchardet.uchardet.org:

@@ -1,0 +1,25 @@
+
+distributable:
+  url: https://downloads.xiph.org/releases/vorbis/libvorbis-{{ version }}.tar.xz
+  using: homebrew_curl
+  mirrors:
+  - https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-{{ version }}.tar.xz
+
+versions:
+  max-age: 6 weeks
+  url: https://ftp.osuosl.org/pub/xiph/releases/vorbis/?C=M&O=D
+  regex: href=.*?libvorbis[._-]v?(\d+(?:\.\d+)+)\.t
+
+dependencies:
+  libogg: '*'
+  pkg-config: '*'
+
+resources:
+  oggfile:
+    url: https://upload.wikimedia.org/wikipedia/commons/c/c8/Example.ogg
+
+build:
+  script: |-
+    {{ cmd.autogen }}
+    ./configure --prefix={{ prefix }}
+    make --jobs {{

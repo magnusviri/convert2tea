@@ -1,0 +1,179 @@
+aria2
+
+class Aria2 < Formula
+  homepage "https://aria2.github.io/"
+  url "https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0.tar.xz"
+  revision 1
+  depends_on "pkg-config" => :build
+  depends_on "gettext"
+  depends_on "libssh2"
+  depends_on "sqlite"
+  uses_from_macos "libxml2"
+  uses_from_macos "zlib"
+  on_linux do
+    depends_on "openssl@1.1"
+  end
+  def install
+    ENV.cxx11
+    args = %W[
+      --disable-dependency-tracking
+      --prefix=#{prefix}
+      --with-libssh2
+      --without-gnutls
+      --without-libgmp
+      --without-libnettle
+      --without-libgcrypt
+    ]
+    if OS.mac?
+      args << "--with-appletls"
+      args << "--without-openssl"
+    else
+      args << "--without-appletls"
+      args << "--with-openssl"
+    end
+    system "./configure", *args
+    system "make", "install"
+    bash_completion.install "doc/bash_completion/aria2c"
+  end
+  test do
+    system "#{bin}/aria2c", "https://brew.sh/"
+    assert_predicate testpath/"index.html", :exist?, "Failed to create index.html!"
+  end
+end
+
+
+distributable:
+  url: https://github.com/aria2/aria2/releases/download/release-{{ version }}/aria2-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: aria2/aria2
+  strip: /^aria2 /
+
+provides:
+  - bin/aria2c
+
+dependencies:
+  zlib.net: ^1
+  openssl.org: ^1
+  libexpat.github.io: '*'
+  sqlite.org: ^3
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnupg.org/libgcrypt: ^1
+    gnupg.org/libgpg-error: ^1
+    freedesktop.org/pkg-config: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --with-openssl
+      - --with-libgcrypt
+
+test: |
+  aria2c -v
+  aria2c https://tea.xyz
+  aria2c --seed-time=0 "magnet:?xt=urn:btih:d984f67af9917b214cd8b6048ab5624c7df6a07a&tr=https%3A%2F%2Facademictorrents.com%2Fannounce.php&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce"
+
+class Gdal < Formula
+  homepage "https://www.gdal.org/"
+  url "http://download.osgeo.org/gdal/3.6.3/gdal-3.6.3.tar.xz"
+  revision 1
+  livecheck do
+    url "https://download.osgeo.org/gdal/CURRENT/"
+    regex(/href=.*?gdal[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  head do
+    url "https://github.com/OSGeo/gdal.git", branch: "master"
+    depends_on "doxygen" => :build
+  end
+  depends_on "cmake" => :build
+  depends_on "pkg-config" => :build
+  depends_on "apache-arrow"
+  depends_on "cfitsio"
+  depends_on "epsilon"
+  depends_on "expat"
+  depends_on "freexl"
+  depends_on "geos"
+  depends_on "giflib"
+  depends_on "hdf5"
+  depends_on "jpeg-turbo"
+  depends_on "jpeg-xl"
+  depends_on "json-c"
+  depends_on "libdap"
+  depends_on "libgeotiff"
+  depends_on "libheif"
+  depends_on "liblerc"
+  depends_on "libpng"
+  depends_on "libpq"
+  depends_on "libspatialite"
+  depends_on "libtiff"
+  depends_on "libxml2"
+  depends_on "netcdf"
+  depends_on "numpy"
+  depends_on "openexr"
+  depends_on "openjpeg"
+  depends_on "pcre2"
+  depends_on "poppler"
+  depends_on "proj"
+  depends_on "python@3.11"
+  depends_on "qhull"
+  depends_on "sqlite"
+  depends_on "unixodbc"
+  depends_on "webp"
+  depends_on "xerces-c"
+  depends_on "xz"
+  depends_on "zstd"
+  uses_from_macos "curl"
+  on_linux do
+    depends_on "util-linux"
+  end
+  conflicts_with "avce00", because: "both install a cpl_conv.h header"
+  conflicts_with "cpl", because: "both install cpl_error.h"
+  fails_with gcc: "5"
+  def python3
+    "python3.11"
+  end
+  def install
+    site_packages = prefix/Language::Python.site_packages(python3)
+    # Work around Homebrew's "prefix scheme" patch which causes non-pip installs
+    # to incorrectly try to write into HOMEBREW_PREFIX/lib since Python 3.10.
+    inreplace "swig/python/CMakeLists.txt",
+              'set(INSTALL_ARGS "--single-version-externally-managed --record=record.txt',
+              "\\0 --install-lib=#{site_packages} --install-scripts=#{bin}"
+    osgeo_ext = site_packages/"osgeo"
+    rpaths = [rpath, rpath(source: osgeo_ext)]
+    ENV.append "LDFLAGS", "-Wl,#{rpaths.map { |rp| "-rpath,#{rp}" }.join(",")}"
+    # keep C++ standard in sync with `abseil.rb`
+    args = %W[
+      -DENABLE_PAM=ON
+      -DBUILD_PYTHON_BINDINGS=ON
+      -DCMAKE_INSTALL_RPATH=#{rpaths.join(";")}
+      -DPython_EXECUTABLE=#{which(python3)}
+      -DGDAL_PYTHON_INSTALL_LIB=#{site_packages}
+      -DCMAKE_CXX_STANDARD=17
+    ]
+    # JavaVM.framework in SDK causing Java bindings to be built
+    args << "-DBUILD_JAVA_BINDINGS=OFF" if MacOS.version <= :catalina
+    system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    bash_completion.install (share/"bash-completion/completions").children
+  end
+  test do
+    # basic tests to see if third-party dylibs are loading OK
+    system bin/"gdalinfo", "--formats"
+    system bin/"ogrinfo", "--formats"
+    # Changed Python package name from "gdal" to "osgeo.gdal" in 3.2.0.
+    system python3, "-c", "import osgeo.gdal"
+  end
+end
+
+
+gdal

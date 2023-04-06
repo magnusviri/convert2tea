@@ -1,0 +1,28 @@
+
+distributable:
+   url: https://github.com/libssh2/libssh2/archive/refs/tags/{{version}}.tar.gz
+   strip-components: 1
+
+versions:
+  - 1.10.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    autoconf: ^2.69
+    automake: ^1.16
+    libtool: ^2.4.2
+    openssl@1.1: ^1.1
+    zlib: '*'
+  working-directory: build
+  script: |
+    ./configure --disable-silent-rules --disable-examples-build --with-openssl --with-libz --with-libssl-prefix={{prefix}}
+    make --jobs {{ hw.concurrency }} 
+    make install
+
+provides:
+  - lib/libssh2.a
+  - lib/libssh2.la
+  - lib/libssh2.dylib
+  - lib/libssh

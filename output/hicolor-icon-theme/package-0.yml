@@ -1,0 +1,31 @@
+
+distributable:
+   url: https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-{{version}}.tar.xz
+   strip-components: 1
+
+versions:
+  - 0.17
+
+build:
+  working-directory: .
+  script: |
+    if head?
+        ./autogen.sh $ARGS
+    else
+        ./configure $ARGS
+    fi
+    make --jobs {{ hw.concurrency }}
+    make install
+  env:
+    ARGS:
+    - --prefix="{{ prefix }}"
+    - --disable-silent-rules
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+
+provides:
+  - share/icons/hicolor/index.theme
+
+test:
+  script: assert_predicate share/"icons/hicolor/index.theme", :exist?

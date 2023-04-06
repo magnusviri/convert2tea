@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/glew/glew/{{version}}/glew-{{version}}.tgz
+  revision: 1
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: nigels-com/glew/tags/master
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: ^3
+  working-directory: _build
+  script: |
+    cmake -S ../build/cmake -B _build -DCMAKE_INSTALL_RPATH="{{rpath}}"
+    cmake --build _build
+    cmake --install _build
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+
+provides:
+  # specify the binaries or tea magic won’t work
+  - lib/libGLEW.{{

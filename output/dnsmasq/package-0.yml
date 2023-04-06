@@ -1,0 +1,36 @@
+
+distributable:
+  url: https://thekelleys.org.uk/dnsmasq/dnsmasq-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  strip: /dnsmasq-/
+
+dependencies:
+  pkg-config.org: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make PREFIX={{prefix}}
+
+test:
+  script: |
+    {{sbin}}/dnsmasq --test
+
+service:
+  run:
+    - {{opt_sbin}}/dnsmasq
+    - --keep-in-foreground
+    - -C
+    - {{etc}}/dnsmasq.conf
+    - -7
+    - {{etc}}/dnsmasq.d,*.conf
+  keep-alive: true
+  require-root: true
+
+post-install:
+  scripts:
+    - (var/"lib/misc/d

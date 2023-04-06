@@ -1,0 +1,36 @@
+
+distributable:
+  url: https://fftw.org/fftw-{{version}}.tar.gz
+  licenses:
+    - GPL-2.0-or-later
+    - BSD-2-Clause
+
+dependencies:
+  open-mpi: '*'
+  on_macos:
+    gcc: '*'
+
+build:
+  dependencies:
+    gnu.org/make: '*'
+    gnu.org/autoconf: '*'
+  env:
+    CONFIGURE_ARGS: |
+      --disable-debug \
+      --prefix={{prefix}} \
+      --enable-threads \
+      --disable-dependency-tracking \
+      --enable-mpi \
+      --enable-openmp \
+      --with-pic \
+      --with-shared
+  script: |
+    ./configure \
+        --enable-single \
+        --enable-shared \
+        {{ CONFIGURE_ARGS }} \
+        {{ CONFIGURE_OPTIONS }}
+    make --jobs {{ hw.concurrency }} install
+
+provides:
+ 

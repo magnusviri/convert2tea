@@ -1,0 +1,37 @@
+
+distributable:
+  url: https://gitlab.com/gitlab-org/ci-cd/docker-machine.git
+  tag: v{{version}}
+  revision: {{sha}}
+  version: {{version}}
+versions:
+  head: gitlab-org/ci-cd/docker-machine
+  branch: master
+
+dependencies:
+  automake: '*'
+  go: '*'
+
+build:
+  script: |
+    export GOPATH={{ buildpath }}
+    export GO111MODULE=auto
+    make build
+  install:
+    bin:
+      - bin/*
+    bash-completion-scripts:
+      - contrib/completion/bash/*.bash
+    zsh-completion-scripts:
+      - contrib/completion/zsh/_docker-machine
+    metafiles:
+      - yes
+
+test:
+  script: |
+    assert_match {{version}}.to_s, shell_output(bin/"docker-machine --version")
+
+service:
+  run:
+    - bin/"docker-machine" start default
+  path:

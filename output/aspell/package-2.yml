@@ -1,0 +1,28 @@
+distributable:
+  url: https://ftp.gnu.org/gnu/aspell/aspell-{{ version.raw }}.tar.gz
+  mirrors:
+    - https://ftpmirror.gnu.org/aspell/aspell-{{ version.raw }}.tar.gz 
+  strip-components: 1
+
+versions:
+  gnu: aspell/
+  strip: /^aspell-/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      apple.com/xcode/clt: '*'
+  script: |
+    ./configure --prefix="{{prefix}}" 
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    darwin:
+      ncurses: '*'
+  script: |
+    #!/bin/sh
+    echo 'misspell worrd' | "${prefix}/bin/aspell" list -d en_US
+    [[ "$(echo 'misspell worrd' | "${prefix}/bin/

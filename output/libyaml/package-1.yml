@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://github.com/yaml/libyaml/archive/{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: yaml/libyaml/releases
+  latest: true
+
+dependencies:
+  autoconf: '*'
+  automake: '*'
+  libtool: '*'
+
+build:
+  script: |-
+    ./bootstrap
+    ./configure --prefix={{prefix}}
+    make --jobs {{hw.concurrency}} install
+  env:
+    V: 1
+
+test:
+  script:
+    LD_LIBRARY_PATH="{{deps.libtool.prefix}}/lib:{{prefix}}/lib" # ensure libtool's library is found
+    {{cc}} test.c -L{{lib}} -lyaml -o test
+    ./test

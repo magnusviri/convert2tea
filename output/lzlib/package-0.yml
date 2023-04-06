@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://download.savannah.gnu.org/releases/lzip/lzlib/lzlib-{{version}}.tar.gz
+  strip-components: 1
+  mirrors:
+    - https://download-mirror.savannah.gnu.org/releases/lzip/lzlib/lzlib-{{version}}.tar.gz
+
+versions:
+  regex: /^LZlib - ([\d\.]+)$/
+
+dependencies:
+  none
+
+build:
+  dependencies:
+    none
+  script: |
+    ./configure --prefix={{prefix}} CC={{env.cc}} CFLAGS={{env.cflags}}
+    make --jobs {{hw.concurrency}}
+    make check
+    make install
+
+provides:
+  - lib/liblz.a
+  - lib/liblz.dylib
+  - include/lzlib.h
+
+test:
+  ./test

@@ -1,0 +1,23 @@
+
+distributable:
+  url: https://zlib.net/zlib-{{version}}.tar.gz
+  mirror: https://downloads.sourceforge.net/project/libpng/zlib/{{version}}/zlib-{{version}}.tar.gz
+  strip-components: 0
+
+versions:
+  - 1.2.13
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    libtool.org: '*'
+    sourceware.org/autoconf: '*'
+    sourceware.org/automake: '*'
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make
+    cd contrib/minizip
+    if [ "${OSTYPE,,}" = "darwin"* ]; then
+      # edits to statically link to libz.a
+      sed -i.bak 's/-L$(zlib_top_builddir)/$(zlib_top_builddir)\/libz.a/'

@@ -1,0 +1,24 @@
+
+distributable:
+  url: https://invisible-mirror.net/archives/dialog/dialog-{{ version.raw }}-{{ version.date }}.tgz
+  strip-components: 1
+
+versions:
+  url: https://invisible-mirror.net/archives/dialog/
+  regex: /href=.*?dialog[._-]v?(?<version>[^.]+-[0-9]{6,8})\.t/
+  strip: /^v/
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    invisible-island.net/ncurses: '*'
+  script: |
+    ./configure --prefix="{{prefix}}" --with-ncurses
+    make --jobs {{ hw.concurrency }} install-full
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    {{bin.dialog}} --version

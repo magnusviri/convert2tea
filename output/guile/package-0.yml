@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://ftp.gnu.org/gnu/guile/guile-{{version.raw}}.tar.xz
+  mirror: https://ftpmirror.gnu.org/guile/guile-{{version.raw}}.tar.xz
+
+versions:
+  github: guile/tags
+
+dependencies:
+  bdw-gc.org: '*'
+  gmp.org: '*'
+  libtool.org: '*'
+  libunistring.org: '*'
+  pkg-config.org: '*'
+  readline.org: '*'
+
+companions:
+  gnu-sed.org: '*'
+  apple.com/xcode/clt: "*"
+  flex.sourceforge.net: "*"
+  gettext.org: '*'
+  gperf.org: "*"
+  libffi.org: "*"
+  libxcrypt.org: "*"
+
+provides:
+  - lib/libguile-{{version.major

@@ -1,0 +1,24 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/matio/matio/{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  sources:
+    - url: https://matio.sourceforge.io/
+      regexp: matio/([0-9.]+)/
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    hdf5: '*'
+    zlib.net: '*'
+  script: |
+    ./configure --prefix="{{prefix}}" --enable-extended-sparse=yes --enable-mat73=yes --with-hdf5="{{deps.hdf5}}" --with-zlib=/usr
+    make --jobs {{ hw.concurrency }}
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_

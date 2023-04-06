@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://dbus.freedesktop.org/releases/dbus/dbus-{{version}}.tar.gz
+
+versions:
+  - 1.14.6
+
+build:
+  dependencies:
+    pkg-config.org: '*'
+    xmlto: '*'
+    expat:
+      macos: '*'
+    autoconf.gnu.org:
+      head: '*'
+    autoconf-archive.github.io:
+      head: '*'
+    automake.gnu.org:
+      head: '*'
+    libtool.gnu.org:
+      head: '*'
+  working-directory:
+    out
+  script: |
+    ../autogen.sh --no-configure
+    ../configure -- prefix={{prefix}} --localstatedir={{vars}} --sysconfdir={{etc}} --enable-xml-docs --disable-doxygen-docs --without-x --disable-tests
+    if [ "${{os}}" = "macos" ]; then
+      ../

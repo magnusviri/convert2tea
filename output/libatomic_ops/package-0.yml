@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://github.com/ivmai/libatomic_ops/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: ivmai/libatomic_ops/releases/tags
+
+# this formula is GPL-2.0-or-later and MIT
+licenses:
+  - GPL-2.0-or-later
+  - MIT
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --disable-dependency-tracking --prefix="{{prefix}}"
+    make
+    make check
+    make install
+
+provides:
+  - lib/libatomic_ops.a
+  - include/atomic_ops.h
+  - include/atomic_ops_ibm_power.h
+
+test:
+  script: |
+    test -f "{{prefix}}/lib/libatomic_ops.a"
+    test -f "{{prefix}}/

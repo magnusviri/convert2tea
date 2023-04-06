@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://ftp.postgresql.org/pub/source/v{{ version.raw }}/postgresql-{{ version.raw }}.tar.bz2
+  strip-components: 1
+
+versions:
+  url: https://ftp.postgresql.org/pub/source/
+  regex: %r{href=["']?v?(\d+(?:\.\d+)+)/?["' >]}i
+  livecheck:
+    disable: true
+
+keg_only:
+  reason: conflicts with postgres formula
+
+dependencies:
+  linux:
+    krb5: '*'
+    openssl@1.1: '*'
+    readline: '*'
+  darwin:
+    krb5: '*'
+    openssl@1.1: '*'
+    zlib: '*'
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.

@@ -1,0 +1,31 @@
+
+distributable:
+   url: https://github.com/aws/aws-sdk-cpp/archive/{{ version }}.tar.gz
+   strip-components: 0
+
+versions:
+  - 1.11.50
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++11
+    tea.xyz/gx/make: '*'
+    cmake.org: '*'
+    curl.se: 7.60.0
+  working-directory: build
+  script: |
+    cmake $ARGS -G "Unix Makefiles" ..
+    make --jobs {{ hw.concurrency }} 
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DENABLE_TESTING=OFF
+
+provides:
+  - lib/mac/Release/libaws-cpp-sdk-core.a
+
+test:
+  script: |
+    c++ -std=c++11 test.

@@ -1,0 +1,153 @@
+duckdb
+
+class Duckdb < Formula
+  homepage "https://www.duckdb.org"
+  url "https://github.com/duckdb/duckdb.git",
+      tag:      "v0.7.1",
+      revision: "b00b93f0b14bfff869e1facfd86a6b556a6f1c6e"
+  depends_on "cmake" => :build
+  def install
+    mkdir "build"
+    cd "build" do
+      system "cmake", "..", *std_cmake_args, "-DBUILD_ICU_EXTENSION=1", "-DBUILD_JSON_EXTENSION=1",
+             "-DBUILD_PARQUET_EXTENSION=1"
+      system "make"
+      system "make", "install"
+      bin.install "duckdb"
+      # The cli tool was renamed (0.1.8 -> 0.1.9)
+      # Create a symlink to not break compatibility
+      bin.install_symlink bin/"duckdb" => "duckdb_cli"
+    end
+  end
+  test do
+    path = testpath/"weather.sql"
+    path.write <<~EOS
+      CREATE TABLE weather (temp INTEGER);
+      INSERT INTO weather (temp) VALUES (40), (45), (50);
+      SELECT AVG(temp) FROM weather;
+    EOS
+    expected_output = <<~EOS
+      ┌─────────────┐
+      │ avg("temp") │
+      │   double    │
+      ├─────────────┤
+      │        45.0 │
+      └─────────────┘
+    EOS
+    assert_equal expected_output, shell_output("#{bin}/duckdb_cli < #{path}")
+  end
+end
+
+
+distributable:
+  url: https://github.com/duckdb/duckdb/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: duckdb/duckdb/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: ^3
+    git-scm.org: '*'
+  working-directory: build
+  script: |
+    # duckdb uses git to get its version
+    git init ..
+    git config user.email "bot@tea.xyz"
+    git config user.name "teabot"
+    git commit --allow-empty -mnil
+    git tag v{{version}}
+
+    cmake ..
+    make --jobs {{ hw.concurrency }}
+    mkdir -p "{{prefix}}"/bin
+    mv duckdb "{{prefix}}"/bin
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_ICU_EXTENSION=1
+      - -DBUILD_JSON_EXTENSION=1
+      - -DBUILD_PARQUET_EXTENSION=1
+
+provides:
+  - bin/duckdb
+  # ^^ specify the binaries or tea magic won’t work
+
+test:
+  fixture: |
+    CREATE TABLE weather (temp INTEGER);
+    INSERT INTO weather (temp) VALUES (40), (45), (50);
+    SELECT AVG(temp) FROM weather;
+  script: |
+    out="$(duckdb < $FIXTURE)"
+    exp=$(cat <<EOS
+    ┌─────────────┐
+    │ avg("temp") │
+    │   double    │
+    ├─────────────┤
+    │        45.0 │
+    └─────────────┘
+    EOS)
+
+    test "$out" = "$exp"
+
+    if [[ "$(duckdb --version)" != "v{{version}}"* ]]; then
+      echo "invalid version" >&2
+      exit 1
+    fi
+
+
+class Libmatio < Formula
+  homepage "https://matio.sourceforge.io/"
+  url "https://downloads.sourceforge.net/project/matio/matio/1.5.23/matio-1.5.23.tar.gz"
+  depends_on "hdf5"
+  def install
+    args = %W[
+      --prefix=#{prefix}
+      --enable-extended-sparse=yes
+      --enable-mat73=yes
+      --with-hdf5=#{Formula["hdf5"].opt_prefix}
+      --with-zlib=/usr
+    ]
+    system "./configure", *args
+    system "make", "install"
+  end
+  test do
+    testpath.install resource("homebrew-test_mat_file")
+    (testpath/"mat.c").write <<~EOS
+      #include <stdlib.h>
+      #include <matio.h>
+      size_t dims[2] = {5, 5};
+      double data[25] = {0.0, };
+      mat_t *mat;
+      matvar_t *matvar;
+      int main(int argc, char **argv) {
+        if (!(mat = Mat_Open(argv[1], MAT_ACC_RDONLY)))
+          abort();
+        Mat_Close(mat);
+        mat = Mat_CreateVer("test_writenan.mat", NULL, MAT_FT_DEFAULT);
+        if (mat) {
+          matvar = Mat_VarCreate("foo", MAT_C_DOUBLE, MAT_T_DOUBLE, 2,
+                                 dims, data, MAT_F_DONT_COPY_DATA);
+          Mat_VarWrite(mat, matvar, MAT_COMPRESSION_NONE);
+          Mat_VarFree(matvar);
+          Mat_Close(mat);
+        } else {
+          abort();
+        }
+        mat = Mat_CreateVer("foo", NULL, MAT_FT_MAT73);
+        return EXIT_SUCCESS;
+      }
+    EOS
+    system ENV.cc, "mat.c", "-o", "mat", "-I#{include}", "-L#{lib}", "-lmatio"
+    system "./mat", "poc_data.mat.sfx"
+  end
+end
+
+
+libmatio

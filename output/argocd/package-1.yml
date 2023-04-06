@@ -1,0 +1,30 @@
+
+distributable:
+  url: git@github.com:argoproj/argo-cd.git
+  tag: v{{version}}
+
+versions:
+  github: argoproj/argo-cd
+  strip: /^v(.*?)$/
+
+dependencies:
+  go.dev: '*'
+  nodejs.org: '*'
+  yarnpkg.com: '*'
+
+build:
+  dependencies:
+    nodejs.org: '*'
+    yarnpkg.com: '*'
+  script: |
+    make dep-ui-local
+    with_env NODE_ENV=production NODE_ONLINE_ENV=online yarn --cwd ui build
+    make cli-local
+  install: bin/argocd
+
+test:
+  script: |
+    assert_match "argocd controls a Argo CD server", shell_output("{{bin}}/argocd --help")
+    # Providing argocd with an empty config file returns the contexts table header
+    touch testpath/"argocd-config"
+    (testpath/"

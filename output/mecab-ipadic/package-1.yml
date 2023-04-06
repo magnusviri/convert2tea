@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://deb.debian.org/debian/pool/main/m/mecab-ipadic/mecab-ipadic_{{version}}+main.orig.tar.gz
+  strip-components: 1
+
+versions:
+  - 2.7.0-20070801
+
+build:
+  script: |
+    ./configure \
+      --prefix={{prefix}} \
+      --with-charset=utf8 \
+      --with-dicdir={{prefix}}/lib/mecab/dic/ipadic
+    make install
+
+depends_on:
+  mecab: *
+
+link_overwrite: lib/mecab/dic
+
+caveats: |
+  To enable mecab-ipadic dictionary, add to {{HOMEBREW_PREFIX}}/etc/mecabrc:
+    dicdir = {{HOMEBREW_PREFIX}}/lib/mecab/dic/ipadic
+
+test:
+  env:
+    mecabrc: |
+      dicdir = {{HOME

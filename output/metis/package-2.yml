@@ -1,0 +1,32 @@
+
+distributable:
+   url: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/metis-{{version}}.tar.gz
+
+versions:
+  - 5.1.0
+
+build:
+  dependencies:
+    cmake.org: ^3
+  working-directory: .
+  script: |
+    make config prefix="{{prefix}}" shared=1
+    make install
+  env:
+    LDFLAGS: "-L{{lib}} -Wl,-rpath,{{lib}}"
+
+provides:
+  - bin/gpmetis
+  - bin/ndmetis
+  - bin/pmetis
+  - bin/mpmetis
+  - bin/graphchk
+
+test:
+  depends:
+    - {{prefix}}/graphs/4elt.graph
+    - {{prefix}}/graphs/copter2.graph
+    - {{prefix}}/graphs/mdual.graph
+    - {{prefix}}/graphs/test.mgraph
+    - {{prefix}}/graphs/metis.mesh
+ 

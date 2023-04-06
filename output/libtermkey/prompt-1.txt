@@ -1,0 +1,105 @@
+aria2
+
+class Aria2 < Formula
+  homepage "https://aria2.github.io/"
+  url "https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0.tar.xz"
+  revision 1
+  depends_on "pkg-config" => :build
+  depends_on "gettext"
+  depends_on "libssh2"
+  depends_on "sqlite"
+  uses_from_macos "libxml2"
+  uses_from_macos "zlib"
+  on_linux do
+    depends_on "openssl@1.1"
+  end
+  def install
+    ENV.cxx11
+    args = %W[
+      --disable-dependency-tracking
+      --prefix=#{prefix}
+      --with-libssh2
+      --without-gnutls
+      --without-libgmp
+      --without-libnettle
+      --without-libgcrypt
+    ]
+    if OS.mac?
+      args << "--with-appletls"
+      args << "--without-openssl"
+    else
+      args << "--without-appletls"
+      args << "--with-openssl"
+    end
+    system "./configure", *args
+    system "make", "install"
+    bash_completion.install "doc/bash_completion/aria2c"
+  end
+  test do
+    system "#{bin}/aria2c", "https://brew.sh/"
+    assert_predicate testpath/"index.html", :exist?, "Failed to create index.html!"
+  end
+end
+
+
+distributable:
+  url: https://github.com/aria2/aria2/releases/download/release-{{ version }}/aria2-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: aria2/aria2
+  strip: /^aria2 /
+
+provides:
+  - bin/aria2c
+
+dependencies:
+  zlib.net: ^1
+  openssl.org: ^1
+  libexpat.github.io: '*'
+  sqlite.org: ^3
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnupg.org/libgcrypt: ^1
+    gnupg.org/libgpg-error: ^1
+    freedesktop.org/pkg-config: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --with-openssl
+      - --with-libgcrypt
+
+test: |
+  aria2c -v
+  aria2c https://tea.xyz
+  aria2c --seed-time=0 "magnet:?xt=urn:btih:d984f67af9917b214cd8b6048ab5624c7df6a07a&tr=https%3A%2F%2Facademictorrents.com%2Fannounce.php&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce"
+
+class Libtermkey < Formula
+  homepage "https://www.leonerd.org.uk/code/libtermkey/"
+  url "https://www.leonerd.org.uk/code/libtermkey/libtermkey-0.22.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?libtermkey[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
+  depends_on "unibilium"
+  uses_from_macos "ncurses"
+  on_linux do
+    depends_on "glib" => :build
+  end
+  def install
+    system "make", "PREFIX=#{prefix}"
+    system "make", "install", "PREFIX=#{prefix}"
+  end
+end
+
+
+libtermkey

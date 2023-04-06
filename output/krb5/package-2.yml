@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://kerberos.org/dist/krb5/{{version.major_minor_patch}}/krb5-{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  home-page: https://web.mit.edu/kerberos/
+  regex: /Current release: .*?>krb5[._-]v?(\d+(?:\.\d+)+)/i
+
+keg-only: provided_by_macos
+dependencies:
+  openssl@1.1: '*'
+  bison.build: '*'
+  libedit.macos: '*'
+
+provides:
+  - bin/krb5-config
+
+build:
+  dependencies:
+    bison.build: '*'
+  script: |
+    ./configure {{std_configure_args}} \
+      --disable-nls \
+      --disable-silent-rules \
+      --without-system-verto \
+      --without-keyutils
+    make
+    make install
+

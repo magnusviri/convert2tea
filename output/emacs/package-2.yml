@@ -1,0 +1,25 @@
+
+distributable:
+  url: https://ftp.gnu.org/gnu/emacs/emacs-{{ version.raw }}.tar.xz
+  mirror: https://ftpmirror.gnu.org/emacs/emacs-{{ version.raw }}.tar.xz
+  strip-components: 1
+versions:
+  - 28.2
+source:
+  scm:
+    git: https://github.com/emacs-mirror/emacs.git
+    branch: master
+provides:
+  - bin/ctags
+  - bin/emacs
+  - bin/etags
+  - bin/emacs-{{ version.raw }}
+  - bin/ctags-{{ version.raw }}
+  - bin/etags-{{ version.raw }}
+  - lib/libgnutls.{{ gnutls.version }}.dylib
+  - {{ prefix }}/share/emacs/site-lisp/site-load.el
+build:
+  dependencies:
+    autoconf: '*'
+    gnu-sed: '*'
+    texinfo: '*'

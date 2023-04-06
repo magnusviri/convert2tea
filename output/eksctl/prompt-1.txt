@@ -1,0 +1,74 @@
+direnv
+
+class Direnv < Formula
+  homepage "https://direnv.net/"
+  url "https://github.com/direnv/direnv/archive/v2.32.2.tar.gz"
+  head "https://github.com/direnv/direnv.git", branch: "master"
+  depends_on "go" => :build
+  def install
+    system "make", "install", "PREFIX=#{prefix}"
+  end
+  test do
+    system bin/"direnv", "status"
+  end
+end
+
+
+distributable:
+  url: https://github.com/direnv/direnv/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: direnv/direnv/releases/tags
+
+provides:
+  - bin/direnv
+
+build:
+  dependencies:
+    go.dev: ^1.18
+    tea.xyz/gx/make: '*'
+  script: |
+    make install PREFIX="{{ prefix }}"
+
+test:
+  test "$(direnv --version)" = "{{ version }}"
+
+
+class Eksctl < Formula
+  homepage "https://eksctl.io"
+  url "https://github.com/weaveworks/eksctl.git",
+      tag:      "0.136.0",
+      revision: "3f5a7c5e0f7a13c534103ad297a04823bb6c3998"
+  head "https://github.com/weaveworks/eksctl.git", branch: "main"
+  depends_on "counterfeiter" => :build
+  depends_on "go" => :build
+  depends_on "go-bindata" => :build
+  depends_on "mockery" => :build
+  depends_on "aws-iam-authenticator"
+  # Eksctl requires newer version of ifacemaker
+  #
+  # Replace with `depends_on "ifacemaker" => :build` when ifacemaker > 1.2.0
+  # Until then get the resource version from go.mod
+  def install
+    resource("ifacemaker").stage do
+      system "go", "build", *std_go_args(ldflags: "-s -w", output: buildpath/"ifacemaker")
+    end
+    inreplace "build/scripts/generate-aws-interfaces.sh", "${GOBIN}/ifacemaker",
+                                                          buildpath/"ifacemaker"
+    ENV["GOBIN"] = HOMEBREW_PREFIX/"bin"
+    ENV.deparallelize # Makefile prerequisites need to be run in order
+    system "make", "build"
+    bin.install "eksctl"
+    generate_completions_from_executable(bin/"eksctl", "completion")
+  end
+  test do
+    assert_match "The official CLI for Amazon EKS",
+      shell_output("#{bin}/eksctl --help")
+    assert_match "Error: couldn't create node group filter from command line options: --cluster must be set",
+      shell_output("#{bin}/eksctl create nodegroup 2>&1", 1)
+  end
+end
+
+
+eksctl

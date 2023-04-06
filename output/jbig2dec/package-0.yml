@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs{{version}}/jbig2dec-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: https://jbig2dec.com/
+  regex: %r{href=.*?/jbig2dec[._-]v?(\d+(?:\.\d+)+)\.t}i
+
+provides:
+  - bin/jbig2dec
+
+build:
+  dependencies:
+    autoconf.gnu.org: '*'
+    automake.org: '*'
+    gnu.org/libtool: '*'
+  script: |
+    ./autogen.sh \
+      --disable-dependency-tracking \
+      --prefix="{{ prefix }}" \
+      --disable-silent-rules \
+      --without-libpng
+    make install
+
+test:
+  test "$(jbig2dec --version)" = "{{ version }}"
+  resources:
+    - url: https://github

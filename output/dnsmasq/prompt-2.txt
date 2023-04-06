@@ -1,0 +1,128 @@
+mpdecimal
+
+class Mpdecimal < Formula
+  homepage "https://www.bytereef.org/mpdecimal/"
+  url "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-2.5.1.tar.gz"
+  livecheck do
+    url "https://www.bytereef.org/mpdecimal/download.html"
+    regex(/href=.*?mpdecimal[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "./configure", "--prefix=#{prefix}"
+    system "make"
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <assert.h>
+      #include <mpdecimal.h>
+      #include <string.h>
+      int main() {
+        mpd_context_t ctx;
+        mpd_t *a, *b, *result;
+        char *rstring;
+        mpd_defaultcontext(&ctx);
+        a = mpd_new(&ctx);
+        b = mpd_new(&ctx);
+        result = mpd_new(&ctx);
+        mpd_set_string(a, "0.1", &ctx);
+        mpd_set_string(b, "0.2", &ctx);
+        mpd_add(result, a, b, &ctx);
+        rstring = mpd_to_sci(result, 1);
+        assert(strcmp(rstring, "0.3") == 0);
+        mpd_del(a);
+        mpd_del(b);
+        mpd_del(result);
+        mpd_free(rstring);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-o", "test", "-L#{lib}", "-lmpdec"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2.5.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{ prefix }}
+    make --jobs {{hw.concurrency}} install
+    rm -rf {{prefix}}/share  # docs are online
+
+    if test {{hw.platform}} = darwin; then
+      install_name_tool -change \
+        @rpath/libmpdec.3.dylib \
+        @loader_path/libmpdec.3.dylib \
+        {{prefix}}/lib/libmpdec++.dylib
+    fi
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -o test -lmpdec
+    ./test
+
+
+class Dnsmasq < Formula
+  homepage "https://thekelleys.org.uk/dnsmasq/doc.html"
+  url "https://thekelleys.org.uk/dnsmasq/dnsmasq-2.89.tar.gz"
+  license any_of: ["GPL-2.0-only", "GPL-3.0-only"]
+  livecheck do
+    url "https://thekelleys.org.uk/dnsmasq/"
+    regex(/href=.*?dnsmasq[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  depends_on "pkg-config" => :build
+  def install
+    ENV.deparallelize
+    # Fix etc location
+    inreplace %w[dnsmasq.conf.example src/config.h man/dnsmasq.8
+                 man/es/dnsmasq.8 man/fr/dnsmasq.8].each do |s|
+      s.gsub! "/var/lib/misc/dnsmasq.leases",
+              var/"lib/misc/dnsmasq/dnsmasq.leases", false
+      s.gsub! "/etc/dnsmasq.conf", etc/"dnsmasq.conf", false
+      s.gsub! "/var/run/dnsmasq.pid", var/"run/dnsmasq/dnsmasq.pid", false
+      s.gsub! "/etc/dnsmasq.d", etc/"dnsmasq.d", false
+      s.gsub! "/etc/ppp/resolv.conf", etc/"dnsmasq.d/ppp/resolv.conf", false
+      s.gsub! "/etc/dhcpc/resolv.conf", etc/"dnsmasq.d/dhcpc/resolv.conf", false
+      s.gsub! "/usr/sbin/dnsmasq", HOMEBREW_PREFIX/"sbin/dnsmasq", false
+    end
+    # Fix compilation on newer macOS versions.
+    ENV.append_to_cflags "-D__APPLE_USE_RFC_3542"
+    inreplace "Makefile" do |s|
+      s.change_make_var! "CFLAGS", ENV.cflags
+      s.change_make_var! "LDFLAGS", ENV.ldflags
+    end
+    system "make", "install", "PREFIX=#{prefix}"
+    etc.install "dnsmasq.conf.example" => "dnsmasq.conf"
+  end
+  def post_install
+    (var/"lib/misc/dnsmasq").mkpath
+    (var/"run/dnsmasq").mkpath
+    (etc/"dnsmasq.d/ppp").mkpath
+    (etc/"dnsmasq.d/dhcpc").mkpath
+    touch etc/"dnsmasq.d/ppp/.keepme"
+    touch etc/"dnsmasq.d/dhcpc/.keepme"
+  end
+  service do
+    run [opt_sbin/"dnsmasq", "--keep-in-foreground", "-C", etc/"dnsmasq.conf", "-7", etc/"dnsmasq.d,*.conf"]
+    keep_alive true
+    require_root true
+  end
+  test do
+    system "#{sbin}/dnsmasq", "--test"
+  end
+end
+
+
+dnsmasq

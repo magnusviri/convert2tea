@@ -1,0 +1,129 @@
+mpdecimal
+
+class Mpdecimal < Formula
+  homepage "https://www.bytereef.org/mpdecimal/"
+  url "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-2.5.1.tar.gz"
+  livecheck do
+    url "https://www.bytereef.org/mpdecimal/download.html"
+    regex(/href=.*?mpdecimal[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "./configure", "--prefix=#{prefix}"
+    system "make"
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <assert.h>
+      #include <mpdecimal.h>
+      #include <string.h>
+      int main() {
+        mpd_context_t ctx;
+        mpd_t *a, *b, *result;
+        char *rstring;
+        mpd_defaultcontext(&ctx);
+        a = mpd_new(&ctx);
+        b = mpd_new(&ctx);
+        result = mpd_new(&ctx);
+        mpd_set_string(a, "0.1", &ctx);
+        mpd_set_string(b, "0.2", &ctx);
+        mpd_add(result, a, b, &ctx);
+        rstring = mpd_to_sci(result, 1);
+        assert(strcmp(rstring, "0.3") == 0);
+        mpd_del(a);
+        mpd_del(b);
+        mpd_del(result);
+        mpd_free(rstring);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-o", "test", "-L#{lib}", "-lmpdec"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 2.5.1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{ prefix }}
+    make --jobs {{hw.concurrency}} install
+    rm -rf {{prefix}}/share  # docs are online
+
+    if test {{hw.platform}} = darwin; then
+      install_name_tool -change \
+        @rpath/libmpdec.3.dylib \
+        @loader_path/libmpdec.3.dylib \
+        {{prefix}}/lib/libmpdec++.dylib
+    fi
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -o test -lmpdec
+    ./test
+
+
+class Libb2 < Formula
+  homepage "https://blake2.net/"
+  url "https://github.com/BLAKE2/libb2/releases/download/v0.98.1/libb2-0.98.1.tar.gz"
+  # Fix -flat_namespace being used on Big Sur and later.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+  end
+  def install
+    # SSE detection is broken on arm64 macos
+    # https://github.com/BLAKE2/libb2/issues/36
+    extra_args = []
+    extra_args << "--enable-fat" unless Hardware::CPU.arm?
+    system "./configure", "--disable-dependency-tracking",
+                          "--disable-silent-rules",
+                          "--prefix=#{prefix}",
+                          *extra_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"blake2test.c").write <<~EOS
+      #include <blake2.h>
+      #include <stdio.h>
+      #include <string.h>
+      int main(void) {
+          uint8_t out[64];
+          uint8_t expected[64] =
+          {
+            0xb2, 0x02, 0xb4, 0x77, 0xa7, 0x97, 0xe9, 0x84, 0xe6, 0xa2, 0xb9, 0x76,
+            0xca, 0x4c, 0xb7, 0xd3, 0x94, 0x40, 0x04, 0xb3, 0xef, 0x6c, 0xde, 0x80,
+            0x34, 0x1c, 0x78, 0x53, 0xa2, 0xdd, 0x7e, 0x2f, 0x9e, 0x08, 0xcd, 0xa6,
+            0xd7, 0x37, 0x28, 0x12, 0xcf, 0x75, 0xe8, 0xc7, 0x74, 0x1f, 0xb6, 0x56,
+            0xce, 0xc3, 0xa1, 0x19, 0x77, 0x2e, 0x2e, 0x71, 0x5c, 0xeb, 0xc7, 0x64,
+            0x33, 0xfa, 0xfd, 0x4d
+          };
+          int res = blake2b(out, "blake2", "blake2", 64, 6, 6);
+          if (res == 0) {
+            if (memcmp(out, expected, 64) == 0) {
+              return 0;
+            } else {
+              return 1;
+            }
+          } else {
+            return 1;
+          }
+      }
+    EOS
+    system ENV.cc, "blake2test.c", "-L#{lib}", "-lb2", "-o", "b2test"
+    system "./b2test"
+  end
+end
+
+
+libb2

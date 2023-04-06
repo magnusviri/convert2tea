@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://files.nothingisreal.com/software/gpp/gpp-{{version}}.tar.bz2
+  version: 2.27
+
+# if there’s a github then we can parse the versions
+versions:
+  github: logological/gpp
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure \
+      --prefix="{{ prefix }}" \
+      --mandir="{{ man }}" \
+      --disable-debug \
+      --disable-dependency-tracking
+    make
+    make check
+    make install
+
+provides:
+  - bin/gpp
+test:
+  script:
+    ./gpp --version

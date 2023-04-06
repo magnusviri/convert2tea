@@ -1,0 +1,23 @@
+
+distributable:
+  url: https://www.libssh2.org/download/libssh2-{{ version }}.tar.gz
+  mirror:
+    - https://github.com/libssh2/libssh2/releases/download/libssh2-{{ version }}/libssh2-{{ version }}.tar.gz
+    - http://download.openpkg.org/components/cache/libssh2/libssh2-{{ version }}.tar.gz
+
+versions:
+  url: https://www.libssh2.org/download/
+  regex: /href=.*?libssh2[._-]v?(\d+(?:\.\d+)+)\./
+
+dependencies:
+  openssl@1.1: '>=1.1'
+  zlib.net: '*'
+
+build:
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |-
+    ./buildconf
+    ./configure --prefix={{ prefix }} --disable-silent-rules --disable-ex

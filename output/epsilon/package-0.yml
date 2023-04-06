@@ -1,0 +1,22 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/epsilon-project/epsilon/{{ version }}/epsilon-{{ version }}.tar.gz
+
+versions:
+  stable: downloads.sourceforge.net/project/epsilon-project/epsilon/
+
+dependencies:
+  autoconf: '*'
+  automake: '*'
+  libtool: '*'
+  popt: '*'
+
+build:
+  script: |
+    autoreconf --force --install --verbose
+    ./configure --disable-debug --disable-dependency-tracking --prefix={{ prefix }}
+    make install
+
+test:
+  script: |
+    {{ bin }}/epsilon --version

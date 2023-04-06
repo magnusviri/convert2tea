@@ -1,0 +1,118 @@
+jansson
+
+class Jansson < Formula
+  homepage "https://digip.org/jansson/"
+  url "https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz"
+  def install
+    system "./configure", *std_configure_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <jansson.h>
+      #include <assert.h>
+      int main()
+      {
+        json_t *json;
+        json_error_t error;
+        json = json_loads("\\"foo\\"", JSON_DECODE_ANY, &error);
+        assert(json && json_is_string(json));
+        json_decref(json);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-ljansson", "-o", "test"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://github.com/akheron/jansson/releases/download/v{{ version.raw }}/jansson-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: akheron/jansson/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc fixture.c -ljansson
+    ./a.out
+
+class Libgeotiff < Formula
+  homepage "https://github.com/OSGeo/libgeotiff"
+  revision 2
+  stable do
+    url "https://github.com/OSGeo/libgeotiff/releases/download/1.7.1/libgeotiff-1.7.1.tar.gz"
+    # Fix -flat_namespace being used on Big Sur and later.
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+    end
+  end
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
+  head do
+    url "https://github.com/OSGeo/libgeotiff.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+  depends_on "jpeg-turbo"
+  depends_on "libtiff"
+  depends_on "proj"
+  def install
+    system "./autogen.sh" if build.head?
+    system "./configure", *std_configure_args, "--with-jpeg"
+    system "make" # Separate steps or install fails
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include "geotiffio.h"
+      #include "xtiffio.h"
+      #include <stdlib.h>
+      #include <string.h>
+      int main(int argc, char* argv[])
+      {
+        TIFF *tif = XTIFFOpen(argv[1], "w");
+        GTIF *gtif = GTIFNew(tif);
+        TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32) 10);
+        GTIFKeySet(gtif, GeogInvFlatteningGeoKey, TYPE_DOUBLE, 1, (double)123.456);
+        int i;
+        char buffer[20L];
+        memset(buffer,0,(size_t)20L);
+        for (i=0;i<20L;i++){
+          TIFFWriteScanline(tif, buffer, i, 0);
+        }
+        GTIFWriteKeys(gtif);
+        GTIFFree(gtif);
+        XTIFFClose(tif);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-I#{include}", "-L#{lib}", "-lgeotiff",
+                   "-L#{Formula["libtiff"].opt_lib}", "-ltiff", "-o", "test"
+    system "./test", "test.tif"
+    output = shell_output("#{bin}/listgeo test.tif")
+    assert_match(/GeogInvFlatteningGeoKey.*123\.456/, output)
+  end
+end
+
+
+libgeotiff

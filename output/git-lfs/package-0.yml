@@ -1,0 +1,26 @@
+
+distributable:
+  url: https://github.com/git-lfs/git-lfs/releases/download/v{{ version.raw }}/git-lfs-v{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: git-lfs/git-lfs/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    asciidoctor: '*'
+    go: '*'
+    ronn: '*'
+    ruby: '*'
+  script: |
+    export GIT_LFS_SHA
+    export VERSION="{{ version.raw }}"
+    make
+    make man RONN="{{ deps.ronn.bin }}/ronn"
+
+install:
+  script: |
+    install -m 755 bin/git-lfs {{ prefix }}/bin/git-lfs
+    install -m 644 man/man1/*.1 {{ prefix }}/share/man/man1/
+    install -m 644 man/man5/*.5 {{ prefix }}/share/

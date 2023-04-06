@@ -1,0 +1,130 @@
+doxygen
+
+class Doxygen < Formula
+  homepage "https://www.doxygen.nl/"
+  url "https://doxygen.nl/files/doxygen-1.9.6.src.tar.gz"
+  mirror "https://downloads.sourceforge.net/project/doxygen/rel-1.9.6/doxygen-1.9.6.src.tar.gz"
+  head "https://github.com/doxygen/doxygen.git", branch: "master"
+  livecheck do
+    url "https://www.doxygen.nl/download.html"
+    regex(/href=.*?doxygen[._-]v?(\d+(?:\.\d+)+)[._-]src\.t/i)
+  end
+  depends_on "bison" => :build
+  depends_on "cmake" => :build
+  uses_from_macos "flex" => :build, since: :big_sur
+  uses_from_macos "python" => :build
+  fails_with :gcc do
+    version "6"
+    cause "Need gcc>=7.2. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66297"
+  end
+  def install
+    system "cmake", "-S", ".", "-B", "build",
+                    "-DPYTHON_EXECUTABLE=#{which("python3") || which("python")}",
+                    *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    system "cmake", "-S", ".", "-B", "build", "-Dbuild_doc=1", *std_cmake_args
+    man1.install buildpath.glob("build/man/*.1")
+  end
+  test do
+    system bin/"doxygen", "-g"
+    system bin/"doxygen", "Doxyfile"
+  end
+end
+
+
+
+distributable:
+   url: https://github.com/doxygen/doxygen/archive/refs/tags/Release_{{version.major}}_{{version.minor}}_{{version.patch}}.tar.gz
+   strip-components: 1
+
+versions:
+  - 1.9.6 # FIXME: the versions are "Release_1_9_6" but no idea how I can parse this without regex
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/bison: ^3
+    cmake.org: ^3
+    github.com/westes/flex: 2
+    python.org: ^3
+  working-directory: build
+  script: |
+    cmake $ARGS -G "Unix Makefiles" ..
+    make --jobs {{ hw.concurrency }} 
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+    
+
+provides:
+  - bin/doxygen
+
+test:
+  script: |
+    doxygen -g
+    doxygen Doxyfile
+
+
+class Gts < Formula
+  homepage "https://gts.sourceforge.io/"
+  url "https://downloads.sourceforge.net/project/gts/gts/0.7.6/gts-0.7.6.tar.gz"
+  revision 2
+  # We regenerate configure to avoid the `-flat_namespace` flag.
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => [:build, :test]
+  depends_on "glib"
+  depends_on "netpbm"
+  on_macos do
+    depends_on "gettext"
+  end
+  conflicts_with "pcb", because: "both install a `gts.h` header"
+  # Fix for newer netpbm.
+  # This software hasn't been updated in seven years
+  patch :DATA
+  def install
+    # The `configure` passes `-flat_namespace` but none of our usual patches apply.
+    system "autoreconf", "--force", "--install", "--verbose"
+    system "./configure", *std_configure_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"gtstest.c").write <<~EOS
+      #include "gts.h"
+      int main() {
+        GtsRange r;
+        gts_range_init(&r);
+        for (int i = 0; i < 10; ++i)
+          gts_range_add_value(&r, i);
+        gts_range_update(&r);
+        if (r.n == 10) return 0;
+        return 1;
+      }
+    EOS
+    cflags = Utils.safe_popen_read("pkg-config", "--cflags", "--libs", "gts").strip.split
+    system ENV.cc, "gtstest.c", *cflags, "-lm", "-o", "gtstest"
+    system "./gtstest"
+  end
+end
+__END__
+diff --git a/examples/happrox.c b/examples/happrox.c
+index 88770a8..11f140d 100644
+--- a/examples/happrox.c
++++ b/examples/happrox.c
+@@ -21,7 +21,7 @@
+ #include <stdlib.h>
+ #include <locale.h>
+ #include <string.h>
+-#include <pgm.h>
++#include <netpbm/pgm.h>
+ #include "config.h"
+ #ifdef HAVE_GETOPT_H
+ #  include <getopt.h>
+
+
+gts

@@ -1,0 +1,73 @@
+direnv
+
+class Direnv < Formula
+  homepage "https://direnv.net/"
+  url "https://github.com/direnv/direnv/archive/v2.32.2.tar.gz"
+  head "https://github.com/direnv/direnv.git", branch: "master"
+  depends_on "go" => :build
+  def install
+    system "make", "install", "PREFIX=#{prefix}"
+  end
+  test do
+    system bin/"direnv", "status"
+  end
+end
+
+
+distributable:
+  url: https://github.com/direnv/direnv/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: direnv/direnv/releases/tags
+
+provides:
+  - bin/direnv
+
+build:
+  dependencies:
+    go.dev: ^1.18
+    tea.xyz/gx/make: '*'
+  script: |
+    make install PREFIX="{{ prefix }}"
+
+test:
+  test "$(direnv --version)" = "{{ version }}"
+
+
+class Groff < Formula
+  homepage "https://www.gnu.org/software/groff/"
+  url "https://ftp.gnu.org/gnu/groff/groff-1.22.4.tar.gz"
+  mirror "https://ftpmirror.gnu.org/groff/groff-1.22.4.tar.gz"
+  revision 1
+  depends_on "pkg-config" => :build
+  depends_on "ghostscript"
+  depends_on "netpbm"
+  depends_on "psutils"
+  depends_on "uchardet"
+  uses_from_macos "bison" => :build
+  uses_from_macos "perl"
+  on_system :linux, macos: :ventura_or_newer do
+    depends_on "texinfo" => :build
+  end
+  on_linux do
+    depends_on "glib"
+  end
+  # See https://savannah.gnu.org/bugs/index.php?59276
+  # Fixed in 1.23.0
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/8059b3027a4aa68d8f42e1281cc3a81449ca0010/groff/1.22.4.patch"
+  end
+  def install
+    system "./configure", "--prefix=#{prefix}", "--without-x", "--with-uchardet"
+    system "make" # Separate steps required
+    system "make", "install"
+  end
+  test do
+    assert_match "homebrew\n",
+      pipe_output("#{bin}/groff -a", "homebrew\n")
+  end
+end
+
+
+groff

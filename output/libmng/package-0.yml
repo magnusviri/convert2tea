@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/libmng/libmng-devel/{{ version }}/libmng-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  sourceforge: libmng/libmng-devel
+  strip: /libmng-/
+
+dependencies:
+  jpeg-turbo.org: ^1
+  little-cms2.sourceforge.net: '*'
+  zlib.net: ^1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --disable-silent-rules
+
+test: |
+  gcc -DMNG_USE_SO -I$(brew --prefix jpeg-turbo)/include -I{{include}} -L{{

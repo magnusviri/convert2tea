@@ -1,0 +1,33 @@
+
+distributable:
+  url: https://www.libraw.org/data/LibRaw-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: libraw/libraw
+  strip: /^LibRaw /
+
+license: any_of:
+  - LGPL-2.1-only
+  - CDDL-1.0
+
+livecheck:
+  url: https://www.libraw.org/download/
+  regex: (?<=href=".*?LibRaw[._-]v?)(\d+(?:\.\d+)+)(?=\.t)
+
+dependencies:
+  jpeg-turbo: '*'
+  little-cms2: '*'
+  jasper: '*'
+  zlib.net: ^1
+
+build:
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+    pkg-config: '*'
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - "ac

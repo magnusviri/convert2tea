@@ -1,0 +1,35 @@
+
+distributable:
+  url: https://www.libssh2.org/download/libssh2-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: www.libssh2.org/download/
+  ignore: /-rc\d/
+
+detect:
+  cmd: libssh2-config --version
+  regex: \v
+
+dependencies:
+  openssl@1.1: '*'
+  zlib.net: 1
+
+provides:
+  darwin:
+  - lib/libssh2.a
+  - lib/libssh2.dylib
+  linux:
+  - lib/libssh2.a
+  - lib/libssh2.so
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |-
+    if [[ "$HEAD" == "yes" ]] ; then
+      ./

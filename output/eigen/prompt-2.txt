@@ -1,0 +1,95 @@
+wumpus
+
+class Wumpus < Formula
+  homepage "http://www.catb.org/~esr/wumpus/"
+  url "http://www.catb.org/~esr/wumpus/wumpus-1.9.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?wumpus[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "make"
+    system "make", "prefix=#{prefix}", "install"
+  end
+  test do
+    assert_match("HUNT THE WUMPUS",
+                 pipe_output(bin/"wumpus", "^C"))
+  end
+end
+
+
+distributable:
+  url: https://gitlab.com/esr/wumpus/-/archive/{{ version.raw }}/wumpus-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.9
+
+provides:
+  - bin/wumpus
+  - bin/superhack
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    #pagure.io/xmlto: '*'
+
+  script: |
+    make wumpus superhack
+    # When xmlto is packaged then switch the to `make ... install`
+    mkdir -p "{{prefix}}"/bin
+    mv wumpus superhack "{{prefix}}"/bin
+    # make prefix={{prefix}} install
+
+test:
+  script: |
+    wumpus > wumpus.out &
+    superhack > superhack.out &
+    sleep 1
+    test "x$(head -n1 wumpus.out)" = "xINSTRUCTIONS (Y-N)" && \
+    test "x$(head -n1 superhack.out)" = "xHunt the Superhack"
+
+
+class Eigen < Formula
+  homepage "https://eigen.tuxfamily.org/"
+  url "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz"
+  revision 1
+  head "https://gitlab.com/libeigen/eigen.git", branch: "master"
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
+  depends_on "cmake" => :build
+  conflicts_with "freeling", because: "freeling ships its own copy of eigen"
+  def install
+    mkdir "eigen-build" do
+      args = std_cmake_args
+      args << "-Dpkg_config_libdir=#{lib}" << ".."
+      system "cmake", *args
+      system "make", "install"
+    end
+    (share/"cmake/Modules").install "cmake/FindEigen3.cmake"
+  end
+  test do
+    (testpath/"test.cpp").write <<~EOS
+      #include <iostream>
+      #include <Eigen/Dense>
+      using Eigen::MatrixXd;
+      int main()
+      {
+        MatrixXd m(2,2);
+        m(0,0) = 3;
+        m(1,0) = 2.5;
+        m(0,1) = -1;
+        m(1,1) = m(1,0) + m(0,1);
+        std::cout << m << std::endl;
+      }
+    EOS
+    system ENV.cxx, "test.cpp", "-I#{include}/eigen3", "-o", "test"
+    assert_equal %w[3 -1 2.5 1.5], shell_output("./test").split
+  end
+end
+
+
+eigen

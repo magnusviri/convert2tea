@@ -1,0 +1,30 @@
+
+distributable:
+  url: http://download.osgeo.org/gdal/{{ version }}/gdal-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: OSGeo/gdal
+  strip: /^gdal-/
+
+provides:
+  - bin/gdalinfo
+  - bin/ogrinfo
+
+dependencies:
+  cmake.org: '*'
+  pkg-config.se: '*'
+  apache-arrow: '*'
+  cfitsio: '*'
+  epsilon: '*'
+  expat: '*'
+  freexl: '*'
+  geos: '*'
+  giflib.sourceforge.io: '*'
+  hdf5.org: '*'
+  jpeg-turbo.org: '*'
+  jpeg-xl: '*'
+  json-c.org: '*'
+  libdap: '*'
+  libgeotiff: '*'
+  libheif: '*

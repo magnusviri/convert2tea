@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://github.com/ivmai/bdwgc/releases/download/v{{version}}/gc-{{version}}.tar.gz
+
+versions:
+  - 8.2.2
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    autoconf: ^2.69
+    automake: ^1.15
+    libtool: '*'
+    libatomic_ops: '*'
+    pkg-config: '*'
+  script: |
+    ./autogen.sh
+    ./configure --disable-debug --disable-dependency-tracking --prefix={{prefix}} --enable-cplusplus --enable-static --enable-large-config
+    make
+    make check
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    gcc: '*'
+  env:
+    cxxflags: $(pkg-config --cflags bdw-

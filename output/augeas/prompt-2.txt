@@ -1,0 +1,125 @@
+jansson
+
+class Jansson < Formula
+  homepage "https://digip.org/jansson/"
+  url "https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz"
+  def install
+    system "./configure", *std_configure_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <jansson.h>
+      #include <assert.h>
+      int main()
+      {
+        json_t *json;
+        json_error_t error;
+        json = json_loads("\\"foo\\"", JSON_DECODE_ANY, &error);
+        assert(json && json_is_string(json));
+        json_decref(json);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-ljansson", "-o", "test"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://github.com/akheron/jansson/releases/download/v{{ version.raw }}/jansson-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: akheron/jansson/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc fixture.c -ljansson
+    ./a.out
+
+class Augeas < Formula
+  homepage "https://augeas.net/"
+  revision 1
+  head "https://github.com/hercules-team/augeas.git", branch: "master"
+  # Remove stable block when patch is no longer needed.
+  stable do
+    url "https://github.com/hercules-team/augeas/releases/download/release-1.14.0/augeas-1.14.0.tar.gz"
+    # Remove `#include <malloc.h>`, add `#include <libgen.h>`.
+    # Remove on next release.
+    patch do
+      url "https://github.com/hercules-team/augeas/commit/7b26cbb74ed634d886ed842e3d5495361d8fd9b1.patch?full_index=1"
+    end
+  end
+  livecheck do
+    url :stable
+    regex(%r{href=["']?[^"' >]*?/tag/\D*?(\d+(?:\.\d+)+)["' >]}i)
+    strategy :github_latest
+  end
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "bison" => :build
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
+  depends_on "readline"
+  uses_from_macos "libxml2"
+  def install
+    if build.head?
+      system "./autogen.sh", *std_configure_args
+    else
+      # autoreconf is needed to work around
+      # https://debbugs.gnu.org/cgi/bugreport.cgi?bug=44605.
+      system "autoreconf", "--force", "--install"
+      system "./configure", *std_configure_args
+    end
+    system "make", "install"
+  end
+  def caveats
+    <<~EOS
+      Lenses have been installed to:
+        #{HOMEBREW_PREFIX}/share/augeas/lenses/dist
+    EOS
+  end
+  test do
+    assert_match version.to_s, shell_output("#{bin}/augtool --version 2>&1")
+    (testpath/"etc/hosts").write <<~EOS
+      192.168.0.1 brew.sh test
+    EOS
+    expected_augtool_output = <<~EOS
+      /files/etc/hosts/1
+      /files/etc/hosts/1/ipaddr = "192.168.0.1"
+      /files/etc/hosts/1/canonical = "brew.sh"
+      /files/etc/hosts/1/alias = "test"
+    EOS
+    assert_equal expected_augtool_output,
+                 shell_output("#{bin}/augtool --root #{testpath} 'print /files/etc/hosts/1'")
+    expected_augprint_output = <<~EOS
+      setm /augeas/load/*[incl='/etc/hosts' and label() != 'hosts']/excl '/etc/hosts'
+      transform hosts incl /etc/hosts
+      load-file /etc/hosts
+      set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/ipaddr '192.168.0.1'
+      set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/canonical 'brew.sh'
+      set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/alias 'test'
+    EOS
+    assert_equal expected_augprint_output,
+                 shell_output("#{bin}/augprint --lens=hosts --target=/etc/hosts #{testpath}/etc/hosts")
+  end
+end
+
+
+augeas

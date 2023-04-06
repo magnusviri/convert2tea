@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://gitlab.com/grpc/grpc/-/archive/{{ version.raw }}/grpc-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.53.0
+
+provides:
+  - bin/grpc_cli
+
+dependencies:
+  autoconf: '*'
+  automake: '*'
+  cmake: '*'
+  libtool: '*'
+  pkg-config: '*'
+  abseil: '*'
+  c-ares: '*'
+  openssl@1.1: '*'
+  protobuf: '*'
+  re2: '*'
+  zlib: '*'
+  llvm: '*' # Only on macOS
+
+build:
+  script: |
+      cmake -B cmake/build \
+        -DCMAKE_INSTALL_RPATH={{rpath}} \
+        -DCMAKE_CXX_STANDARD=17 \
+        -DCMAKE_CXX_

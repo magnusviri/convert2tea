@@ -1,0 +1,158 @@
+bitcoin
+
+class Bitcoin < Formula
+  homepage "https://bitcoincore.org/"
+  url "https://bitcoincore.org/bin/bitcoin-core-24.0.1/bitcoin-24.0.1.tar.gz"
+  head "https://github.com/bitcoin/bitcoin.git", branch: "master"
+  livecheck do
+    url "https://bitcoincore.org/en/download/"
+    regex(/latest version.*?v?(\d+(?:\.\d+)+)/i)
+  end
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
+  # berkeley db should be kept at version 4
+  # https://github.com/bitcoin/bitcoin/blob/master/doc/build-osx.md
+  # https://github.com/bitcoin/bitcoin/blob/master/doc/build-unix.md
+  depends_on "berkeley-db@4"
+  depends_on "boost"
+  depends_on "libevent"
+  depends_on macos: :catalina
+  depends_on "miniupnpc"
+  depends_on "zeromq"
+  uses_from_macos "sqlite"
+  on_linux do
+    depends_on "util-linux" => :build # for `hexdump`
+  end
+  fails_with :gcc do
+    version "7" # fails with GCC 7.x and earlier
+    cause "Requires std::filesystem support"
+  end
+  def install
+    system "./autogen.sh"
+    system "./configure", *std_configure_args,
+                          "--disable-silent-rules",
+                          "--with-boost-libdir=#{Formula["boost"].opt_lib}"
+    system "make", "install"
+    pkgshare.install "share/rpcauth"
+  end
+  service do
+    run opt_bin/"bitcoind"
+  end
+  test do
+    system "#{bin}/test_bitcoin"
+    # Test that we're using the right version of `berkeley-db`.
+    port = free_port
+    bitcoind = spawn bin/"bitcoind", "-regtest", "-rpcport=#{port}", "-listen=0", "-datadir=#{testpath}"
+    sleep 15
+    # This command will fail if we have too new a version.
+    system bin/"bitcoin-cli", "-regtest", "-datadir=#{testpath}", "-rpcport=#{port}",
+                              "createwallet", "test-wallet", "false", "false", "", "false", "false"
+  ensure
+    Process.kill "TERM", bitcoind
+  end
+end
+
+
+distributable:
+  url: https://bitcoincore.org/bin/bitcoin-core-{{version}}/bitcoin-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: bitcoin/bitcoin
+  strip: /^Bitcoin Core /
+
+dependencies:
+  oracle.com/berkeley-db: ^18
+  boost.org: ^1
+  libevent.org: ^2
+  zeromq.org: ^4
+  sqlite.org: ^3
+
+build:
+  dependencies:
+    gnu.org/autoconf: ^2
+    gnu.org/automake: ^1
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    freedesktop.org/pkg-config: ^0.29
+    gnu.org/libtool: ^2
+  script: |
+    ./autogen.sh
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --disable-debug
+      - --disable-tests  # needs: `hexedit`
+      - --disable-bench  # fails: linux/aarch64/v24.0.1
+
+provides:
+  - bin/bitcoin-cli
+  - bin/bitcoin-tx
+  - bin/bitcoin-util
+  - bin/bitcoin-wallet
+  - bin/bitcoind
+
+test:
+  bitcoind -version
+
+
+class Libaec < Formula
+  homepage "https://gitlab.dkrz.de/k202009/libaec"
+  url "https://gitlab.dkrz.de/k202009/libaec/-/archive/v1.0.6/libaec-v1.0.6.tar.bz2"
+  head "https://gitlab.dkrz.de/k202009/libaec.git", branch: "master"
+  depends_on "cmake" => :build
+  # These may have been linked by `szip` before keg_only change
+  link_overwrite "include/szlib.h"
+  link_overwrite "lib/libsz.a"
+  link_overwrite "lib/libsz.dylib"
+  link_overwrite "lib/libsz.2.dylib"
+  link_overwrite "lib/libsz.so"
+  link_overwrite "lib/libsz.so.2"
+  def install
+    mkdir "build" do
+      # We run `make test` for libraries
+      system "cmake", "..", *std_cmake_args, "-DBUILD_TESTING=ON"
+      system "make", "install"
+      system "make", "test"
+    end
+  end
+  test do
+    system bin/"aec", "-v"
+    (testpath/"test.cpp").write <<~EOS
+      #include <cassert>
+      #include <cstddef>
+      #include <cstdlib>
+      #include <libaec.h>
+      int main() {
+        unsigned char * data = (unsigned char *) calloc(1024, sizeof(unsigned char));
+        unsigned char * compressed = (unsigned char *) calloc(1024, sizeof(unsigned char));
+        for(int i = 0; i < 1024; i++) { data[i] = (unsigned char)(i); }
+        struct aec_stream strm;
+        strm.bits_per_sample = 16;
+        strm.block_size      = 64;
+        strm.rsi             = 129;
+        strm.flags           = AEC_DATA_PREPROCESS | AEC_DATA_MSB;
+        strm.next_in         = data;
+        strm.avail_in        = 1024;
+        strm.next_out        = compressed;
+        strm.avail_out       = 1024;
+        assert(aec_encode_init(&strm) == 0);
+        assert(aec_encode(&strm, AEC_FLUSH) == 0);
+        assert(strm.total_out > 0);
+        assert(aec_encode_end(&strm) == 0);
+        free(data);
+        free(compressed);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.cpp", "-I#{include}", "-L#{lib}", "-laec", "-o", "test"
+    system "./test"
+  end
+end
+
+
+libaec

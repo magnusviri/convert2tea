@@ -1,0 +1,32 @@
+
+distributable:
+  url: http://ceres-solver.org/ceres-solver-{{ version }}.tar.gz
+  strip-components: 0
+
+versions:
+  github: ceres-solver/ceres-solver
+  regex: 'ceres-solver[._-]v?(\d+(?:\.\d+)+)\.t'
+
+provides:
+  - bin/ceres
+
+dependencies:
+  cmake.org: '*'
+  eigen: '*'
+  gflags: '*'
+  glog: '*'
+  metis: '*'
+  openblas: '*'
+  suite-sparse: >=6.0.0
+  tbb: '*'
+
+build:
+  script: |
+    cmake . -DBUILD_SHARED_LIBS=ON -DBUILD_EXAMPLES=OFF -DLIB_SUFFIX=''
+    make
+    make install
+
+test: |
+  mkdir build
+  cd build
+  cmake -DCeres_DIR=#

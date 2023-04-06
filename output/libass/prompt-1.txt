@@ -1,0 +1,129 @@
+cpanminus
+
+class Cpanminus < Formula
+  homepage "https://github.com/miyagawa/cpanminus"
+  # Don't use git tags, their naming is misleading
+  url "https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-1.7046.tar.gz"
+  license any_of: ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
+  version_scheme 1
+  head "https://github.com/miyagawa/cpanminus.git", branch: "devel"
+  uses_from_macos "perl"
+  def install
+    cd "App-cpanminus" if build.head?
+    system "perl", "Makefile.PL", "INSTALL_BASE=#{prefix}",
+                                  "INSTALLSITEMAN1DIR=#{man1}",
+                                  "INSTALLSITEMAN3DIR=#{man3}"
+    system "make", "install"
+  end
+  def post_install
+    cpanm_lines = (bin/"cpanm").read.lines
+    return if cpanm_lines.first.match?(%r{^#!/usr/bin/env perl})
+    ohai "Adding `/usr/bin/env perl` shebang to `cpanm`..."
+    cpanm_lines.unshift "#!/usr/bin/env perl\n"
+    (bin/"cpanm").atomic_write cpanm_lines.join
+  end
+  test do
+    assert_match "cpan.metacpan.org", stable.url, "Don't use git tags, their naming is misleading"
+    system "#{bin}/cpanm", "--local-lib=#{testpath}/perl5", "Test::More"
+  end
+end
+
+
+distributable:
+  url: https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: miyagawa/cpanminus/tags
+  ignore:
+    - /^1.9/   # invalid versions in the tags for some reason
+    - /^1.79/  # ^^
+    - /^1.71/  # ^^ like wtf?
+
+dependencies:
+  perl.org: '*'
+
+companions:
+  tea.xyz/gx/make: '*'
+
+provides:
+  - bin/cpanm
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    perl Makefile.PL INSTALL_BASE={{prefix}}
+    make install
+
+    fix-shebangs.ts {{prefix}}/bin/cpanm
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script:
+    cpanm --verbose --local-lib=./out Test::More
+
+
+class Libass < Formula
+  homepage "https://github.com/libass/libass"
+  url "https://github.com/libass/libass/releases/download/0.17.1/libass-0.17.1.tar.xz"
+  head do
+    url "https://github.com/libass/libass.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+  depends_on "pkg-config" => :build
+  depends_on "freetype"
+  depends_on "fribidi"
+  depends_on "harfbuzz"
+  depends_on "libunibreak"
+  on_linux do
+    depends_on "fontconfig"
+  end
+  on_intel do
+    depends_on "nasm" => :build
+  end
+  def install
+    system "autoreconf", "-i" if build.head?
+    args = %W[
+      --disable-dependency-tracking
+      --prefix=#{prefix}
+    ]
+    # libass uses coretext on macOS, fontconfig on Linux
+    args << "--disable-fontconfig" if OS.mac?
+    system "./configure", *args
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.cpp").write <<~EOS
+      #include "ass/ass.h"
+      int main() {
+        ASS_Library *library;
+        ASS_Renderer *renderer;
+        library = ass_library_init();
+        if (library) {
+          renderer = ass_renderer_init(library);
+          if (renderer) {
+            ass_renderer_done(renderer);
+            ass_library_done(library);
+            return 0;
+          }
+          else {
+            ass_library_done(library);
+            return 1;
+          }
+        }
+        else {
+          return 1;
+        }
+      }
+    EOS
+    system ENV.cc, "test.cpp", "-I#{include}", "-L#{lib}", "-lass", "-o", "test"
+    system "./test"
+  end
+end
+
+
+libass

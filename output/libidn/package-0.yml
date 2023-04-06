@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://ftp.gnu.org/gnu/libidn/libidn-{{version}}.tar.gz
+  checksum: 9d2aa9ac9ceeac7c0e63713a6f1aba6b
+  strip-components: 1
+
+versions:
+  - 1.41
+
+build:
+  dependencies:
+    pkg-config.se: ^1
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --disable-dependency-tracking \
+      --prefix={{prefix}} \
+      --disable-csharp \
+      --with-lispdir={{elispdir}}
+    make
+    make install
+  env:
+    elispdir: {{prefix}}/share/emacs/site-lisp
+
+provides:
+  - bin/idn
+
+test: |
+  CHARSET=UTF-8 idn räksmörgås.se blåbærgrød.no

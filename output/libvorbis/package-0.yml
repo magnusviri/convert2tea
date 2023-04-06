@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://downloads.xiph.org/releases/vorbis/libvorbis-{{version}}.tar.xz
+  strip-components: 0
+
+versions:
+  url: https://ftp.osuosl.org/pub/xiph/releases/vorbis/?C=M&O=D
+  regex: /href=.*?libvorbis[._-]v?(\d+(?:\.\d+)+)\.t/i
+  strip: /^libvorbis-/
+
+dependencies:
+  libogg: ^1.3.6
+
+build:
+  dependencies:
+    pkg-config: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |
+    ./autogen.sh
+    ./configure --prefix={{ prefix }}
+    make
+    make install
+
+test:
+  dependencies:
+    gcc: c99
+  resources:
+    - url: https://upload.wikimedia.org/wikipedia/commons/c/c8

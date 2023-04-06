@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://github.com/maxmind/libmaxminddb/releases/download/{{ version.raw }}/libmaxminddb-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/mmdblookup
+
+versions:
+  github: maxmind/libmaxminddb
+  strip: /^libmaxminddb-/
+
+runtime:
+  env:
+    MAXMINDDB_LIB_NAME: libmaxminddb
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |
+    ./bootstrap
+    ./configure --disable-debug --disable-dependency-tracking --disable-silent-rules --prefix={{prefix}}
+    make check
+    make install
+
+test:
+  script: |
+    mmdblookup -f {{share}}/examples/Ge

@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://download-mirror.savannah.gnu.org/releases/lzip/lzip-{{version.raw}}.tar.gz
+  strip-components: 0
+
+versions:
+  url: https://download.savannah.gnu.org/releases/lzip/
+  regex: '/href=.*?lzip[._-]v?(\d+(?:\.\d+)+)\.t/i'
+
+dependencies:
+  tea.xyz/gx/make: '*'
+
+provides:
+  - bin/lzip
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{prefix}} \
+      CXX={{env.cxx}} \
+      CXXFLAGS={{env.cflags}}
+    make
+    make check
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    echo "."*1000 > data.txt
+    l

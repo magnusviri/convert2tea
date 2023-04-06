@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://github.com/postmodern/chruby/archive/v{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.3.9
+
+provides:
+  - bin/chruby
+  - bin/chruby-exec
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    make install PREFIX={{prefix}}
+
+caveats: |
+  Add the following to the ~/.bash_profile or ~/.zshrc file:
+    source {{prefix}}/share/chruby/chruby.sh
+  To enable auto-switching of Rubies specified by .ruby-version files,
+  add the following to ~/.bash_profile or ~/.zshrc:
+    source {{prefix}}/share/chruby/auto.sh
+
+test:
+  script: |
+    test "x$({{prefix}}/bin/chruby-exec --version)" = "xchruby version {{ version.raw }}"

@@ -1,0 +1,22 @@
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=apr/apr-util-{{ version.raw }}.tar.bz2
+  mirror: https://archive.apache.org/dist/apr/apr-util-{{ version.raw }}.tar.bz2
+  strip-components: 1
+
+versions:
+  github: apache/apr/tags
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+      unixodbc: '*'
+      mawk: '*'
+    darwin:
+      libxcrypt: '*'
+      sqlite: '*'
+      expat: '*'
+      apr:
+        url: https://www.apache.org/dyn/closer.lua?path=apr/apr-{{ apr.version.raw }}.tar.bz2
+        mirror: https://archive.apache.org/dist/apr/apr-{{ apr.version.raw }}.tar.bz2
+        strip

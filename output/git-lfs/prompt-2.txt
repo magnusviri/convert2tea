@@ -1,0 +1,172 @@
+cmake
+
+class Cmake < Formula
+  homepage "https://www.cmake.org/"
+  url "https://github.com/Kitware/CMake/releases/download/v3.26.3/cmake-3.26.3.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/cmake-3.26.3.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/legacy/cmake-3.26.3.tar.gz"
+  head "https://gitlab.kitware.com/cmake/cmake.git", branch: "master"
+  # The "latest" release on GitHub has been an unstable version before, so we
+  # check the Git tags instead.
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
+  uses_from_macos "ncurses"
+  on_linux do
+    depends_on "openssl@3"
+  end
+  # The completions were removed because of problems with system bash
+  # The `with-qt` GUI option was removed due to circular dependencies if
+  # CMake is built with Qt support and Qt is built with MySQL support as MySQL uses CMake.
+  # For the GUI application please instead use `brew install --cask cmake`.
+  def install
+    args = %W[
+      --prefix=#{prefix}
+      --no-system-libs
+      --parallel=#{ENV.make_jobs}
+      --datadir=/share/cmake
+      --docdir=/share/doc/cmake
+      --mandir=/share/man
+    ]
+    if OS.mac?
+      args += %w[
+        --system-zlib
+        --system-bzip2
+        --system-curl
+      ]
+    end
+    system "./bootstrap", *args, "--", *std_cmake_args,
+                                       "-DCMake_INSTALL_BASH_COMP_DIR=#{bash_completion}",
+                                       "-DCMake_INSTALL_EMACS_DIR=#{elisp}",
+                                       "-DCMake_BUILD_LTO=ON"
+    system "make"
+    system "make", "install"
+  end
+  def caveats
+    <<~EOS
+      To install the CMake documentation, run:
+        brew install cmake-docs
+    EOS
+  end
+  test do
+    (testpath/"CMakeLists.txt").write("find_package(Ruby)")
+    system bin/"cmake", "."
+    # These should be supplied in a separate cmake-docs formula.
+    refute_path_exists doc/"html"
+    refute_path_exists man
+  end
+end
+
+
+distributable:
+  url: https://github.com/Kitware/CMake/releases/download/v{{ version }}/cmake-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: Kitware/CMake/releases/tags
+  ignore: /-rc\d/
+
+detect:
+  cmd: cmake --version
+  regex: cmake version \v
+
+dependencies:
+  curl.se: '>=5'
+  zlib.net: 1
+  sourceware.org/bzip2: 1
+
+provides:
+  darwin:
+  - bin/cmake
+  - bin/ccmake
+  - bin/cpack
+  - bin/ctest
+  linux:
+  - bin/cmake
+  - bin/cpack
+  - bin/ctest
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |-
+    ./bootstrap $ARGS
+    make --jobs {{ hw.concurrency }} install
+    rm -rf {{prefix}}/share/doc  # docs are online
+  env:
+    V: 1
+    ARGS:
+      - --prefix={{ prefix }}
+      - --parallel={{ hw.concurrency }}
+      - --datadir=/var
+      - --docdir=/share/doc
+      - --mandir=/share/man
+      - --system-zlib
+      - --system-bzip2
+      - --system-curl
+      - --
+      - -DCMake_BUILD_LTO=ON
+      - -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+    darwin:
+      ARGS:
+      - -DZLIB_LIBRARY={{deps.zlib.net.prefix}}/lib/libz.dylib
+      - -DZLIB_INCLUDE_DIR={{deps.zlib.net.prefix}}/include
+      - -DCURL_LIBRARY={{deps.curl.se.prefix}}/lib/libcurl.dylib
+      - -DCURL_INCLUDE_DIR={{deps.curl.se.prefix}}/include
+      - -DBZIP2_LIBRARIES={{deps.sourceware.org/bzip2.prefix}}/lib/libbz2.a
+      - -DBZIP2_INCLUDE_DIR={{deps.sourceware.org/bzip2.prefix}}/include
+    linux:
+      ARGS:
+      - -DZLIB_LIBRARY={{deps.zlib.net.prefix}}/lib/libz.so
+      - -DZLIB_INCLUDE_DIR={{deps.zlib.net.prefix}}/include
+      - -DCURL_LIBRARY={{deps.curl.se.prefix}}/lib/libcurl.so
+      - -DCURL_INCLUDE_DIR={{deps.curl.se.prefix}}/include
+      - -DBZIP2_LIBRARIES={{deps.sourceware.org/bzip2.prefix}}/lib/libbz2.so
+      - -DBZIP2_INCLUDE_DIR={{deps.sourceware.org/bzip2.prefix}}/include
+
+  error-log:
+    Bootstrap.cmk/cmake_bootstrap.log
+
+test:
+  script:
+    cmake --version
+
+
+class GitLfs < Formula
+  homepage "https://git-lfs.github.com/"
+  url "https://github.com/git-lfs/git-lfs/releases/download/v3.3.0/git-lfs-v3.3.0.tar.gz"
+  depends_on "asciidoctor" => :build
+  depends_on "go" => :build
+  depends_on "ronn" => :build
+  depends_on "ruby" => :build
+  def install
+    ENV["GIT_LFS_SHA"] = ""
+    ENV["VERSION"] = version
+    system "make"
+    system "make", "man", "RONN=#{Formula["ronn"].bin}/ronn"
+    bin.install "bin/git-lfs"
+    man1.install Dir["man/man1/*.1"]
+    man5.install Dir["man/man5/*.5"]
+    man7.install Dir["man/man7/*.7"]
+    doc.install Dir["man/html/*.html"]
+  end
+  def caveats
+    <<~EOS
+      Update your git config to finish installation:
+        # Update global git config
+        $ git lfs install
+        # Update system git config
+        $ git lfs install --system
+    EOS
+  end
+  test do
+    system "git", "init"
+    system "git", "lfs", "track", "test"
+    assert_match(/^test filter=lfs/, File.read(".gitattributes"))
+  end
+end
+
+
+git-lfs

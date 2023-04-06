@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://github.com/libass/libass/releases/download/{{ version.raw }}/libass-{{ version.raw }}.tar.xz
+
+versions:
+  github: libass/libass/tags
+
+head:
+  url: https://github.com/libass/libass.git
+  branch: master
+  dependencies:
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+    gnu.org/libtool: '*'
+
+build:
+  dependencies:
+    curl.se: '*'
+    freetype.org: '*'
+    fribidi.org: '*'
+    harfbuzz.org: '*'
+    libunibreak.org: '*'
+    linux:
+      fontconfig.org: '*'
+    intel:
+      gnu.org/nasm: '*'
+  script: |
+    autoreconf -i
+    ./configure \
+    --disable-dependency-tracking \
+    --

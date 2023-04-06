@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://github.com/weaveworks/eksctl/archive/{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: weaveworks/eksctl/releases/tags
+
+detect:
+  cmd: eksctl version
+  regex: eksctl version \v
+
+dependencies:
+  aws-iam-authenticator: '*'
+
+provides:
+  - bin/eksctl
+
+build:
+  dependencies:
+    counterfeiter: '*'
+    go: '*'
+    go-bindata: '*'
+    mockery: '*'
+    github.com/weaveworks/eksctl/vendor/github.com/golang/protobuf/protoc-gen-go: '*'
+    github.com/weaveworks/eksctl/vendor/k8s.io/code-generator/cmd/conversion-gen: '*'
+    github.com/weaveworks/eksctl/vendor/k8s.io/code-generator/cmd/in

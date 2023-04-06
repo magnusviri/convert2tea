@@ -1,0 +1,22 @@
+
+distributable:
+  url: https://github.com/abseil/abseil-cpp/archive/refs/tags/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 20230125.2
+
+build:
+  working-directory: build
+  dependencies:
+    tea.xyz/gx/cc: c++17
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+  script: |
+    cmake .. -DCMAKE_INSTALL_PREFIX={{prefix}} -DCMAKE_CXX_STANDARD=17  -DBUILD_SHARED_LIBS=ON -DABSL_PROPAGATE_CXX_STD=ON
+    make install
+
+    # remove bad flags
+    if [ $OS == "mac" ]; then
+      cd "{{prefix}}"
+      find . -name "*.pc" -exec sed -i '' -e 's/-Xarch_x86_64 -Xarch_x86_64 -Xarch_arm64

@@ -1,0 +1,36 @@
+
+distributable:
+  url: https://gitlab.com/graphviz/graphviz.git
+  tag: 8.0.1
+  revision: 8cd5300e2e31c80dbbfcdd65aad697187e5ac0b0
+  strip-components: 1
+
+versions:
+  github: graphviz/graphviz
+  strip: /^graphviz-/
+
+dependencies:
+  gd: '*'
+  gts: '*'
+  libpng: '*'
+  librsvg: '*'
+  libtool: '*'
+  pango: '*'
+  sourceware.org/bzip2: '*'
+
+build:
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    bison: '*'
+    pkg-config: '*'
+    flex: c99
+    byacc: c99
+    ghostscript: '*'
+  script: |
+    ./autogen.sh
+    ./configure
+    make
+
+test:
+ 

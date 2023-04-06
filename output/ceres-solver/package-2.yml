@@ -1,0 +1,29 @@
+
+distributable:
+  url: http://ceres-solver.org/ceres-solver-{{version.marketing}}.tar.gz
+  revision: 3
+  strip-components: 1
+  head:
+    url: https://ceres-solver.googlesource.com/ceres-solver.git
+    branch: master
+
+versions:
+  - 2.1.0
+
+dependencies:
+  cmake.org: '*'
+  eigen: '*'
+  gflags: '*'
+  glog: '*'
+  metis: '*'
+  openblas: '*'
+  suite-sparse: '*'
+  tbb: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake -DCMAKE_INSTALL_PREFIX={{prefix}} -DBUILD_SHARED_LIBS=ON -DBUILD_EXAMPLES=OFF -DLIB_SUFFIX='' .
+    make
+    make

@@ -1,0 +1,23 @@
+
+distributable:
+  url: https://github.com/lima-vm/lima/archive/v{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: lima-vm/lima/tags
+
+dependencies:
+  go.dev: '*'
+  qemu: '*'
+
+provides:
+  - bin/limactl
+  - share/completion/limactl
+
+build:
+  script: |
+    make VERSION={{version.raw}} clean binaries
+
+test:
+  script: |
+    limactl info | jq -r '.vmTypes, .templates[].name' | grep --fixed-strings qemu {{macos.ventura.version.exists? ? "vz" : "" }} default

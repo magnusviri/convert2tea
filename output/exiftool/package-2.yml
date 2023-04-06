@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://cpan.metacpan.org/authors/id/E/EX/EXIFTOOL/Image-ExifTool-{{version}}.tar.gz
+  mirror: https://exiftool.org/Image-ExifTool-{{version}}.tar.gz
+
+versions:
+  strip: /^Image[._-]ExifTool[._-]v?/
+  url: https://exiftool.org/history.html
+  regex: /production release is.*?href=.*?Image[._-]ExifTool[._-]v?(\d+(?:\.\d+)+)\.t/i
+
+dependencies:
+  perl.org: ^5
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    gnu.org/make: '*'
+  script: |
+    perl Makefile.PL
+    make all
+
+provides:
+  - bin/exiftool
+
+test:
+  # Ensure release is tagged production before submitting.
+  # https://exiftool.org/

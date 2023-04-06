@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://github.com/ivmai/bdwgc/releases/download/v{{version}}/gc-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: ivmai/bdwgc
+  strip: /gc-/
+
+dependencies:
+  libatomic_ops: ^7
+  pkg-config: ^0.29
+
+build:
+  dependencies:
+    gnu.org/autoconf: ^2
+    gnu.org/automake: ^1
+    gnu.org/libtool: ^2
+  script: |
+    ./autogen.sh
+    ./configure --prefix={{prefix}} --enable-cplusplus --enable-static --enable-large-config
+    make
+    make check
+    make install
+
+test:
+  gcc test.c -I{{include}} -L{{lib}} -lgc -o test
+  ./test

@@ -1,0 +1,23 @@
+
+distributable:
+  url: https://src.fedoraproject.org/repo/pkgs/bash-completion/bash-completion-{{ version }}/a1262659b4bbf44dc9e59d034de505ec/bash-completion-{{ version }}.tar.bz2
+  strip-components: 1
+
+versions:
+  strip: /^bash-completion-/
+
+provides:
+  - bin/bash_completion
+
+dependencies:
+  gnu.org/gettext: ^0.19
+
+patches:
+  - url: https://raw.githubusercontent.com/Homebrew/formula-patches/c1d87451da3b5b147bed95b2dc783a1b02520ac5/bash-completion/bug-740971.patch
+  - command: patch --strip=1
+    source: |
+      --- a/completions/man
+      +++ b/completions/man
+      @@ -27,7 +27,7 @@
+           fi
+           uname=$( uname -s

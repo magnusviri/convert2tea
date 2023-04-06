@@ -1,0 +1,28 @@
+
+distributable:
+   url: https://github.com/P-H-C/phc-winner-argon2/archive/refs/tags/v{{version}}.tar.gz
+   strip-components: 1
+
+versions:
+  - 20190702
+
+build:
+  env:
+    ARGON2_VERSION: '{{version}}'
+    LIBRARY_REL: lib
+    PREFIX: '{{prefix}}'
+  script: |
+    make $ARGON2_VERSION $LIBRARY_REL $PREFIX
+    make test
+    make install $ARGON2_VERSION $LIBRARY_REL $PREFIX
+
+provides:
+  - bin/argon2
+
+doc:
+  - argon2-specs.pdf
+
+test:
+  script: |
+    argon2 somesalt -t 2 -m 16 -p 4 <<<'password'
+    test "${PIPESTATUS[0]}" = 0

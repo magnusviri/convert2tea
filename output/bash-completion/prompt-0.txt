@@ -1,0 +1,136 @@
+aria2
+
+class Aria2 < Formula
+  homepage "https://aria2.github.io/"
+  url "https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0.tar.xz"
+  revision 1
+  depends_on "pkg-config" => :build
+  depends_on "gettext"
+  depends_on "libssh2"
+  depends_on "sqlite"
+  uses_from_macos "libxml2"
+  uses_from_macos "zlib"
+  on_linux do
+    depends_on "openssl@1.1"
+  end
+  def install
+    ENV.cxx11
+    args = %W[
+      --disable-dependency-tracking
+      --prefix=#{prefix}
+      --with-libssh2
+      --without-gnutls
+      --without-libgmp
+      --without-libnettle
+      --without-libgcrypt
+    ]
+    if OS.mac?
+      args << "--with-appletls"
+      args << "--without-openssl"
+    else
+      args << "--without-appletls"
+      args << "--with-openssl"
+    end
+    system "./configure", *args
+    system "make", "install"
+    bash_completion.install "doc/bash_completion/aria2c"
+  end
+  test do
+    system "#{bin}/aria2c", "https://brew.sh/"
+    assert_predicate testpath/"index.html", :exist?, "Failed to create index.html!"
+  end
+end
+
+
+distributable:
+  url: https://github.com/aria2/aria2/releases/download/release-{{ version }}/aria2-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: aria2/aria2
+  strip: /^aria2 /
+
+provides:
+  - bin/aria2c
+
+dependencies:
+  zlib.net: ^1
+  openssl.org: ^1
+  libexpat.github.io: '*'
+  sqlite.org: ^3
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnupg.org/libgcrypt: ^1
+    gnupg.org/libgpg-error: ^1
+    freedesktop.org/pkg-config: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --with-openssl
+      - --with-libgcrypt
+
+test: |
+  aria2c -v
+  aria2c https://tea.xyz
+  aria2c --seed-time=0 "magnet:?xt=urn:btih:d984f67af9917b214cd8b6048ab5624c7df6a07a&tr=https%3A%2F%2Facademictorrents.com%2Fannounce.php&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce"
+
+# NOTE: version 2 is out, but it requires Bash 4, and macOS ships
+# with 3.2.57. If you've upgraded bash, use bash-completion@2 instead.
+class BashCompletion < Formula
+  homepage "https://salsa.debian.org/debian/bash-completion"
+  url "https://src.fedoraproject.org/repo/pkgs/bash-completion/bash-completion-1.3.tar.bz2/a1262659b4bbf44dc9e59d034de505ec/bash-completion-1.3.tar.bz2"
+  revision 3
+  livecheck do
+    skip "1.x versions are no longer developed"
+  end
+  on_linux do
+    conflicts_with "util-linux", because: "both install `mount`, `rfkill`, and `rtcwake` completions"
+  end
+  conflicts_with "bash-completion@2",
+    because: "each are different versions of the same formula"
+  # Backports the following upstream patch from 2.x:
+  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=740971
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/c1d87451da3b5b147bed95b2dc783a1b02520ac5/bash-completion/bug-740971.patch"
+  end
+  # Backports (a variant of) an upstream patch to fix man completion.
+  patch :DATA
+  def install
+    inreplace "bash_completion" do |s|
+      s.gsub! "/etc/bash_completion", etc/"bash_completion"
+      s.gsub! "readlink -f", "readlink"
+    end
+    system "./configure", "--prefix=#{prefix}"
+    system "make", "install"
+  end
+  def caveats
+    <<~EOS
+      Add the following line to your ~/.bash_profile:
+        [[ -r "#{etc}/profile.d/bash_completion.sh" ]] && . "#{etc}/profile.d/bash_completion.sh"
+    EOS
+  end
+  test do
+    system "bash", "-c", ". #{etc}/profile.d/bash_completion.sh"
+  end
+end
+__END__
+--- a/completions/man
++++ b/completions/man
+@@ -27,7 +27,7 @@
+     fi
+     uname=$( uname -s )
+-    if [[ $uname == @(Linux|GNU|GNU/*|FreeBSD|Cygwin|CYGWIN_*) ]]; then
++    if [[ $uname == @(Darwin|Linux|GNU|GNU/*|FreeBSD|Cygwin|CYGWIN_*) ]]; then
+         manpath=$( manpath 2>/dev/null || command man --path )
+     else
+         manpath=$MANPATH
+
+
+bash-completion

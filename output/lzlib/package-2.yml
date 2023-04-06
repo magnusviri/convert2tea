@@ -1,0 +1,23 @@
+
+distributable:
+  url: https://download.savannah.gnu.org/releases/lzip/lzlib/lzlib-{{version}}.tar.gz
+  mirror: https://download-mirror.savannah.gnu.org/releases/lzip/lzlib/lzlib-{{version}}.tar.gz
+
+versions:
+  url: https://download.savannah.gnu.org/releases/lzip/lzlib/
+  regex: '/href=.*?lzlib[._-]v?(\d+(?:\.\d+)+)\.t/i'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+     ./configure --prefix="{{prefix}}" CC="{{env.CC}}" CFLAGS="{{env.CFLAGS}}"
+     make
+     make check
+     make install
+
+provides:
+  - lib/liblz.a
+  - include/lzlib.h
+  - bin

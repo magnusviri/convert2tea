@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://gitlab.com/libeigen/eigen/-/archive/{{version.marketing}}/eigen-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 3.4.0
+
+dependencies:
+  cmake.org: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    mkdir eigen-build
+    cd eigen-build
+    cmake -Dpkg_config_libdir={{lib}} ..
+    make prefix={{prefix}} install
+    cp ../cmake/FindEigen3.cmake {{share}}/cmake/Modules
+
+provides:
+  - include/eigen3/Eigen
+
+test:
+  script: |
+    printf '#include <iostream>\n#include <Eigen/Dense>\nusing Eigen::MatrixXd;\nint main()\n {\nMatrixX

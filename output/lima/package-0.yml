@@ -1,0 +1,33 @@
+
+distributable:
+  url: https://github.com/lima-vm/lima/archive/v{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: lima-vm/lima/tags
+
+dependencies:
+  go.dev: '*'
+  qemu: '*'
+
+companions:
+  tea.xyz/gx/make: '*'
+
+provides:
+  - bin/limactl
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+    go.dev: '*'
+  script: |
+    make VERSION={{version.raw}} clean binaries
+    install-binaries -o {{prefix}}/bin
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script:
+    limactl info | ts-json |  assert-equal '{{ $.vmTypes }}' '["qemu"]' --deep
+
+    limactl info | ts-json |  assert-equal '{{ $

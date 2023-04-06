@@ -1,0 +1,125 @@
+aria2
+
+class Aria2 < Formula
+  homepage "https://aria2.github.io/"
+  url "https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0.tar.xz"
+  revision 1
+  depends_on "pkg-config" => :build
+  depends_on "gettext"
+  depends_on "libssh2"
+  depends_on "sqlite"
+  uses_from_macos "libxml2"
+  uses_from_macos "zlib"
+  on_linux do
+    depends_on "openssl@1.1"
+  end
+  def install
+    ENV.cxx11
+    args = %W[
+      --disable-dependency-tracking
+      --prefix=#{prefix}
+      --with-libssh2
+      --without-gnutls
+      --without-libgmp
+      --without-libnettle
+      --without-libgcrypt
+    ]
+    if OS.mac?
+      args << "--with-appletls"
+      args << "--without-openssl"
+    else
+      args << "--without-appletls"
+      args << "--with-openssl"
+    end
+    system "./configure", *args
+    system "make", "install"
+    bash_completion.install "doc/bash_completion/aria2c"
+  end
+  test do
+    system "#{bin}/aria2c", "https://brew.sh/"
+    assert_predicate testpath/"index.html", :exist?, "Failed to create index.html!"
+  end
+end
+
+
+distributable:
+  url: https://github.com/aria2/aria2/releases/download/release-{{ version }}/aria2-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: aria2/aria2
+  strip: /^aria2 /
+
+provides:
+  - bin/aria2c
+
+dependencies:
+  zlib.net: ^1
+  openssl.org: ^1
+  libexpat.github.io: '*'
+  sqlite.org: ^3
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnupg.org/libgcrypt: ^1
+    gnupg.org/libgpg-error: ^1
+    freedesktop.org/pkg-config: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --with-openssl
+      - --with-libgcrypt
+
+test: |
+  aria2c -v
+  aria2c https://tea.xyz
+  aria2c --seed-time=0 "magnet:?xt=urn:btih:d984f67af9917b214cd8b6048ab5624c7df6a07a&tr=https%3A%2F%2Facademictorrents.com%2Fannounce.php&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce"
+
+class Abseil < Formula
+  homepage "https://abseil.io"
+  url "https://github.com/abseil/abseil-cpp/archive/refs/tags/20230125.2.tar.gz"
+  head "https://github.com/abseil/abseil-cpp.git", branch: "master"
+  depends_on "cmake" => :build
+  fails_with gcc: "5" # C++17
+  def install
+    system "cmake", "-S", ".", "-B", "build",
+                    "-DCMAKE_INSTALL_RPATH=#{rpath}",
+                    "-DCMAKE_CXX_STANDARD=17",
+                    "-DBUILD_SHARED_LIBS=ON",
+                    "-DABSL_PROPAGATE_CXX_STD=ON",
+                    *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    # Remove bad flags in .pc files.
+    # https://github.com/abseil/abseil-cpp/issues/1408
+    if OS.mac?
+      inreplace lib.glob("pkgconfig/absl_random_internal_randen_hwaes{,_impl}.pc"),
+                "-Xarch_x86_64 -Xarch_x86_64 -Xarch_arm64 ", ""
+    end
+  end
+  test do
+    (testpath/"test.cc").write <<~EOS
+      #include <iostream>
+      #include <string>
+      #include <vector>
+      #include "absl/strings/str_join.h"
+      int main() {
+        std::vector<std::string> v = {"foo","bar","baz"};
+        std::string s = absl::StrJoin(v, "-");
+        std::cout << "Joined string: " << s << "\\n";
+      }
+    EOS
+    system ENV.cxx, "-std=c++17", "-I#{include}", "-L#{lib}", "-labsl_strings",
+                    "test.cc", "-o", "test"
+    assert_equal "Joined string: foo-bar-baz\n", shell_output("#{testpath}/test")
+  end
+end
+
+
+abseil

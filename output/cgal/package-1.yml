@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://github.com/CGAL/cgal/releases/download/v{{version}}.tar.xz
+
+versions:
+  - 5.5.2
+
+build:
+  dependencies:
+    - cmake.org: ^3 
+    - qt@5: ^5 
+    - boost: '*'
+    - eigen: '*'
+    - gmp: '*'
+    - mpfr: '*'
+    - linux:
+      openssl@3: '*' 
+    - tea.xyz/gx/cc: c14
+  script: |
+    cmake .. -DCMAKE_INSTALL_PREFIX="{{prefix}}" $ARGS
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_CXX_FLAGS="-std=c++14"
+test: |
+  surprise --help
+
+provides:
+  - lib/libCGAL*.dylib
+  - lib/libCGAL*.

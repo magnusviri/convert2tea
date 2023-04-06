@@ -1,0 +1,21 @@
+
+distributable:
+  url: http://www.leonerd.org.uk/code/libvterm/libvterm-{{ version.raw }}.tar.gz
+
+versions:
+  - 0.3.1
+
+provides:
+  - lib/libvterm.a
+  - lib/libvterm.dylib
+  - include/vterm.h
+
+build:
+  dependencies:
+    gnu.org/libtool: '*'
+  script: make install PREFIX={{prefix}}
+
+test:
+  script: |
+    cc test.c -L{{lib}} -lvterm -o test
+    ./test

@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://github.com/abseil/abseil-cpp/archive/refs/tags/{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: abseil/abseil-cpp
+  strip: /abseil-cpp-/
+
+provides:
+  - lib/libabsl_strings.a
+  - lib/libabsl_strings.dylib
+
+dependencies:
+  cmake.org: ^3
+
+build:
+  dependencies: 
+    tea.xyz/gx/cc: c++17
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake $ARGS
+    cmake --build
+    cmake --install
+  env:
+    ARGS:
+      - DCMAKE_INSTALL_RPATH="{{ rpath }}"
+      - DCMAKE_CXX_STANDARD=17
+      - DBUILD_SHARED_LIBS=ON
+      - DABSL_PROPAGATE_CXX_STD=

@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://www.apache.org/dyn/closer.lua?path=apr/apr-util-{{ version.raw }}.tar.bz2
+  mirrors:
+    - https://archive.apache.org/dist/apr/apr-util-{{ version.raw }}.tar.bz2
+  strip-components: 1
+
+versions:
+  github: apr/apr-util/tags
+
+build:
+  dependencies:
+    darwin:
+      expat: '*'
+      libxcrypt: '*'
+      sqlite: '*'
+    linux:
+      mawk: '*'
+      unixodbc: '*'
+      apr:
+        git: apr/apr
+      openssl@1.1:
+        git: openssl/openssl
+  script: |
+    ./configure --prefix="{{prefix}}" \
+      --with-apr="{{ prefix.opt }}" \
+      --with-crypto \
+      --with-openssl="{{ prefix.opt }}" \
+      --

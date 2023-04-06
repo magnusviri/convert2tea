@@ -1,0 +1,22 @@
+
+distributable:
+  git: 
+    url: https://github.com/aws/aws-sdk-cpp
+    version: v{{ version }}
+
+dependencies:
+  cmake.org: ^{{ version }}
+
+build:
+  script: |
+    cmake . -DENABLE_TESTING=OFF -DCMAKE_INSTALL_PREFIX=$PREFIX
+    make --jobs {{ hw.concurrency}}
+    make install
+
+test:
+  script: |
+    ${CXX:-c++} -std=c++11 test.cpp -L$PREFIX/lib -laws-cpp-sdk-core -o test
+    ./test
+
+provides:
+  - lib/aws-cpp-sdk-core.dylib

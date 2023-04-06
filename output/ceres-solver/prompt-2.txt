@@ -1,0 +1,105 @@
+bcrypt
+
+class Bcrypt < Formula
+  homepage "https://bcrypt.sourceforge.io/"
+  url "https://bcrypt.sourceforge.io/bcrypt-1.1.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?bcrypt[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  uses_from_macos "zlib"
+  def install
+    system "make", "CC=#{ENV.cc}",
+                   "CFLAGS=#{ENV.cflags}",
+                   "LDFLAGS=-lz"
+    bin.install "bcrypt"
+    man1.install Utils::Gzip.compress("bcrypt.1")
+  end
+  test do
+    (testpath/"test.txt").write("Hello World!")
+    pipe_output("#{bin}/bcrypt -r test.txt", "12345678\n12345678\n")
+    mv "test.txt.bfe", "test.out.txt.bfe"
+    pipe_output("#{bin}/bcrypt -r test.out.txt.bfe", "12345678\n")
+    assert_equal File.read("test.txt"), File.read("test.out.txt")
+  end
+end
+
+
+distributable:
+  url: https://bcrypt.sourceforge.net/bcrypt-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.1.0
+
+dependencies:
+  zlib.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make LDFLAGS=-lz PREFIX={{prefix}} install
+
+provides:
+  - bin/bcrypt
+
+test:
+  script: |
+    echo "Hello World!" > test.txt
+    printf '12345678\n12345678\n' | bcrypt -r test.txt
+    mv test.txt.bfe test.out.txt.bfe
+    printf '12345678\n' | bcrypt -r test.out.txt.bfe
+    cat test.out.txt
+
+
+
+class CeresSolver < Formula
+  homepage "http://ceres-solver.org/"
+  url "http://ceres-solver.org/ceres-solver-2.1.0.tar.gz"
+  revision 3
+  head "https://ceres-solver.googlesource.com/ceres-solver.git", branch: "master"
+  livecheck do
+    url "http://ceres-solver.org/installation.html"
+    regex(/href=.*?ceres-solver[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  depends_on "cmake" => [:build, :test]
+  depends_on "eigen"
+  depends_on "gflags"
+  depends_on "glog"
+  depends_on "metis"
+  depends_on "openblas"
+  depends_on "suite-sparse"
+  depends_on "tbb"
+  fails_with gcc: "5" # C++17
+  # Fix version detection for suite-sparse >= 6.0. Remove in next release.
+  patch do
+    url "https://github.com/ceres-solver/ceres-solver/commit/352b320ab1b5438a0838aea09cbbf07fa4ff5d71.patch?full_index=1"
+  end
+  def install
+    system "cmake", ".", *std_cmake_args,
+                    "-DBUILD_SHARED_LIBS=ON",
+                    "-DBUILD_EXAMPLES=OFF",
+                    "-DLIB_SUFFIX=''"
+    system "make"
+    system "make", "install"
+    pkgshare.install "examples", "data"
+  end
+  test do
+    cp pkgshare/"examples/helloworld.cc", testpath
+    (testpath/"CMakeLists.txt").write <<~EOS
+      cmake_minimum_required(VERSION 3.5)
+      project(helloworld)
+      find_package(Ceres REQUIRED COMPONENTS SuiteSparse)
+      add_executable(helloworld helloworld.cc)
+      target_link_libraries(helloworld Ceres::ceres)
+    EOS
+    system "cmake", "-DCeres_DIR=#{share}/Ceres", "."
+    system "make"
+    assert_match "CONVERGENCE", shell_output("./helloworld")
+  end
+end
+
+
+ceres-solver

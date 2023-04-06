@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://www.libraw.org/data/LibRaw-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  url: https://www.libraw.org/download/
+  regex: href="\.\.\/data\/LibRaw[._-]v?(\d+(?:\.\d+)+)\.t
+
+dependencies:
+  autoconf: '*'
+  automake: '*'
+  libtool: '*'
+  pkg-config: '*'
+  jasper: '*'
+  'jpeg-turbo': '*'
+  'little-cms2': '*'
+  darwin:
+    libomp: '*'
+  macos:
+    zlib: '*'
+
+provides:
+  - bin/raw-identify
+  - bin/simple_dcraw
+
+build:
+  script: ./configure $ARGS && make && make install
+  env:
+    ARGS:
+      - --prefix={{ prefix }}
+      - --sysconfdir=/etc

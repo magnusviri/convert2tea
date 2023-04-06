@@ -1,0 +1,29 @@
+distributable:
+  url: https://download.videolan.org/videolan/libbluray/{{ version }}/libbluray-{{ version }}.tar.bz2
+  strip-components: 1
+
+versions:
+  - 1.3.4
+
+head:
+  url: https://code.videolan.org/videolan/libbluray.git
+  dependencies:
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+    gnu.org/libtool: '*'
+
+dependencies:
+  curl.se: '*'
+  fontconfig: '*'
+  freetype: '*'
+  gnu.org/make: '*'
+  libxml2: '*'
+  macos/libxml2: '*'
+  pkg-config: '*'
+
+build:
+  script: |
+    if {{ head }}; then
+      ./bootstrap
+    fi
+    ./configure --prefix={{ prefix }} --disable-dependency-tracking --

@@ -1,0 +1,142 @@
+cpanminus
+
+class Cpanminus < Formula
+  homepage "https://github.com/miyagawa/cpanminus"
+  # Don't use git tags, their naming is misleading
+  url "https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-1.7046.tar.gz"
+  license any_of: ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
+  version_scheme 1
+  head "https://github.com/miyagawa/cpanminus.git", branch: "devel"
+  uses_from_macos "perl"
+  def install
+    cd "App-cpanminus" if build.head?
+    system "perl", "Makefile.PL", "INSTALL_BASE=#{prefix}",
+                                  "INSTALLSITEMAN1DIR=#{man1}",
+                                  "INSTALLSITEMAN3DIR=#{man3}"
+    system "make", "install"
+  end
+  def post_install
+    cpanm_lines = (bin/"cpanm").read.lines
+    return if cpanm_lines.first.match?(%r{^#!/usr/bin/env perl})
+    ohai "Adding `/usr/bin/env perl` shebang to `cpanm`..."
+    cpanm_lines.unshift "#!/usr/bin/env perl\n"
+    (bin/"cpanm").atomic_write cpanm_lines.join
+  end
+  test do
+    assert_match "cpan.metacpan.org", stable.url, "Don't use git tags, their naming is misleading"
+    system "#{bin}/cpanm", "--local-lib=#{testpath}/perl5", "Test::More"
+  end
+end
+
+
+distributable:
+  url: https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: miyagawa/cpanminus/tags
+  ignore:
+    - /^1.9/   # invalid versions in the tags for some reason
+    - /^1.79/  # ^^
+    - /^1.71/  # ^^ like wtf?
+
+dependencies:
+  perl.org: '*'
+
+companions:
+  tea.xyz/gx/make: '*'
+
+provides:
+  - bin/cpanm
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    perl Makefile.PL INSTALL_BASE={{prefix}}
+    make install
+
+    fix-shebangs.ts {{prefix}}/bin/cpanm
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script:
+    cpanm --verbose --local-lib=./out Test::More
+
+
+# Reference: https://github.com/macvim-dev/macvim/wiki/building
+class Macvim < Formula
+  homepage "https://github.com/macvim-dev/macvim"
+  url "https://github.com/macvim-dev/macvim/archive/refs/tags/release-176.tar.gz"
+  version "9.0.1276"
+  head "https://github.com/macvim-dev/macvim.git", branch: "master"
+  livecheck do
+    url "https://github.com/macvim-dev/macvim/releases?q=prerelease%3Afalse&expanded=true"
+    regex(/Updated\s+to\s+Vim\s+v?(\d+(?:\.\d+)+)/i)
+    strategy :page_match
+  end
+  depends_on "gettext" => :build
+  depends_on "libsodium" => :build
+  depends_on xcode: :build
+  depends_on "cscope"
+  depends_on "lua"
+  depends_on :macos
+  depends_on "python@3.11"
+  depends_on "ruby"
+  conflicts_with "vim", because: "vim and macvim both install vi* binaries"
+  def install
+    # Avoid issues finding Ruby headers
+    ENV.delete("SDKROOT")
+    # MacVim doesn't have or require any Python package, so unset PYTHONPATH
+    ENV.delete("PYTHONPATH")
+    # We don't want the deployment target to include the minor version on Big Sur and newer.
+    # https://github.com/Homebrew/homebrew-core/issues/111693
+    ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version
+    # make sure that CC is set to "clang"
+    ENV.clang
+    system "./configure", "--with-features=huge",
+                          "--enable-multibyte",
+                          "--enable-perlinterp",
+                          "--enable-rubyinterp",
+                          "--enable-tclinterp",
+                          "--enable-terminal",
+                          "--with-tlib=ncurses",
+                          "--with-compiledby=Homebrew",
+                          "--with-local-dir=#{HOMEBREW_PREFIX}",
+                          "--enable-cscope",
+                          "--enable-luainterp",
+                          "--with-lua-prefix=#{Formula["lua"].opt_prefix}",
+                          "--enable-luainterp",
+                          "--enable-python3interp",
+                          "--disable-sparkle",
+                          "--with-macarchs=#{Hardware::CPU.arch}"
+    system "make"
+    prefix.install "src/MacVim/build/Release/MacVim.app"
+    # Remove autoupdating universal binaries
+    (prefix/"MacVim.app/Contents/Frameworks/Sparkle.framework").rmtree
+    bin.install_symlink prefix/"MacVim.app/Contents/bin/mvim"
+    # Create MacVim vimdiff, view, ex equivalents
+    executables = %w[mvimdiff mview mvimex gvim gvimdiff gview gvimex]
+    executables += %w[vi vim vimdiff view vimex]
+    executables.each { |e| bin.install_symlink "mvim" => e }
+  end
+  test do
+    output = shell_output("#{bin}/mvim --version")
+    assert_match "+ruby", output
+    assert_match "+gettext", output
+    assert_match "+sodium", output
+    # Simple test to check if MacVim was linked to Homebrew's Python 3
+    py3_exec_prefix = shell_output(Formula["python@3.11"].opt_libexec/"bin/python-config --exec-prefix")
+    assert_match py3_exec_prefix.chomp, output
+    (testpath/"commands.vim").write <<~EOS
+      :python3 import vim; vim.current.buffer[0] = 'hello python3'
+      :wq
+    EOS
+    system bin/"mvim", "-v", "-T", "dumb", "-s", "commands.vim", "test.txt"
+    assert_equal "hello python3", (testpath/"test.txt").read.chomp
+  end
+end
+
+
+macvim

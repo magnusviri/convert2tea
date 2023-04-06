@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://geuz.org/gl2ps/src/gl2ps-{{ version }}.tgz
+
+versions:
+  url: https://geuz.org/gl2ps/src/
+  regex: /href=.*?gl2ps[._-]v?(\d+(?:\.\d+)+)\.t/i
+
+dependencies:
+  cmake: '*'
+  libpng: '*'
+  darwin:
+  - freeglut: '*'
+
+provides:
+  darwin:
+  - lib/libgl2ps.dylib
+  linux:
+  - lib/libgl2ps.so
+
+build:
+  script: |-
+    cmake {{ paths.source }} {{prefix}} {{-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON}}
+    make --jobs {{ hw.concurrency}} install
+  env:
+    V: 1
+
+test:
+  script:
+    {{ compilers.c.gcc.cmd }} -L{{prefix}}/lib -lgl2ps -

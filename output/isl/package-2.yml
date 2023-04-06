@@ -1,0 +1,25 @@
+
+distributable:
+  url: https://libisl.sourceforge.io/isl-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  - 0.26
+
+build:
+  dependencies:
+    gmp: '*'
+    Tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./autogen.sh
+    ./configure --disable-dependency-tracking --disable-silent-rules --prefix={{ prefix }} --with-gmp=system --with-gmp-prefix={{ dep.gmp.prefix }}
+    make --jobs {{hw.concurrency}} install
+    rm -rf {{prefix}}/share  # docs are online
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -o test -lisl
+    ./test

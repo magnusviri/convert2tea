@@ -1,0 +1,21 @@
+
+distributable:
+  url: https://ftp.gnu.org/gnu/findutils/findutils-{{ version }}.tar.xz
+  mirror: https://ftpmirror.gnu.org/findutils/findutils-{{ version }}.tar.xz
+
+build:
+  script: |
+    ./configure --prefix={{ prefix }} --localstatedir={{ var }}/locate --disable-dependency-tracking --disable-debug --disable-nls --with-packager=Homebrew --with-packager-bug-reports={{ tap.issues_url }}
+    make install
+    if [[ os == 'macos' ]]
+    then
+      ln --symbolic --force --no-dereference `find ${prefix}/bin -iname 'g*'` ${libexec}/gnu/bin
+    fi
+    ln --symbolic --force --no-dereference ${libexec}/gnuman ${libexec}/man
+
+install:
+  post: |
+    mkdir --parents {{ var }}/locate
+
+caveats: |
+  if

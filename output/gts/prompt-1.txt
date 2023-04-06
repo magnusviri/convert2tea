@@ -1,0 +1,112 @@
+wumpus
+
+class Wumpus < Formula
+  homepage "http://www.catb.org/~esr/wumpus/"
+  url "http://www.catb.org/~esr/wumpus/wumpus-1.9.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?wumpus[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "make"
+    system "make", "prefix=#{prefix}", "install"
+  end
+  test do
+    assert_match("HUNT THE WUMPUS",
+                 pipe_output(bin/"wumpus", "^C"))
+  end
+end
+
+
+distributable:
+  url: https://gitlab.com/esr/wumpus/-/archive/{{ version.raw }}/wumpus-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.9
+
+provides:
+  - bin/wumpus
+  - bin/superhack
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    #pagure.io/xmlto: '*'
+
+  script: |
+    make wumpus superhack
+    # When xmlto is packaged then switch the to `make ... install`
+    mkdir -p "{{prefix}}"/bin
+    mv wumpus superhack "{{prefix}}"/bin
+    # make prefix={{prefix}} install
+
+test:
+  script: |
+    wumpus > wumpus.out &
+    superhack > superhack.out &
+    sleep 1
+    test "x$(head -n1 wumpus.out)" = "xINSTRUCTIONS (Y-N)" && \
+    test "x$(head -n1 superhack.out)" = "xHunt the Superhack"
+
+
+class Gts < Formula
+  homepage "https://gts.sourceforge.io/"
+  url "https://downloads.sourceforge.net/project/gts/gts/0.7.6/gts-0.7.6.tar.gz"
+  revision 2
+  # We regenerate configure to avoid the `-flat_namespace` flag.
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => [:build, :test]
+  depends_on "glib"
+  depends_on "netpbm"
+  on_macos do
+    depends_on "gettext"
+  end
+  conflicts_with "pcb", because: "both install a `gts.h` header"
+  # Fix for newer netpbm.
+  # This software hasn't been updated in seven years
+  patch :DATA
+  def install
+    # The `configure` passes `-flat_namespace` but none of our usual patches apply.
+    system "autoreconf", "--force", "--install", "--verbose"
+    system "./configure", *std_configure_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"gtstest.c").write <<~EOS
+      #include "gts.h"
+      int main() {
+        GtsRange r;
+        gts_range_init(&r);
+        for (int i = 0; i < 10; ++i)
+          gts_range_add_value(&r, i);
+        gts_range_update(&r);
+        if (r.n == 10) return 0;
+        return 1;
+      }
+    EOS
+    cflags = Utils.safe_popen_read("pkg-config", "--cflags", "--libs", "gts").strip.split
+    system ENV.cc, "gtstest.c", *cflags, "-lm", "-o", "gtstest"
+    system "./gtstest"
+  end
+end
+__END__
+diff --git a/examples/happrox.c b/examples/happrox.c
+index 88770a8..11f140d 100644
+--- a/examples/happrox.c
++++ b/examples/happrox.c
+@@ -21,7 +21,7 @@
+ #include <stdlib.h>
+ #include <locale.h>
+ #include <string.h>
+-#include <pgm.h>
++#include <netpbm/pgm.h>
+ #include "config.h"
+ #ifdef HAVE_GETOPT_H
+ #  include <getopt.h>
+
+
+gts

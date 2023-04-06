@@ -1,0 +1,21 @@
+
+distributable:
+  url: https://download.oracle.com/berkeley-db/db-{{ version }}.tar.gz
+  mirror: https://fossies.org/linux/misc/db-{{ version }}.tar.gz
+
+versions:
+  url: https://www.oracle.com/database/technologies/related/berkeleydb-downloads.html
+  regex: Berkeley\s*DB[^(]*?\(\s*v?(\d+(?:\.\d+)+)\s*\)
+
+provides:
+  darwin:
+  - lib/libdb.dylib
+  - include/db.h
+  - include/db_cxx.h
+
+dependencies:
+  openssl@1.1: '>=1.1.1'
+
+build:
+  script: |-
+    cd build_unix && ../dist/configure --prefix={{ prefix }} --mandir={{ man }} --enable-compat185 --enable-cxx --enable-sql --enable-sql_codegen --enable-dbm --enable-stl

@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://github.com/elixir-lang/elixir/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: elixir-lang/elixir
+  strip: /^v?([\d.]+)$/
+
+dependencies:
+  erlang.org: ^25
+
+build:
+  script: |
+    make
+    cp -R bin/ lib/
+    make install_man PREFIX={{prefix}}
+  env:
+    MAN_DIR: {{prefix}}/share/man
+
+provides:
+  - bin/elixir
+  - bin/elixirc
+  - bin/iex
+  - lib/elixir/*/*.beam
+
+test:
+  elixir -v | grep Erlang/OTP 25

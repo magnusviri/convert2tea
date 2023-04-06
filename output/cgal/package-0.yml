@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://github.com/CGAL/cgal/releases/download/v{{ version.raw }}/CGAL-{{ version.raw }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: CGAL/cgal/tags
+  strip: /^v/
+
+dependencies:
+  boost: '*'
+  eigen: '*'
+  gmp: '*'
+  mpfr: '*'
+  openssl@3: '*'
+  cmake: '*'
+  qt@5: '*'
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      apple.com/xcode/clt: '*'
+  script: |
+    cmake . -DCMAKE_CXX_FLAGS='-std=c++14' -DWITH_CGAL_Qt5=ON -DCMAKE_PREFIX_PATH="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install

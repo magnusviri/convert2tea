@@ -1,0 +1,94 @@
+cpanminus
+
+class Cpanminus < Formula
+  homepage "https://github.com/miyagawa/cpanminus"
+  # Don't use git tags, their naming is misleading
+  url "https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-1.7046.tar.gz"
+  license any_of: ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
+  version_scheme 1
+  head "https://github.com/miyagawa/cpanminus.git", branch: "devel"
+  uses_from_macos "perl"
+  def install
+    cd "App-cpanminus" if build.head?
+    system "perl", "Makefile.PL", "INSTALL_BASE=#{prefix}",
+                                  "INSTALLSITEMAN1DIR=#{man1}",
+                                  "INSTALLSITEMAN3DIR=#{man3}"
+    system "make", "install"
+  end
+  def post_install
+    cpanm_lines = (bin/"cpanm").read.lines
+    return if cpanm_lines.first.match?(%r{^#!/usr/bin/env perl})
+    ohai "Adding `/usr/bin/env perl` shebang to `cpanm`..."
+    cpanm_lines.unshift "#!/usr/bin/env perl\n"
+    (bin/"cpanm").atomic_write cpanm_lines.join
+  end
+  test do
+    assert_match "cpan.metacpan.org", stable.url, "Don't use git tags, their naming is misleading"
+    system "#{bin}/cpanm", "--local-lib=#{testpath}/perl5", "Test::More"
+  end
+end
+
+
+distributable:
+  url: https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: miyagawa/cpanminus/tags
+  ignore:
+    - /^1.9/   # invalid versions in the tags for some reason
+    - /^1.79/  # ^^
+    - /^1.71/  # ^^ like wtf?
+
+dependencies:
+  perl.org: '*'
+
+companions:
+  tea.xyz/gx/make: '*'
+
+provides:
+  - bin/cpanm
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    perl Makefile.PL INSTALL_BASE={{prefix}}
+    make install
+
+    fix-shebangs.ts {{prefix}}/bin/cpanm
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script:
+    cpanm --verbose --local-lib=./out Test::More
+
+
+class Libsmi < Formula
+  homepage "https://www.ibr.cs.tu-bs.de/projects/libsmi/"
+  url "https://www.ibr.cs.tu-bs.de/projects/libsmi/download/libsmi-0.5.0.tar.gz"
+  mirror "https://www.mirrorservice.org/sites/distfiles.macports.org/libsmi/libsmi-0.5.0.tar.gz"
+  license all_of: ["TCL", "BSD-3-Clause", "Beerware"]
+  livecheck do
+    url "https://www.ibr.cs.tu-bs.de/projects/libsmi/download/"
+    regex(/href=.*?libsmi[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  # Regenerate `configure` to avoid `-flat_namespace` bug.
+  # None of our usual patches apply.
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
+  def install
+    system "autoreconf", "--force", "--install", "--verbose"
+    system "./configure", "--disable-debug", "--disable-dependency-tracking",
+                          "--prefix=#{prefix}"
+    system "make", "install"
+  end
+  test do
+    assert_match version.to_s, shell_output("#{bin}/smidiff -V")
+  end
+end
+
+
+libsmi

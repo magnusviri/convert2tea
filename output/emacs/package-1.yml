@@ -1,0 +1,23 @@
+
+distributable:
+   url: https://ftp.gnu.org/gnu/emacs/emacs-{{version.major}}.{{version.minor}}.tar.xz
+   mirror: https://ftpmirror.gnu.org/emacs/emacs-{{version.major}}.{{version.minor}}.tar.xz
+   strip-components: 1
+
+versions:
+  - 28.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/autoconf: ^2.62
+    gnu.org/gnu-sed: ^4.6
+    texinfo.info: ^6.7
+    pkg-config.org: '*'
+    gnutls.org: 3.6.13
+    jansson.org: 2.12
+    libxml2.org: '*'
+    ncurses.org: ^6.2
+    on_linux:
+      jpeg-turbo.org: 1.5.3

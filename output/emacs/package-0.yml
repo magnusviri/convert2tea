@@ -1,0 +1,29 @@
+    distributable:
+      url: https://ftp.gnu.org/gnu/emacs/emacs-{{ version }}.tar.xz
+      mirror: https://ftpmirror.gnu.org/emacs/emacs-{{ version }}.tar.xz
+      strip-components: 1
+    
+    versions:
+      - 28.2
+    
+    head:
+      url: https://github.com/emacs-mirror/emacs.git
+      branch: master
+      dependencies:
+        gnu-sed: '*'
+        autoconf: '*'
+        texinfo: '*'
+    
+    build:
+      dependencies:
+        pkg-config: '*'
+        gnutls: '*'
+        jansson: '*'
+      script: |
+        if test {{hw.platform}} = darwin; then
+          export ac_cv_func_aligned_alloc=no
+        fi
+        
+        ./configure \
+          --disable-silent-rules \
+          --enable-locallisppath={{ prefix }}/share/emacs/

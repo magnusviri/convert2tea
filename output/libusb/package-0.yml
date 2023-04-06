@@ -1,0 +1,36 @@
+
+distributable:
+  url: https://github.com/libusb/libusb/releases/download/v{{version}}/libusb-{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  github: libusb/libusb
+  strip: /^v/
+
+dependencies:
+  systemd.org: '*'
+  
+build:
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --prefix={{prefix}}
+  test:
+    make test
+
+test:
+  script: ./examples/test
+
+# TODO need to fix the .la file
+
+provides:
+  - lib/libusb-1.0.a
+  - lib/libusb-1.0.0.dylib
+  - lib/libusb-1.0.dylib
+  - lib/libusb-1.0.la

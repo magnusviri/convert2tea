@@ -1,0 +1,208 @@
+cmake
+
+class Cmake < Formula
+  homepage "https://www.cmake.org/"
+  url "https://github.com/Kitware/CMake/releases/download/v3.26.3/cmake-3.26.3.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/cmake-3.26.3.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/legacy/cmake-3.26.3.tar.gz"
+  head "https://gitlab.kitware.com/cmake/cmake.git", branch: "master"
+  # The "latest" release on GitHub has been an unstable version before, so we
+  # check the Git tags instead.
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
+  uses_from_macos "ncurses"
+  on_linux do
+    depends_on "openssl@3"
+  end
+  # The completions were removed because of problems with system bash
+  # The `with-qt` GUI option was removed due to circular dependencies if
+  # CMake is built with Qt support and Qt is built with MySQL support as MySQL uses CMake.
+  # For the GUI application please instead use `brew install --cask cmake`.
+  def install
+    args = %W[
+      --prefix=#{prefix}
+      --no-system-libs
+      --parallel=#{ENV.make_jobs}
+      --datadir=/share/cmake
+      --docdir=/share/doc/cmake
+      --mandir=/share/man
+    ]
+    if OS.mac?
+      args += %w[
+        --system-zlib
+        --system-bzip2
+        --system-curl
+      ]
+    end
+    system "./bootstrap", *args, "--", *std_cmake_args,
+                                       "-DCMake_INSTALL_BASH_COMP_DIR=#{bash_completion}",
+                                       "-DCMake_INSTALL_EMACS_DIR=#{elisp}",
+                                       "-DCMake_BUILD_LTO=ON"
+    system "make"
+    system "make", "install"
+  end
+  def caveats
+    <<~EOS
+      To install the CMake documentation, run:
+        brew install cmake-docs
+    EOS
+  end
+  test do
+    (testpath/"CMakeLists.txt").write("find_package(Ruby)")
+    system bin/"cmake", "."
+    # These should be supplied in a separate cmake-docs formula.
+    refute_path_exists doc/"html"
+    refute_path_exists man
+  end
+end
+
+
+distributable:
+  url: https://github.com/Kitware/CMake/releases/download/v{{ version }}/cmake-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: Kitware/CMake/releases/tags
+  ignore: /-rc\d/
+
+detect:
+  cmd: cmake --version
+  regex: cmake version \v
+
+dependencies:
+  curl.se: '>=5'
+  zlib.net: 1
+  sourceware.org/bzip2: 1
+
+provides:
+  darwin:
+  - bin/cmake
+  - bin/ccmake
+  - bin/cpack
+  - bin/ctest
+  linux:
+  - bin/cmake
+  - bin/cpack
+  - bin/ctest
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |-
+    ./bootstrap $ARGS
+    make --jobs {{ hw.concurrency }} install
+    rm -rf {{prefix}}/share/doc  # docs are online
+  env:
+    V: 1
+    ARGS:
+      - --prefix={{ prefix }}
+      - --parallel={{ hw.concurrency }}
+      - --datadir=/var
+      - --docdir=/share/doc
+      - --mandir=/share/man
+      - --system-zlib
+      - --system-bzip2
+      - --system-curl
+      - --
+      - -DCMake_BUILD_LTO=ON
+      - -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+    darwin:
+      ARGS:
+      - -DZLIB_LIBRARY={{deps.zlib.net.prefix}}/lib/libz.dylib
+      - -DZLIB_INCLUDE_DIR={{deps.zlib.net.prefix}}/include
+      - -DCURL_LIBRARY={{deps.curl.se.prefix}}/lib/libcurl.dylib
+      - -DCURL_INCLUDE_DIR={{deps.curl.se.prefix}}/include
+      - -DBZIP2_LIBRARIES={{deps.sourceware.org/bzip2.prefix}}/lib/libbz2.a
+      - -DBZIP2_INCLUDE_DIR={{deps.sourceware.org/bzip2.prefix}}/include
+    linux:
+      ARGS:
+      - -DZLIB_LIBRARY={{deps.zlib.net.prefix}}/lib/libz.so
+      - -DZLIB_INCLUDE_DIR={{deps.zlib.net.prefix}}/include
+      - -DCURL_LIBRARY={{deps.curl.se.prefix}}/lib/libcurl.so
+      - -DCURL_INCLUDE_DIR={{deps.curl.se.prefix}}/include
+      - -DBZIP2_LIBRARIES={{deps.sourceware.org/bzip2.prefix}}/lib/libbz2.so
+      - -DBZIP2_INCLUDE_DIR={{deps.sourceware.org/bzip2.prefix}}/include
+
+  error-log:
+    Bootstrap.cmk/cmake_bootstrap.log
+
+test:
+  script:
+    cmake --version
+
+
+class BerkeleyDb < Formula
+  homepage "https://www.oracle.com/database/technologies/related/berkeleydb.html"
+  url "https://download.oracle.com/berkeley-db/db-18.1.40.tar.gz"
+  mirror "https://fossies.org/linux/misc/db-18.1.40.tar.gz"
+  revision 1
+  livecheck do
+    url "https://www.oracle.com/database/technologies/related/berkeleydb-downloads.html"
+    regex(/Berkeley\s*DB[^(]*?\(\s*v?(\d+(?:\.\d+)+)\s*\)/i)
+  end
+  keg_only :provided_by_macos
+  depends_on "openssl@1.1"
+  # Fix -flat_namespace being used on Big Sur and later.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-pre-0.4.2.418-big_sur.diff"
+    directory "dist"
+  end
+  def install
+    # BerkeleyDB dislikes parallel builds
+    ENV.deparallelize
+    # --enable-compat185 is necessary because our build shadows
+    # the system berkeley db 1.x
+    args = %W[
+      --disable-debug
+      --disable-static
+      --prefix=#{prefix}
+      --mandir=#{man}
+      --enable-cxx
+      --enable-compat185
+      --enable-sql
+      --enable-sql_codegen
+      --enable-dbm
+      --enable-stl
+    ]
+    # BerkeleyDB requires you to build everything from the build_unix subdirectory
+    cd "build_unix" do
+      system "../dist/configure", *args
+      # delete docs dir because it is huge
+      rm_rf prefix/"docs"
+    end
+  end
+  test do
+    (testpath/"test.cpp").write <<~EOS
+      #include <assert.h>
+      #include <string.h>
+      #include <db_cxx.h>
+      int main() {
+        Db db(NULL, 0);
+        assert(db.open(NULL, "test.db", NULL, DB_BTREE, DB_CREATE, 0) == 0);
+        const char *project = "Homebrew";
+        const char *stored_description = "The missing package manager for macOS";
+        Dbt key(const_cast<char *>(project), strlen(project) + 1);
+        Dbt stored_data(const_cast<char *>(stored_description), strlen(stored_description) + 1);
+        assert(db.put(NULL, &key, &stored_data, DB_NOOVERWRITE) == 0);
+        Dbt returned_data;
+        assert(db.get(NULL, &key, &returned_data, 0) == 0);
+        assert(strcmp(stored_description, (const char *)(returned_data.get_data())) == 0);
+        assert(db.close(0) == 0);
+      }
+    EOS
+    flags = %W[
+      -I#{include}
+      -L#{lib}
+      -ldb_cxx
+    ]
+    system ENV.cxx, "test.cpp", "-o", "test", *flags
+    system "./test"
+    assert_predicate testpath/"test.db", :exist?
+  end
+end
+
+
+berkeley-db

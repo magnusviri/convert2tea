@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://github.com/libusb/libusb/releases/download/v{{version}}/libusb-{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  github: libusb/libusb
+  strip: /^libusb-/
+
+dependencies:
+  system.d: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --with-systemd
+  test:
+    make check
+
+provides:
+  - lib/libusb-1.0.so
+  - bin/libusb-config
+
+filesystem:
+  - examples/

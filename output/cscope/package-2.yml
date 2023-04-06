@@ -1,0 +1,34 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/cscope/cscope/v{{version}}/cscope-{{version}}.tar.gz
+
+versions:
+  - 15.9
+
+build:
+  script: |
+    ./configure --prefix={{prefix}} --mandir={{man}}
+    make install
+  test:
+    make test
+
+test:
+  dependencies:
+    freedesktop.org/pkg-config: 0.29
+  fixture: |
+    #include <stdio.h>
+    #include <stdlib.h>
+    void func()
+    {
+      printf("Hello World!");
+    }
+    int main()
+    {
+      func();
+      return 0;
+    }
+  script: |
+    mv $FIXTURE test.c
+    echo `pwd`/test.c > cscope.files
+    $BUILD/bin/cscope -b -k
+    $BUILD/bin/cscope -L1func | grep test.c | grep func

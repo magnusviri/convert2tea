@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://dbus.freedesktop.org/releases/dbus/dbus-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: freedesktop/dbus/releases/tags
+  ignore: /-rc\d/
+
+detect:
+  cmd: dbus-daemon --version
+  regex: dbus-daemon version \v
+
+dependencies:
+  pkg-config.org: '*'
+  xmlto: '*'
+
+provides:
+  darwin:
+  - bin/dbus-cleanup-sockets
+  - bin/dbus-daemon
+  - bin/dbus-launch
+  - bin/dbus-monitor
+  - bin/dbus-run-session
+  - bin/dbus-send
+  - bin/dbus-test-tool
+  - bin/dbus-update-activation-environment
+  - bin/dbus-uuidgen
+  linux:
+  - bin/dbus-cleanup-sockets
+  - bin

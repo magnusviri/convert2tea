@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://github.com/ivmai/libatomic_ops/releases/download/v{{ version }}/libatomic_ops-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: ivmai/libatomic_ops/releases/tags
+  ignore: /-rc\d/
+
+detect:
+  cmd: libatomic_ops-config --version
+  regex: (\d+\.\d+\.\d+)
+
+provides:
+  - lib/libatomic_ops.a
+  - lib/libatomic_ops.so
+  - include/atomic_ops.h
+
+build:
+  script: |-
+  ./configure --prefix={{ prefix }} --disable-dependency-tracking
+  make
+  make check
+  make install
+
+test:
+  script:
+  libatomic_ops-config --version

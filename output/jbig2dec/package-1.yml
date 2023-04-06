@@ -1,0 +1,30 @@
+distributable:
+  url: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9531/jbig2dec-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/jbig2dec
+
+dependencies:
+  autoconf: '*'
+  automake: '*'
+  libtool: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./autogen.sh $ARGS
+    make -j {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --disable-dependency-tracking
+      - --prefix={{prefix}}
+      - --disable-silent-rules
+      - --without-libpng
+
+test:
+  script: |
+    test "$(jbig2dec -t pbm --hash "$FIXTURE" | tr -d \\n)" = "aa35470724

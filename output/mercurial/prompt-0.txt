@@ -1,0 +1,193 @@
+boost
+
+class Boost < Formula
+  homepage "https://www.boost.org/"
+  url "https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.bz2"
+  revision 1
+  head "https://github.com/boostorg/boost.git", branch: "master"
+  livecheck do
+    url "https://www.boost.org/users/download/"
+    regex(/href=.*?boost[._-]v?(\d+(?:[._]\d+)+)\.t/i)
+    strategy :page_match do |page, regex|
+      page.scan(regex).map { |match| match.first.tr("_", ".") }
+    end
+  end
+  depends_on "icu4c"
+  depends_on "xz"
+  depends_on "zstd"
+  uses_from_macos "bzip2"
+  uses_from_macos "zlib"
+  def install
+    # Force boost to compile with the desired compiler
+    open("user-config.jam", "a") do |file|
+      if OS.mac?
+        file.write "using darwin : : #{ENV.cxx} ;\n"
+      else
+        file.write "using gcc : : #{ENV.cxx} ;\n"
+      end
+    end
+    # libdir should be set by --prefix but isn't
+    icu4c_prefix = Formula["icu4c"].opt_prefix
+    bootstrap_args = %W[
+      --prefix=#{prefix}
+      --libdir=#{lib}
+      --with-icu=#{icu4c_prefix}
+    ]
+    # Handle libraries that will not be built.
+    without_libraries = ["python", "mpi"]
+    # Boost.Log cannot be built using Apple GCC at the moment. Disabled
+    # on such systems.
+    without_libraries << "log" if ENV.compiler == :gcc
+    bootstrap_args << "--without-libraries=#{without_libraries.join(",")}"
+    # layout should be synchronized with boost-python and boost-mpi
+    args = %W[
+      --prefix=#{prefix}
+      --libdir=#{lib}
+      -d2
+      -j#{ENV.make_jobs}
+      --layout=tagged-1.66
+      --user-config=user-config.jam
+      install
+      threading=multi,single
+      link=shared,static
+    ]
+    # Boost is using "clang++ -x c" to select C compiler which breaks C++14
+    # handling using ENV.cxx14. Using "cxxflags" and "linkflags" still works.
+    args << "cxxflags=-std=c++14"
+    args << "cxxflags=-stdlib=libc++" << "linkflags=-stdlib=libc++" if ENV.compiler == :clang
+    system "./bootstrap.sh", *bootstrap_args
+    system "./b2", "headers"
+    system "./b2", *args
+  end
+  test do
+    (testpath/"test.cpp").write <<~EOS
+      #include <boost/algorithm/string.hpp>
+      #include <boost/iostreams/device/array.hpp>
+      #include <boost/iostreams/device/back_inserter.hpp>
+      #include <boost/iostreams/filter/zstd.hpp>
+      #include <boost/iostreams/filtering_stream.hpp>
+      #include <boost/iostreams/stream.hpp>
+      #include <string>
+      #include <iostream>
+      #include <vector>
+      #include <assert.h>
+      using namespace boost::algorithm;
+      using namespace boost::iostreams;
+      using namespace std;
+      int main()
+      {
+        string str("a,b");
+        vector<string> strVec;
+        split(strVec, str, is_any_of(","));
+        assert(strVec.size()==2);
+        assert(strVec[0]=="a");
+        assert(strVec[1]=="b");
+        // Test boost::iostreams::zstd_compressor() linking
+        std::vector<char> v;
+        back_insert_device<std::vector<char>> snk{v};
+        filtering_ostream os;
+        os.push(zstd_compressor());
+        os.push(snk);
+        os << "Boost" << std::flush;
+        os.pop();
+        array_source src{v.data(), v.size()};
+        filtering_istream is;
+        is.push(zstd_decompressor());
+        is.push(src);
+        std::string s;
+        is >> s;
+        assert(s == "Boost");
+        return 0;
+      }
+    EOS
+    system ENV.cxx, "test.cpp", "-std=c++14", "-o", "test", "-L#{lib}", "-lboost_iostreams",
+                    "-L#{Formula["zstd"].opt_lib}", "-lzstd"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://boostorg.jfrog.io/artifactory/main/release/{{ version }}/source/boost_{{version.major}}_{{version.minor}}_{{version.patch}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: boostorg/boost
+  strip: /^boost-/
+
+dependencies:
+  facebook.com/zstd: ^1
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./bootstrap.sh --prefix={{ prefix }}
+    ./b2 install --prefix={{ prefix }}
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    c++ test.cpp -std=c++14 -lboost_iostreams -lzstd
+    ./a.out
+
+
+# No head build supported; if you need head builds of Mercurial, do so outside
+# of Homebrew.
+class Mercurial < Formula
+  homepage "https://mercurial-scm.org/"
+  url "https://www.mercurial-scm.org/release/mercurial-6.4.tar.gz"
+  livecheck do
+    url "https://www.mercurial-scm.org/release/"
+    regex(/href=.*?mercurial[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  depends_on "python@3.11"
+  def install
+    ENV["HGPYTHON3"] = "1"
+    ENV["PYTHON"] = python3 = which("python3.11")
+    # FIXME: python@3.11 formula's "prefix scheme" patch tries to install into
+    # HOMEBREW_PREFIX/{lib,bin}, which fails due to sandbox. As workaround,
+    # manually set the installation paths to behave like prior python versions.
+    setup_install_args = %W[
+      --install-lib="#{prefix/Language::Python.site_packages(python3)}"
+      --install-scripts="#{bin}"
+      --install-data="#{prefix}"
+    ]
+    inreplace "Makefile", / setup\.py .* --prefix="\$\(PREFIX\)"/, "\\0 #{setup_install_args.join(" ")}"
+    system "make", "install-bin", "PREFIX=#{prefix}"
+    # Install chg (see https://www.mercurial-scm.org/wiki/CHg)
+    system "make", "-C", "contrib/chg", "install", "PREFIX=#{prefix}", "HGPATH=#{bin}/hg", "HG=#{bin}/hg"
+    # Configure a nicer default pager
+    (buildpath/"hgrc").write <<~EOS
+      [pager]
+      pager = less -FRX
+    EOS
+    (etc/"mercurial").install "hgrc"
+    # Install man pages, which come pre-built in source releases
+    man1.install "doc/hg.1"
+    man5.install "doc/hgignore.5", "doc/hgrc.5"
+    # Move the bash completion script
+    bash_completion.install share/"bash-completion/completions/hg"
+  end
+  def caveats
+    return unless (opt_bin/"hg").exist?
+    cacerts_configured = `#{opt_bin}/hg config web.cacerts`.strip
+    return if cacerts_configured.empty?
+    <<~EOS
+      Homebrew has detected that Mercurial is configured to use a certificate
+      bundle file as its trust store for TLS connections instead of using the
+      default OpenSSL store. If you have trouble connecting to remote
+      repositories, consider unsetting the `web.cacerts` property. You can
+      determine where the property is being set by running:
+        hg config --debug web.cacerts
+    EOS
+  end
+  test do
+    system "#{bin}/hg", "init"
+  end
+end
+
+
+mercurial

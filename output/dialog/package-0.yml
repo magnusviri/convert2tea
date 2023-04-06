@@ -1,0 +1,18 @@
+
+distributable:
+  url: https://invisible-mirror.net/archives/dialog/dialog-{{version}}.tgz
+  strip-components: 1
+
+dependencies:
+  invisible-island.net/ncurses: '*'
+
+build:
+  script: |
+    ./configure --prefix={{prefix}} --with-ncurses
+    make --jobs {{ hw.concurrency }} install-full
+
+provides:
+  - bin/dialog
+
+test:
+  script: bin/dialog --version

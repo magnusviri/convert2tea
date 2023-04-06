@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://www.ibr.cs.tu-bs.de/projects/libsmi/download/libsmi-{{ version }}.tar.gz
+  mirrors:
+    - https://www.mirrorservice.org/sites/distfiles.macports.org/libsmi/libsmi-{{ version }}.tar.gz
+  licenses:
+    - TCL
+    - BSD-3-Clause
+    - Beerware
+
+versions:
+  regex: /libsmi[._-]v?(?<version>\d+(?:\.\d+)+)\.t/i
+  url: https://www.ibr.cs.tu-bs.de/projects/libsmi/download/
+
+provides:
+  - bin/smidiff
+
+dependencies:
+  autoconf: '*'
+  automake: '*'
+  libtool: '*'
+
+build:
+  script: |
+    autoreconf --force --install --verbose
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{hw.

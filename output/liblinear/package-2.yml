@@ -1,0 +1,26 @@
+
+distributable:
+  url: https://www.csie.ntu.edu.tw/~cjlin/liblinear/oldfiles/liblinear-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  url: https://www.csie.ntu.edu.tw/~cjlin/liblinear/oldfiles/
+  regex: /href=.*?liblinear[._-]v?(\d+(?:\.\d+)+)\.t/i
+
+provides:
+  - bin/predict
+  - bin/train
+  - lib/liblinear.{{ soversion }}.dylib
+  - include/linear.h
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: make --jobs {{ hw.concurrency }} all
+  error-log: make.log
+
+test:
+  script: |-
+    (
+    echo "+1 201:1.2 3148:1.8 3983:1 4882:1"

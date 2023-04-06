@@ -1,0 +1,139 @@
+cpanminus
+
+class Cpanminus < Formula
+  homepage "https://github.com/miyagawa/cpanminus"
+  # Don't use git tags, their naming is misleading
+  url "https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-1.7046.tar.gz"
+  license any_of: ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
+  version_scheme 1
+  head "https://github.com/miyagawa/cpanminus.git", branch: "devel"
+  uses_from_macos "perl"
+  def install
+    cd "App-cpanminus" if build.head?
+    system "perl", "Makefile.PL", "INSTALL_BASE=#{prefix}",
+                                  "INSTALLSITEMAN1DIR=#{man1}",
+                                  "INSTALLSITEMAN3DIR=#{man3}"
+    system "make", "install"
+  end
+  def post_install
+    cpanm_lines = (bin/"cpanm").read.lines
+    return if cpanm_lines.first.match?(%r{^#!/usr/bin/env perl})
+    ohai "Adding `/usr/bin/env perl` shebang to `cpanm`..."
+    cpanm_lines.unshift "#!/usr/bin/env perl\n"
+    (bin/"cpanm").atomic_write cpanm_lines.join
+  end
+  test do
+    assert_match "cpan.metacpan.org", stable.url, "Don't use git tags, their naming is misleading"
+    system "#{bin}/cpanm", "--local-lib=#{testpath}/perl5", "Test::More"
+  end
+end
+
+
+distributable:
+  url: https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: miyagawa/cpanminus/tags
+  ignore:
+    - /^1.9/   # invalid versions in the tags for some reason
+    - /^1.79/  # ^^
+    - /^1.71/  # ^^ like wtf?
+
+dependencies:
+  perl.org: '*'
+
+companions:
+  tea.xyz/gx/make: '*'
+
+provides:
+  - bin/cpanm
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    perl Makefile.PL INSTALL_BASE={{prefix}}
+    make install
+
+    fix-shebangs.ts {{prefix}}/bin/cpanm
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script:
+    cpanm --verbose --local-lib=./out Test::More
+
+
+class Fftw < Formula
+  homepage "https://fftw.org"
+  url "https://fftw.org/fftw-3.3.10.tar.gz"
+  license all_of: ["GPL-2.0-or-later", "BSD-2-Clause"]
+  revision 1
+  livecheck do
+    url :homepage
+    regex(%r{latest official release.*? <b>v?(\d+(?:\.\d+)+)</b>}i)
+  end
+  depends_on "open-mpi"
+  on_macos do
+    depends_on "gcc"
+  end
+  fails_with :clang
+  def install
+    ENV.runtime_cpu_detection
+    args = [
+      "--enable-shared",
+      "--disable-debug",
+      "--prefix=#{prefix}",
+      "--enable-threads",
+      "--disable-dependency-tracking",
+      "--enable-mpi",
+      "--enable-openmp",
+    ]
+    # FFTW supports runtime detection of CPU capabilities, so it is safe to
+    # use with --enable-avx and the code will still run on all CPUs
+    simd_args = []
+    simd_args += %w[--enable-sse2 --enable-avx --enable-avx2] if Hardware::CPU.intel?
+    # single precision
+    # enable-sse2, enable-avx and enable-avx2 work for both single and double precision
+    system "./configure", "--enable-single", *(args + simd_args)
+    system "make", "install"
+    # clean up so we can compile the double precision variant
+    system "make", "clean"
+    # double precision
+    # enable-sse2, enable-avx and enable-avx2 work for both single and double precision
+    system "./configure", *(args + simd_args)
+    system "make", "install"
+    # clean up so we can compile the long-double precision variant
+    system "make", "clean"
+    # long-double precision
+    # no SIMD optimization available
+    system "./configure", "--enable-long-double", *args
+    system "make", "install"
+  end
+  test do
+    # Adapted from the sample usage provided in the documentation:
+    # https://www.fftw.org/fftw3_doc/Complex-One_002dDimensional-DFTs.html
+    (testpath/"fftw.c").write <<~EOS
+      #include <fftw3.h>
+      int main(int argc, char* *argv)
+      {
+          fftw_complex *in, *out;
+          fftw_plan p;
+          long N = 1;
+          in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+          out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+          p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+          fftw_execute(p); /* repeat as needed */
+          fftw_destroy_plan(p);
+          fftw_free(in); fftw_free(out);
+          return 0;
+      }
+    EOS
+    system ENV.cc, "-o", "fftw", "fftw.c", "-L#{lib}", "-lfftw3"
+    system "./fftw"
+  end
+end
+
+
+fftw

@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://download.gnome.org/sources/libgsf/{{ version }}/libgsf-{{ version }}.tar.xz
+  strip-components: 1
+
+versions:
+  github: GNOME/libgsf
+  strip: /^libgsf-/
+
+provides:
+  - lib/libgsf-1.so
+  - lib/libgsf-1.dll.a
+  - lib/libgsf-1.la
+
+dependencies:
+  glib: ^2.0
+  pkg-config: '*'
+  bzip2: '*'
+  libxml2: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnupg.org/libgcrypt: ^1
+    gnupg.org/libgpg-error: ^1
+    freedesktop.org/pkg-config: '*'
+    autoconf: '*'
+    automake: '*

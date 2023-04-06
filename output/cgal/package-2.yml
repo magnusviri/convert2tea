@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://github.com/CGAL/cgal/archive/v{{version}}.tar.xz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: CGAL/cgal/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++14
+    tea.xyz/gx/make: '*'
+    cmake.org: ^3
+    git-scm.org: '*'
+    qt@5: '*'
+    boost: '*'
+    eigen: '*'
+    gmp: '*'
+    mpfr: '*'
+  on:
+    linux:
+      - openssl@3: '*'
+  script: |
+    cmake .. -DCMAKE_CXX_FLAGS='-std=c++14' -DWITH_CGAL_Qt5=ON
+    make --jobs {{ hw.concurrency }}
+    mkdir -p "{{prefix}}"/

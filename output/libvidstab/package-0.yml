@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://github.com/georgmartius/vid.stab/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: georgmartius/vid.stab
+  strip: /^v/
+
+dependencies:
+  cmake.org: '*'
+
+build:
+  dependencies:
+    cmake.org: '*'
+  script: |
+    cmake -DUSE_OMP=OFF $ARGS
+    make -j {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - -DCMAKE_INSTALL_PREFIX={{prefix}}
+
+provides:
+  - lib/libvidstab.{{ version.major }}.dylib
+  - lib/libvidstab.{{ version.major }}f.dylib
+  - lib/libvidstab.dylib
+  - include/vid.stab.h

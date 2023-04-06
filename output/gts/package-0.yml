@@ -1,0 +1,33 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/gts/gts/{{version}}/gts-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  strip: /^GTS /
+
+dependencies:
+  glib.gnome.org: ^2
+  netpbm.sourceforge.io: ^10
+  on_macos:
+    gettext.org: ^0.20
+
+build:
+  dependencies:
+    gnu.org/autoconf: ^2
+    gnu.org/automake: ^1
+    gnu.org/libtool: ^2
+    freedesktop.org/pkg-config: ^0.29
+  patch:
+    - DATA
+  script:
+    - autoreconf --force --install --verbose
+    - ./configure $ARGS
+    - make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+
+provides:
+  - include/gts.h
+  - bin

@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://github.com/aws/aws-sdk-cpp/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: aws/aws-sdk-cpp
+  strip: /^aws-sdk-cpp /
+
+dependencies:
+  cmake.org: '*'
+  curl.se: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c++11
+    tea.xyz/gx/make: '*'
+  script: |
+    cmake -S . -B build ${ARGS}
+    cmake --build build
+    cmake --install build
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX=${prefix}
+  test:
+    make test
+
+provides:
+  - lib/cpp-sdk-core.a
+  - lib/cpp-sdk-core.dylib
+  - lib/cpp-sdk-core.so
+  - lib/cpp-sdk-core

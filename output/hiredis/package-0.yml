@@ -1,0 +1,26 @@
+
+distributable:
+  url: https://github.com/redis/hiredis/archive/v{{ version.raw }}.tar.gz
+  strip-components: 1
+
+provides:
+  - include/hiredis/hiredis.h
+  - lib/libhiredis.a
+
+versions:
+  github: redis/hiredis
+  strip: /^v/
+
+build:
+  script: |
+    make install PREFIX={{prefix}}
+
+files:
+  ${{prefix}}/include/hiredis/hiredis.h: |
+    ${{prefix}}/share/hiredis/examples/example.c
+
+test:
+  script: |
+    $(CC) ${{prefix}}/share/hiredis/examples/example.c -o ${{..testpath}}/test -I${{prefix}}/include/hiredis -L${{prefix}}/lib -lhiredis
+  assertion: |
+    ${{...testpath}}/test

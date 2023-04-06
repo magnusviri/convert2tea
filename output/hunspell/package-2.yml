@@ -1,0 +1,38 @@
+
+distributable:
+  url: https://github.com/hunspell/hunspell/releases/download/v{{ version.raw }}/hunspell-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/hunspell
+  - bin/munch
+
+interprets:
+  extensions: aff dic
+
+versions:
+  github: hunspell/hunspell
+  strip: /^v/
+
+dependencies:
+  readline.org: '*'
+  macos:
+    gettext.org: '*'
+
+runtime:
+  resources:
+    macos:
+      - ${{prefix}}/var/lib/hunspell
+    elsewhere:
+      - ${{prefix}}/share/hunspell
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    ncurses.org: '*'
+  script: |
+    export CC=cc
+    export CXX=c++
+    export LD=ld
+    export AR

@@ -1,0 +1,25 @@
+
+distributable:
+  url: https://download-mirror.savannah.gnu.org/releases/lzip/lzip-{{ version }}.tar.gz
+
+versions:
+  livecheck:
+    url: https://download.savannah.gnu.org/releases/lzip/
+    regex: /href=.*?lzip[._-]v?(\d+(?:\.\d+)+)\.t/i
+
+provides:
+  - bin/lzip
+
+dependencies:
+  tea.xyz/gx/cc: c99
+  tea.xyz/gx/make: '*'
+
+build:
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{hw.concurrency}}
+    make check
+    make install
+
+test: |
+  lzip --test data.txt

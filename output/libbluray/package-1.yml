@@ -1,0 +1,30 @@
+
+distributable:
+   url: https://download.videolan.org/videolan/libbluray/{{version}}/libbluray-{{version}}.tar.bz2
+
+versions:
+  - 1.3.4
+
+build:
+  dependencies:
+    pkg-config: '*'
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/m4: '*'
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+    gnu.org/libtool: '*'
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --disable-dependency-tracking
+      - --disable-silent-rules
+      - --disable-bdjava-jar
+  script: |
+    ./bootstrap
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }}
+    make install
+
+dependencies:
+  fontconfig: '*'

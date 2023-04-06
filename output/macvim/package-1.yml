@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://github.com/macvim-dev/macvim/archive/refs/tags/release-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: macvim-dev/macvim/releases
+
+provides:
+  - bin/mvim
+  - bin/mvimdiff
+  - bin/gvim
+  - bin/gvimdiff
+  - bin/vi
+  - bin/vim
+  - bin/vimdiff
+  - bin/view
+  - bin/vimex
+
+livecheck:
+  url: https://github.com/macvim-dev/macvim/releases?q=prerelease%3Afalse&expanded=true
+  regex: Updated\s+to\s+Vim\s+v?(\d+(?:\.\d+)+)
+  strategy: page_match
+
+build:
+  dependencies:
+    gettext.org: '*'
+    libsodium.org: '*'
+    xcode: '*'
+    apple.com/xcode/clt

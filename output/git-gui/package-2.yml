@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://mirrors.edge.kernel.org/pub/software/scm/git/git-{{version}}.tar.xz
+
+versions:
+  github: git/git/releases/tags
+
+provides:
+  - bin/git-gui
+  - bin/gitk-git
+
+dependencies:
+  tcl-tk: '*'
+
+patches: 
+  - url: https://github.com/git/git/commit/1db62e44b7ec93b6654271ef34065b31496cd02e.patch?full_index=1
+
+build:
+  script: |
+    TKFRAMEWORK=/dev/null \\
+    prefix={{ prefix }} \\
+    gitexecdir={{ bin }} \\
+    sysconfdir={{ etc }} \\
+    CC={{ env.cc }} \\
+    CFLAGS='{{ env.cflags }}' \\
+    LDFLAGS='{{ env.ldflags }}' \\
+    TCL_PATH={{ dependency.tcl-tk.opt_bin }}/t

@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://github.com/carlobaldassi/liblqr/archive/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 0.4.2
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: "*"
+    pkg-config.org: ^0.59
+    glib.org: ^2.52
+  patch:
+    - url: https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-pre-0.4.2.418-big_sur.diff
+  script: |
+    ./configure \
+      --prefix={{prefix}} \
+      --enable-install-man
+    make install
+
+test:
+  dependencies:
+    glib.org: ^2.52
+  env:
+    ccflags: $(pkg-config --cflags glib-2.0)
+  fixture: |
+    #

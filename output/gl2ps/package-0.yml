@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://geuz.org/gl2ps/src/gl2ps-{{ version }}.tgz
+
+versions:
+  strip: /^gl2ps-/
+
+dependencies:
+  cmake: ^3.2
+  libpng: '*'
+  on_linux:
+    freeglut: ^2.0
+
+build:
+  script: |
+    cmake . -DCMAKE_INSTALL_PREFIX={{ prefix }}
+    make install
+
+test:
+  dependencies:
+    on_macos:
+      GLUT: '*'
+    on_linux:
+      GL: '*'
+      GLUT: '*'
+  script: |
+    c99 test.c -L{{ lib }} -lgl2ps -lglut -lGL -framework OpenGL
+    ./a.out

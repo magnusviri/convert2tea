@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/glew/glew/{{version}}/glew-{{version}}.tgz
+  strip-components: 1
+
+versions: 
+  - 2.2.0
+
+build:
+  working-directory: _build
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: '^3'
+  script: |
+    cmake .. -DCMAKE_INSTALL_RPATH={{rpath}}
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    mesa-glu: '*'
+    cmake.org: '^3'
+  env:
+    cflags: $(pkg-config --cflags glew)
+  script: |
+    cmake CMakeLists.txt -Wno-dev
+    make
+    flags="-L{{lib}} -lGLEW"
+    if [ "$(

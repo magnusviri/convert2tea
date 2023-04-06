@@ -1,0 +1,26 @@
+  distributable:
+    url: https://github.com/argoproj/argo-cd.git#{{revision}}
+    tag: {{version}}
+
+versions:
+  - v2.6.7
+
+build:
+  dependencies:
+    go.dev: '^1.14'
+    node.js: '^12.16'
+    yarn.js: '^1.22'
+  script: |
+    make dep-ui-local
+    NODE_ENV=production NODE_ONLINE_ENV=online yarn --cwd ui build
+    make cli-local
+    make install
+  test:
+    script: |
+      # test help message
+      assert_match "argocd controls a Argo CD server", $(argocd --help)
+      # test config file
+      touch argocd-config
+      chmod 0600 ./argocd-config
+      # expected output
+      assert_match "CURRENT  NAME  SERVER\n", $(argocd context --config ./argocd-config)

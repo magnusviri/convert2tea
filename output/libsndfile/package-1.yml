@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://github.com/libsndfile/libsndfile/archive/v{{version}}.tar.gz
+
+versions: 
+  - 1.2.0
+
+build:
+  dependencies:
+    cmake.org: ^3
+    pyyaml.org: '*'
+    python.org: '*'
+    flac.org: '*'
+    lame.org: '*'
+    libogg.org: '*'
+    libvorbis.org: '*'
+    mpg123.org: '*'
+    opus.org: '*'
+  working-directory:
+    out
+  script: |
+    cmake -S . -B build 
+      -DBUILD_SHARED_LIBS=ON
+      -DBUILD_PROGRAMS=ON
+      -DENABLE_PACKAGE_CONFIG=ON
+      -DINSTALL_PKGCONFIG_MODULE=ON
+      -DBUILD_EXAMPLES=OFF
+      -DCMAKE_INSTALL_RPATH="{{

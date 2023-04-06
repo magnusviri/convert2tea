@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://github.com/libsndfile/libsamplerate/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: libsndfile/libsamplerate/releases/tags
+
+dependencies:
+  cmake.org: '*'
+  freedesktop.org/pkg-config: '*'
+
+provides:
+  - lib/libsamplerate.so
+
+build:
+  script: |
+    # Build shared library
+    cmake -S . -B build/shared \\
+      -DBUILD_SHARED_LIBS=ON \\
+      -DLIBSAMPLERATE_EXAMPLES=OFF \\
+      -DBUILD_TESTING=OFF \\
+      {{ cmake_args }}
+    cmake --build build/shared
+    cmake --build build/shared --target install
+
+    # Build static library
+    cmake -S . -B build/static \\
+      -DBUILD_SHARED_LIBS=OFF \\
+      -DLIBS

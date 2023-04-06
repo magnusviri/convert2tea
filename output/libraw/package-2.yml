@@ -1,0 +1,35 @@
+
+distributable:
+  url: https://www.libraw.org/data/LibRaw-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/raw-identify
+  - bin/simple_dcraw
+
+dependencies:
+  jpeg-turbo: '*'
+  little-cms2: '*'
+  jasper: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+    pkg-config: '*'
+  script: |
+    export ERL_TOP=$(pwd)
+    aclocal
+    autoconf
+    automake -ac
+    ./configure $ARGS
+    make -j {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --disable-debug
+      - --disable-silent-rules
+      - --prefix

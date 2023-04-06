@@ -1,0 +1,29 @@
+
+distributable: 
+  url: https://github.com/json-c/json-c/archive/refs/tags/json-c-{{ version }}-{{ date }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: json-c/json-c
+  strip: /^json-c-/
+
+dependencies:
+  cmake: ^3
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    mkdir build
+    cd build
+    cmake .. {{ cmake_args }}
+    make
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    c99 test.c -ljson-c -o test
+    ./test

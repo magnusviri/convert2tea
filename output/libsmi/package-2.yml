@@ -1,0 +1,25 @@
+distributable:
+  url: https://www.ibr.cs.tu-bs.de/projects/libsmi/download/libsmi-{{version.raw}}.tar.gz
+  mirror: https://www.mirrorservice.org/sites/distfiles.macports.org/libsmi/libsmi-{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  url: https://www.ibr.cs.tu-bs.de/projects/libsmi/download/
+  regex: /href=.*?libsmi[._-]v?(\d+(?:\.\d+)+)\.t/i
+
+dependencies:
+  automake: '*'
+  autoconf: '*'
+  libtool: '*'
+
+provides:
+  - bin/smidiff
+
+build:
+  dependencies:
+    automake: '*'
+    autoconf: '*'
+    libtool: '*'
+  script: |
+    autoreconf --force --install --verbose
+    ./configure --prefix=

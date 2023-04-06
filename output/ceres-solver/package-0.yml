@@ -1,0 +1,33 @@
+
+distributable:
+  url: http://ceres-solver.org/ceres-solver-{{version.raw}}.tar.gz
+  strip-components: 0
+
+versions:
+  github: ceres-solver/ceres-solver/tags
+
+dependencies:
+  cmake.org: '*'
+  eigen: '*'
+  gflags: '*'
+  glog: '*'
+  metis: '*'
+  openblas: '*'
+  suite-sparse: '*'
+  tbb: '*'
+
+companions:
+ tea.xyz/gx/make: '*'
+
+provides:
+  - bin/ceres_error_terms
+  - bin/ceres_examples
+  - bin/ceres_scan_matcher
+  - lib/libceres.{dylib,so}
+  - lib/libceres_c.{dylib,so}
+  
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    cm

@@ -1,0 +1,22 @@
+
+distributable:
+  url: https://ftp.gnu.org/gnu/aspell/aspell-{{version}}.tar.gz
+  mirror: https://ftpmirror.gnu.org/aspell/aspell-{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  wildcards:
+    major: 0
+
+# aspell is a difficult one because of the patches array
+patches:
+  - data: |
+      diff --git a/interfaces/cc/aspell.h b/interfaces/cc/aspell.h
+      index 9c8e81b..2cd00d4 100644
+      --- a/interfaces/cc/aspell.h
+      +++ b/interfaces/cc/aspell.h
+      @@ -237,6 +237,7 @@ void delete_aspell_can_have_error(struct AspellCanHaveError * ths);
+      /******************************** errors ********************************/
+      +#ifndef __cplusplus
+       extern const struct AspellErrorInfo

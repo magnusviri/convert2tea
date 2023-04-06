@@ -1,0 +1,167 @@
+duckdb
+
+class Duckdb < Formula
+  homepage "https://www.duckdb.org"
+  url "https://github.com/duckdb/duckdb.git",
+      tag:      "v0.7.1",
+      revision: "b00b93f0b14bfff869e1facfd86a6b556a6f1c6e"
+  depends_on "cmake" => :build
+  def install
+    mkdir "build"
+    cd "build" do
+      system "cmake", "..", *std_cmake_args, "-DBUILD_ICU_EXTENSION=1", "-DBUILD_JSON_EXTENSION=1",
+             "-DBUILD_PARQUET_EXTENSION=1"
+      system "make"
+      system "make", "install"
+      bin.install "duckdb"
+      # The cli tool was renamed (0.1.8 -> 0.1.9)
+      # Create a symlink to not break compatibility
+      bin.install_symlink bin/"duckdb" => "duckdb_cli"
+    end
+  end
+  test do
+    path = testpath/"weather.sql"
+    path.write <<~EOS
+      CREATE TABLE weather (temp INTEGER);
+      INSERT INTO weather (temp) VALUES (40), (45), (50);
+      SELECT AVG(temp) FROM weather;
+    EOS
+    expected_output = <<~EOS
+      ┌─────────────┐
+      │ avg("temp") │
+      │   double    │
+      ├─────────────┤
+      │        45.0 │
+      └─────────────┘
+    EOS
+    assert_equal expected_output, shell_output("#{bin}/duckdb_cli < #{path}")
+  end
+end
+
+
+distributable:
+  url: https://github.com/duckdb/duckdb/archive/refs/tags/v{{version}}.tar.gz
+  strip-components: 1
+
+# if there’s a github then we can parse the versions
+versions:
+  github: duckdb/duckdb/releases/tags
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    cmake.org: ^3
+    git-scm.org: '*'
+  working-directory: build
+  script: |
+    # duckdb uses git to get its version
+    git init ..
+    git config user.email "bot@tea.xyz"
+    git config user.name "teabot"
+    git commit --allow-empty -mnil
+    git tag v{{version}}
+
+    cmake ..
+    make --jobs {{ hw.concurrency }}
+    mkdir -p "{{prefix}}"/bin
+    mv duckdb "{{prefix}}"/bin
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_ICU_EXTENSION=1
+      - -DBUILD_JSON_EXTENSION=1
+      - -DBUILD_PARQUET_EXTENSION=1
+
+provides:
+  - bin/duckdb
+  # ^^ specify the binaries or tea magic won’t work
+
+test:
+  fixture: |
+    CREATE TABLE weather (temp INTEGER);
+    INSERT INTO weather (temp) VALUES (40), (45), (50);
+    SELECT AVG(temp) FROM weather;
+  script: |
+    out="$(duckdb < $FIXTURE)"
+    exp=$(cat <<EOS
+    ┌─────────────┐
+    │ avg("temp") │
+    │   double    │
+    ├─────────────┤
+    │        45.0 │
+    └─────────────┘
+    EOS)
+
+    test "$out" = "$exp"
+
+    if [[ "$(duckdb --version)" != "v{{version}}"* ]]; then
+      echo "invalid version" >&2
+      exit 1
+    fi
+
+
+class Libgeotiff < Formula
+  homepage "https://github.com/OSGeo/libgeotiff"
+  revision 2
+  stable do
+    url "https://github.com/OSGeo/libgeotiff/releases/download/1.7.1/libgeotiff-1.7.1.tar.gz"
+    # Fix -flat_namespace being used on Big Sur and later.
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+    end
+  end
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
+  head do
+    url "https://github.com/OSGeo/libgeotiff.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+  depends_on "jpeg-turbo"
+  depends_on "libtiff"
+  depends_on "proj"
+  def install
+    system "./autogen.sh" if build.head?
+    system "./configure", *std_configure_args, "--with-jpeg"
+    system "make" # Separate steps or install fails
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include "geotiffio.h"
+      #include "xtiffio.h"
+      #include <stdlib.h>
+      #include <string.h>
+      int main(int argc, char* argv[])
+      {
+        TIFF *tif = XTIFFOpen(argv[1], "w");
+        GTIF *gtif = GTIFNew(tif);
+        TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32) 10);
+        GTIFKeySet(gtif, GeogInvFlatteningGeoKey, TYPE_DOUBLE, 1, (double)123.456);
+        int i;
+        char buffer[20L];
+        memset(buffer,0,(size_t)20L);
+        for (i=0;i<20L;i++){
+          TIFFWriteScanline(tif, buffer, i, 0);
+        }
+        GTIFWriteKeys(gtif);
+        GTIFFree(gtif);
+        XTIFFClose(tif);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-I#{include}", "-L#{lib}", "-lgeotiff",
+                   "-L#{Formula["libtiff"].opt_lib}", "-ltiff", "-o", "test"
+    system "./test", "test.tif"
+    output = shell_output("#{bin}/listgeo test.tif")
+    assert_match(/GeogInvFlatteningGeoKey.*123\.456/, output)
+  end
+end
+
+
+libgeotiff

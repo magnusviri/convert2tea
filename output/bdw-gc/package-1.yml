@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://github.com/ivmai/bdwgc/releases/download/{{version}}/gc-{{version}}.tar.gz
+
+versions:
+  - 8.2.2
+
+build:
+  dependencies:
+    pkg-config.se: '*'
+    libatomic_ops.sourceforge.net: '*'
+    autoconf.org: ^2.50
+    automake.org: '*'
+    libtool.org: '*'
+  script: |
+    ./configure --disable-debug --disable-dependency-tracking
+                 --prefix={{prefix}} --enable-cplusplus --enable-static
+                 --enable-large-config
+    make
+    make check
+    make install
+
+test: |
+  gcc test.c -I{{prefix}}/include -L{{prefix}}/lib -lgc -o test
+  ./test
+
+provides:
+  - lib/libgc.a
+  - lib/libgc.so
+  - include/gc.h

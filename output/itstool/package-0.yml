@@ -1,0 +1,30 @@
+
+distributable:
+  url: http://files.itstool.org/itstool/itstool-{{ version.raw }}.tar.bz2
+  strip-components: 1
+
+versions:
+  - 2.0.7
+
+provides:
+  - bin/itstool
+  - lib/itstool/its
+  - man/man1/itstool.1
+
+build:
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    libxml2: '*'
+    python@3.11: '*'
+  script: |
+    ./configure --prefix={{prefix}} PYTHON={{prefix.bin/python3.11}}
+    make
+    make install
+
+test:
+  script: |
+    test -f {{pkgshare}}/its
+    echo '<tag>Homebrew</tag>' > test.xml
+    {{prefix}}/bin/itstool -o test.pot test.xml
+    grep 'msgid "Homebrew"' test.pot

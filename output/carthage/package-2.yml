@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://github.com/Carthage/Carthage.git
+  revision: 187a78c62811d3d75a9b1d41bfaeff708936125d
+  tag: 0.39.0
+  branch: master
+
+versions: 
+  - 0.39.0
+
+provides:
+  - bin/carthage
+
+dependencies:
+  apple.com/xcode/clt: 10.0
+  macos: *
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+
+  script: |
+    make prefix_install PREFIX={{prefix}}
+
+test: 
+  script: |
+    echo "github \"jspahrsummers/xcconfigs\"" > Cartfile
+    carthage update

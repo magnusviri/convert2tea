@@ -1,0 +1,34 @@
+
+distributable:
+  url: https://download.open-mpi.org/release/hwloc/v{{version}}/hwloc-{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  github: open-mpi/hwloc
+  strip: /^hwloc-v?/
+
+dependencies:
+  pkg-config.org: '*'
+  libxml2: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --prefix={{prefix}}
+    - --disable-cairo
+    - --without-x
+    - --enable-shared
+    - --enable-static
+  test:
+    make test
+
+provides:
+  - bin/hwloc-annotate
+  - bin/hwloc-calc
+  - bin/hwloc-compress

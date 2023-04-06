@@ -1,0 +1,31 @@
+
+distributable:
+  url: http://files.itstool.org/itstool/itstool-{{ version }}.tar.bz2
+  strip-components: 1
+
+versions:
+  - 2.0.7
+
+source:
+  git:
+    url: https://github.com/itstool/itstool.git
+    branch: master
+  
+build:
+    dependencies:
+      tea.xyz/gx/cc: c99
+      tea.xyz/gx/make: '*'
+      gnu.org/autoconf: '*'
+      gnu.org/automake: '*'
+    script: |
+      ./autogen.sh
+      ./configure --prefix={{ prefix }} --with-python=#{{ which python@3.11 }}
+      make --jobs {{hw.concurrency}} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    libxml2: '*'
+    python@3.11: '*'
+  script: |
+    echo '<tag>

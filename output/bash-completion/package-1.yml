@@ -1,0 +1,22 @@
+
+distributable:
+  url: https://src.fedoraproject.org/repo/pkgs/bash-completion/bash-completion-{{ version.raw }}.tar.bz2/a1262659b4bbf44dc9e59d034de505ec/bash-completion-{{ version.raw }}.tar.bz2
+  strip-components: 1
+
+versions:
+  - 1.3
+
+provides:
+  - etc/bash_completion
+  - etc/profile.d/bash_completion.sh
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  patches:
+    - url: https://raw.githubusercontent.com/Homebrew/formula-patches/c1d87451da3b5b147bed95b2dc783a1b02520ac5/bash-completion/bug-740971.patch
+    - source: inline
+      data: |
+        --- a/completions/man
+        +++

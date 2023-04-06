@@ -1,0 +1,34 @@
+
+distributable:
+  url: https://libisl.sourceforge.io/isl-{{version}}.tar.xz
+
+versions:
+  - 0.26
+
+build:
+  dependencies:
+    cmake.org: '^3'
+    gmp.org: '*'
+    freedesktop.org/pkg-config: '*'
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    if [ -f autogen.sh ]; then
+      ./autogen.sh
+    fi
+    ./configure \
+                   --prefix={{prefix}} \
+                   --with-gmp=system \
+                   --with-gmp-prefix={{gmp.opt_prefix}}
+    make
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    libisl.sourceforge.io: '*'
+  fixture: |
+    #include <isl/ctx.h>
+    int main()
+    {
+      isl_ctx* c

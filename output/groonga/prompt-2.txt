@@ -1,0 +1,142 @@
+doxygen
+
+class Doxygen < Formula
+  homepage "https://www.doxygen.nl/"
+  url "https://doxygen.nl/files/doxygen-1.9.6.src.tar.gz"
+  mirror "https://downloads.sourceforge.net/project/doxygen/rel-1.9.6/doxygen-1.9.6.src.tar.gz"
+  head "https://github.com/doxygen/doxygen.git", branch: "master"
+  livecheck do
+    url "https://www.doxygen.nl/download.html"
+    regex(/href=.*?doxygen[._-]v?(\d+(?:\.\d+)+)[._-]src\.t/i)
+  end
+  depends_on "bison" => :build
+  depends_on "cmake" => :build
+  uses_from_macos "flex" => :build, since: :big_sur
+  uses_from_macos "python" => :build
+  fails_with :gcc do
+    version "6"
+    cause "Need gcc>=7.2. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66297"
+  end
+  def install
+    system "cmake", "-S", ".", "-B", "build",
+                    "-DPYTHON_EXECUTABLE=#{which("python3") || which("python")}",
+                    *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    system "cmake", "-S", ".", "-B", "build", "-Dbuild_doc=1", *std_cmake_args
+    man1.install buildpath.glob("build/man/*.1")
+  end
+  test do
+    system bin/"doxygen", "-g"
+    system bin/"doxygen", "Doxyfile"
+  end
+end
+
+
+
+distributable:
+   url: https://github.com/doxygen/doxygen/archive/refs/tags/Release_{{version.major}}_{{version.minor}}_{{version.patch}}.tar.gz
+   strip-components: 1
+
+versions:
+  - 1.9.6 # FIXME: the versions are "Release_1_9_6" but no idea how I can parse this without regex
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    gnu.org/bison: ^3
+    cmake.org: ^3
+    github.com/westes/flex: 2
+    python.org: ^3
+  working-directory: build
+  script: |
+    cmake $ARGS -G "Unix Makefiles" ..
+    make --jobs {{ hw.concurrency }} 
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+      - -DCMAKE_BUILD_TYPE=Release
+    
+
+provides:
+  - bin/doxygen
+
+test:
+  script: |
+    doxygen -g
+    doxygen Doxyfile
+
+
+class Groonga < Formula
+  homepage "https://groonga.org/"
+  url "https://packages.groonga.org/source/groonga/groonga-13.0.1.tar.gz"
+  livecheck do
+    url :homepage
+    regex(%r{>v?(\d+(?:\.\d+)+)</a> is the latest release}i)
+  end
+  head do
+    url "https://github.com/groonga/groonga.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+  depends_on "pkg-config" => :build
+  depends_on "mecab"
+  depends_on "mecab-ipadic"
+  depends_on "msgpack"
+  depends_on "openssl@1.1"
+  depends_on "pcre"
+  uses_from_macos "libxcrypt"
+  on_linux do
+    depends_on "glib"
+  end
+  link_overwrite "lib/groonga/plugins/normalizers/"
+  link_overwrite "share/doc/groonga-normalizer-mysql/"
+  link_overwrite "lib/pkgconfig/groonga-normalizer-mysql.pc"
+  def install
+    args = %w[
+      --disable-zeromq
+      --disable-apache-arrow
+      --with-luajit=no
+      --with-ssl
+      --with-zlib
+      --without-libstemmer
+      --with-mecab
+    ]
+    system "./autogen.sh" if build.head?
+    mkdir "builddir" do
+      system "../configure", *args, *std_configure_args
+      system "make", "install"
+    end
+    resource("groonga-normalizer-mysql").stage do
+      ENV.prepend_path "PATH", bin
+      ENV.prepend_path "PKG_CONFIG_PATH", lib/"pkgconfig"
+      system "./configure", "--prefix=#{prefix}"
+      system "make"
+      system "make", "install"
+    end
+  end
+  test do
+    IO.popen("#{bin}/groonga -n #{testpath}/test.db", "r+") do |io|
+      io.puts("table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText")
+      sleep 2
+      io.puts("shutdown")
+      # expected returned result is like this:
+      # [[0,1447502555.38667,0.000824928283691406],true]\n
+      assert_match(/\[\[0,\d+.\d+,\d+.\d+\],true\]/, io.read)
+    end
+    IO.popen("#{bin}/groonga -n #{testpath}/test-normalizer-mysql.db", "r+") do |io|
+      io.puts "register normalizers/mysql"
+      sleep 2
+      io.puts("shutdown")
+      # expected returned result is like this:
+      # [[0,1447502555.38667,0.000824928283691406],true]\n
+      assert_match(/\[\[0,\d+.\d+,\d+.\d+\],true\]/, io.read)
+    end
+  end
+end
+
+
+groonga

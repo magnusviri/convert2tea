@@ -1,0 +1,108 @@
+bcrypt
+
+class Bcrypt < Formula
+  homepage "https://bcrypt.sourceforge.io/"
+  url "https://bcrypt.sourceforge.io/bcrypt-1.1.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?bcrypt[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  uses_from_macos "zlib"
+  def install
+    system "make", "CC=#{ENV.cc}",
+                   "CFLAGS=#{ENV.cflags}",
+                   "LDFLAGS=-lz"
+    bin.install "bcrypt"
+    man1.install Utils::Gzip.compress("bcrypt.1")
+  end
+  test do
+    (testpath/"test.txt").write("Hello World!")
+    pipe_output("#{bin}/bcrypt -r test.txt", "12345678\n12345678\n")
+    mv "test.txt.bfe", "test.out.txt.bfe"
+    pipe_output("#{bin}/bcrypt -r test.out.txt.bfe", "12345678\n")
+    assert_equal File.read("test.txt"), File.read("test.out.txt")
+  end
+end
+
+
+distributable:
+  url: https://bcrypt.sourceforge.net/bcrypt-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.1.0
+
+dependencies:
+  zlib.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make LDFLAGS=-lz PREFIX={{prefix}} install
+
+provides:
+  - bin/bcrypt
+
+test:
+  script: |
+    echo "Hello World!" > test.txt
+    printf '12345678\n12345678\n' | bcrypt -r test.txt
+    mv test.txt.bfe test.out.txt.bfe
+    printf '12345678\n' | bcrypt -r test.out.txt.bfe
+    cat test.out.txt
+
+
+
+class Graphicsmagick < Formula
+  homepage "http://www.graphicsmagick.org/"
+  url "https://downloads.sourceforge.net/project/graphicsmagick/graphicsmagick/1.3.40/GraphicsMagick-1.3.40.tar.xz"
+  revision 1
+  head "http://hg.code.sf.net/p/graphicsmagick/code", using: :hg
+  livecheck do
+    url "https://sourceforge.net/projects/graphicsmagick/rss?path=/graphicsmagick"
+  end
+  depends_on "pkg-config" => :build
+  depends_on "freetype"
+  depends_on "jasper"
+  depends_on "jpeg-turbo"
+  depends_on "jpeg-xl"
+  depends_on "libpng"
+  depends_on "libtiff"
+  depends_on "libtool"
+  depends_on "little-cms2"
+  depends_on "webp"
+  uses_from_macos "bzip2"
+  uses_from_macos "libxml2"
+  uses_from_macos "zlib"
+  skip_clean :la
+  def install
+    args = %W[
+      --prefix=#{prefix}
+      --disable-dependency-tracking
+      --disable-openmp
+      --disable-static
+      --enable-shared
+      --with-modules
+      --with-quantum-depth=16
+      --without-lzma
+      --without-x
+      --without-gslib
+      --with-gs-font-dir=#{HOMEBREW_PREFIX}/share/ghostscript/fonts
+      --without-wmf
+      --with-jxl
+    ]
+    # versioned stuff in main tree is pointless for us
+    inreplace "configure", "${PACKAGE_NAME}-${PACKAGE_VERSION}", "${PACKAGE_NAME}"
+    system "./configure", *args
+    system "make", "install"
+  end
+  test do
+    fixture = test_fixtures("test.png")
+    assert_match "PNG 8x8+0+0", shell_output("#{bin}/gm identify #{fixture}")
+  end
+end
+
+
+graphicsmagick

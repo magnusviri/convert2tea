@@ -1,0 +1,25 @@
+
+distributable:
+  url: https://gitlab.com/redis/hiredis/-/archive/{{ version.raw }}/hiredis-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  - "1.1.0"
+  - master
+
+provides:
+  - lib/libhiredis.a
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+
+  script: |
+    make
+    mkdir -p "{{prefix}}"/lib
+    mv libhiredis.a "{{prefix}}"/lib
+    mkdir -p "{{prefix}}"/include/hiredis
+    mv {adlist.h,dict.h,fmacros.h,hiredis.h,hiredis_ssl.h,sds.h,zmalloc.h} "{{prefix}}"/include/hiredis
+    mkdir -p "{{prefix}}"/share/hiredis
+    mv

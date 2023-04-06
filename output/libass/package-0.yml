@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://github.com/libass/libass/releases/download/{{version}}/libass-{{version}}.tar.xz
+
+versions:
+  - 0.17.1
+
+build:
+  working-directory:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    freetype.org: '*'
+    fribidi.org: '*'
+    harfbuzz.org: '*'
+    libunibreak.org: '*'
+    pkg-config.org: '^0.29'
+    consumed.tech/autoconf: '*'
+    consumed.tech/automake: '*'
+    consumed.tech/libtool: '*'
+    if:
+      linux:
+        fontconfig.org: '*'
+    if:
+      intel:
+        nasm.us: '*'
+  script: |
+    if [[ ${version} ==  '0.17.1' ]] ; then

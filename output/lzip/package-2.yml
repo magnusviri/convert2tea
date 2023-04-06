@@ -1,0 +1,25 @@
+distributable:
+  url: https://download-mirror.savannah.gnu.org/releases/lzip/lzip-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.23.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c11
+    tea.xyz/gx/make: '*'
+  script:
+    ./configure --prefix={{prefix}} CXX={{env.cxx}} CXXFLAGS={{env.cflags}} && make check && make install
+
+provides:
+  - bin/lzip
+
+test:
+  script: |
+    mkdir -p testpath/data.txt
+    echo "."*1000 > testpath/data.txt
+    lzip testpath/data.txt
+    [ ! -f testpath/data.txt ]
+    lzip -d testpath/data.txt.lz
+    diff testpath/data.txt <(echo "."*1000)

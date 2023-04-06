@@ -1,0 +1,77 @@
+jansson
+
+class Jansson < Formula
+  homepage "https://digip.org/jansson/"
+  url "https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz"
+  def install
+    system "./configure", *std_configure_args
+    system "make", "install"
+  end
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <jansson.h>
+      #include <assert.h>
+      int main()
+      {
+        json_t *json;
+        json_error_t error;
+        json = json_loads("\\"foo\\"", JSON_DECODE_ANY, &error);
+        assert(json && json_is_string(json));
+        json_decref(json);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-ljansson", "-o", "test"
+    system "./test"
+  end
+end
+
+
+distributable:
+  url: https://github.com/akheron/jansson/releases/download/v{{ version.raw }}/jansson-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: akheron/jansson/tags
+  strip: /^v/
+
+build:
+  dependencies:
+    linux:
+      gnu.org/gcc: '*'
+    darwin:
+      tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix="{{prefix}}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc fixture.c -ljansson
+    ./a.out
+
+class Libtermkey < Formula
+  homepage "https://www.leonerd.org.uk/code/libtermkey/"
+  url "https://www.leonerd.org.uk/code/libtermkey/libtermkey-0.22.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?libtermkey[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
+  depends_on "unibilium"
+  uses_from_macos "ncurses"
+  on_linux do
+    depends_on "glib" => :build
+  end
+  def install
+    system "make", "PREFIX=#{prefix}"
+    system "make", "install", "PREFIX=#{prefix}"
+  end
+end
+
+
+libtermkey

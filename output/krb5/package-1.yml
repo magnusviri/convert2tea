@@ -1,0 +1,34 @@
+
+distributable:
+  url: https://kerberos.org/dist/krb5/{{ version }}/krb5-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: https://web.mit.edu/kerberos/
+  regex: /Current release: .*?>krb5[._-]v?(\d+(?:\.\d+)+)</i
+
+detect:
+  cmd: krb5-config --version
+  output:
+    stdout: \d+\.\d+\.\d+
+
+dependencies:
+  openssl@1.1: 1
+  libedit: '*'
+
+provides:
+  bin:
+  - krb5-config
+
+build:
+  dependencies:
+    bison: '*'
+    tea.xyz/gx/make: '*'
+  script: |-
+    cd src
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    V: 1
+    ARGS:
+      - --prefix

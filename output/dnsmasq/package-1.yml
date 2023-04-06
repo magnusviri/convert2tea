@@ -1,0 +1,26 @@
+
+distributable:
+  url: https://thekelleys.org.uk/dnsmasq/dnsmasq-{{ version }}.tar.gz
+  strip-components: 0
+
+versions:
+  github: thekelleys/dnsmasq
+  strip: /^dnsmasq-/
+
+dependencies:
+  pkg-config: ^0.29
+
+build:
+  script: |
+    make -j {{make_jobs}} install PREFIX={{prefix}}
+
+post_install:
+  - mkdir -p {{var}}/lib/misc/dnsmasq
+  - mkdir -p {{var}}/run/dnsmasq
+  - mkdir -p {{etc}}/dnsmasq.d/ppp
+  - mkdir -p {{etc}}/dnsmasq.d/dhcpc
+  - touch {{etc}}/dnsmasq.d/ppp/.keepme
+  - touch {{etc}}/dnsmasq.d/dhcpc/.keepme
+
+service:
+  run: [{{ sbin }}/dnsmasq

@@ -1,0 +1,116 @@
+wumpus
+
+class Wumpus < Formula
+  homepage "http://www.catb.org/~esr/wumpus/"
+  url "http://www.catb.org/~esr/wumpus/wumpus-1.9.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?wumpus[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "make"
+    system "make", "prefix=#{prefix}", "install"
+  end
+  test do
+    assert_match("HUNT THE WUMPUS",
+                 pipe_output(bin/"wumpus", "^C"))
+  end
+end
+
+
+distributable:
+  url: https://gitlab.com/esr/wumpus/-/archive/{{ version.raw }}/wumpus-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.9
+
+provides:
+  - bin/wumpus
+  - bin/superhack
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    #pagure.io/xmlto: '*'
+
+  script: |
+    make wumpus superhack
+    # When xmlto is packaged then switch the to `make ... install`
+    mkdir -p "{{prefix}}"/bin
+    mv wumpus superhack "{{prefix}}"/bin
+    # make prefix={{prefix}} install
+
+test:
+  script: |
+    wumpus > wumpus.out &
+    superhack > superhack.out &
+    sleep 1
+    test "x$(head -n1 wumpus.out)" = "xINSTRUCTIONS (Y-N)" && \
+    test "x$(head -n1 superhack.out)" = "xHunt the Superhack"
+
+
+class Dbus < Formula
+  # releases: even (1.12.x) = stable, odd (1.13.x) = development
+  homepage "https://wiki.freedesktop.org/www/Software/dbus"
+  url "https://dbus.freedesktop.org/releases/dbus/dbus-1.14.6.tar.xz"
+  mirror "https://deb.debian.org/debian/pool/main/d/dbus/dbus_1.14.6.orig.tar.xz"
+  license any_of: ["AFL-2.1", "GPL-2.0-or-later"]
+  livecheck do
+    url "https://dbus.freedesktop.org/releases/dbus/"
+    regex(/href=.*?dbus[._-]v?(\d+\.\d*?[02468](?:\.\d+)*)\.t/i)
+  end
+  head do
+    url "https://gitlab.freedesktop.org/dbus/dbus.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "autoconf-archive" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+  depends_on "pkg-config" => :build
+  depends_on "xmlto" => :build
+  uses_from_macos "expat"
+  # Patch applies the config templating fixed in https://bugs.freedesktop.org/show_bug.cgi?id=94494
+  # Homebrew pr/issue: 50219
+  patch do
+    on_macos do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/0a8a55872e/d-bus/org.freedesktop.dbus-session.plist.osx.diff"
+    end
+  end
+  def install
+    # Fix the TMPDIR to one D-Bus doesn't reject due to odd symbols
+    ENV["TMPDIR"] = "/tmp"
+    ENV["XML_CATALOG_FILES"] = "#{etc}/xml/catalog"
+    system "./autogen.sh", "--no-configure" if build.head?
+    args = [
+      "--disable-dependency-tracking",
+      "--prefix=#{prefix}",
+      "--localstatedir=#{var}",
+      "--sysconfdir=#{etc}",
+      "--enable-xml-docs",
+      "--disable-doxygen-docs",
+      "--without-x",
+      "--disable-tests",
+    ]
+    if OS.mac?
+      args << "--enable-launchd"
+      args << "--with-launchd-agent-dir=#{prefix}"
+    end
+    system "./configure", *args
+    system "make", "install"
+  end
+  def plist_name
+    "org.freedesktop.dbus-session"
+  end
+  def post_install
+    # Generate D-Bus's UUID for this machine
+    system "#{bin}/dbus-uuidgen", "--ensure=#{var}/lib/dbus/machine-id"
+  end
+  test do
+    system "#{bin}/dbus-daemon", "--version"
+  end
+end
+
+
+dbus

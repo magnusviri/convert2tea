@@ -1,0 +1,24 @@
+ 
+
+distributable:
+  url: https://downloads.sourceforge.net/project/matio/matio/{{version}}/matio-{{version}}.tar.gz
+
+versions:
+  sourceforge: matio/matio
+
+provides:
+  - lib/libmatio.{{version}}.dylib
+
+dependencies:
+  hdf5.org: *
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{ prefix }} --enable-extended-sparse=yes --enable-mat73=yes --with-hdf5={{ pkg.dependency[hdf5.org] }} --with-zlib=/usr
+    make install 
+
+test:
+  script: |
+    {{ bin['matio-test'] }} poc_data.mat.sfx

@@ -1,0 +1,104 @@
+cpanminus
+
+class Cpanminus < Formula
+  homepage "https://github.com/miyagawa/cpanminus"
+  # Don't use git tags, their naming is misleading
+  url "https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-1.7046.tar.gz"
+  license any_of: ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
+  version_scheme 1
+  head "https://github.com/miyagawa/cpanminus.git", branch: "devel"
+  uses_from_macos "perl"
+  def install
+    cd "App-cpanminus" if build.head?
+    system "perl", "Makefile.PL", "INSTALL_BASE=#{prefix}",
+                                  "INSTALLSITEMAN1DIR=#{man1}",
+                                  "INSTALLSITEMAN3DIR=#{man3}"
+    system "make", "install"
+  end
+  def post_install
+    cpanm_lines = (bin/"cpanm").read.lines
+    return if cpanm_lines.first.match?(%r{^#!/usr/bin/env perl})
+    ohai "Adding `/usr/bin/env perl` shebang to `cpanm`..."
+    cpanm_lines.unshift "#!/usr/bin/env perl\n"
+    (bin/"cpanm").atomic_write cpanm_lines.join
+  end
+  test do
+    assert_match "cpan.metacpan.org", stable.url, "Don't use git tags, their naming is misleading"
+    system "#{bin}/cpanm", "--local-lib=#{testpath}/perl5", "Test::More"
+  end
+end
+
+
+distributable:
+  url: https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/App-cpanminus-{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: miyagawa/cpanminus/tags
+  ignore:
+    - /^1.9/   # invalid versions in the tags for some reason
+    - /^1.79/  # ^^
+    - /^1.71/  # ^^ like wtf?
+
+dependencies:
+  perl.org: '*'
+
+companions:
+  tea.xyz/gx/make: '*'
+
+provides:
+  - bin/cpanm
+
+build:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script: |
+    perl Makefile.PL INSTALL_BASE={{prefix}}
+    make install
+
+    fix-shebangs.ts {{prefix}}/bin/cpanm
+
+test:
+  dependencies:
+    tea.xyz/gx/make: '*'
+  script:
+    cpanm --verbose --local-lib=./out Test::More
+
+
+class DockerMachine < Formula
+  homepage "https://docs.docker.com/machine"
+  url "https://gitlab.com/gitlab-org/ci-cd/docker-machine.git",
+      tag:      "v0.16.2-gitlab.20",
+      revision: "9e9d6baf7eda8b6569f92e777ae7f496599fb297"
+  version "0.16.2-gitlab.20"
+  head "https://gitlab.com/gitlab-org/ci-cd/docker-machine.git", branch: "master"
+  # Commented out while this formula still has dependents.
+  # deprecate! date: "2021-09-30", because: :repo_archived
+  depends_on "automake" => :build
+  depends_on "go" => :build
+  conflicts_with "docker-machine-completion", because: "docker-machine already includes completion scripts"
+  def install
+    ENV["GOPATH"] = buildpath
+    ENV["GO111MODULE"] = "auto"
+    (buildpath/"src/github.com/docker/machine").install buildpath.children
+    cd "src/github.com/docker/machine" do
+      system "make", "build"
+      bin.install Dir["bin/*"]
+      bash_completion.install Dir["contrib/completion/bash/*.bash"]
+      zsh_completion.install "contrib/completion/zsh/_docker-machine"
+      prefix.install_metafiles
+    end
+  end
+  service do
+    run [opt_bin/"docker-machine", "start", "default"]
+    environment_variables PATH: std_service_path_env
+    run_type :immediate
+    working_dir HOMEBREW_PREFIX
+  end
+  test do
+    assert_match version.to_s, shell_output(bin/"docker-machine --version")
+  end
+end
+
+
+docker-machine

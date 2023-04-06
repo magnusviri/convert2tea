@@ -1,0 +1,142 @@
+aom
+
+class Aom < Formula
+  homepage "https://aomedia.googlesource.com/aom"
+  url "https://aomedia.googlesource.com/aom.git",
+      tag:      "v3.6.0",
+      revision: "3c65175b1972da4a1992c1dae2365b48d13f9a8d"
+  depends_on "cmake" => :build
+  # `jpeg-xl` is currently not bottled on Linux
+  on_macos do
+    depends_on "pkg-config" => :build
+    depends_on "jpeg-xl"
+    depends_on "libvmaf"
+  end
+  on_intel do
+    depends_on "yasm" => :build
+  end
+  def install
+    ENV.runtime_cpu_detection unless Hardware::CPU.arm?
+    args = std_cmake_args + [
+      "-DCMAKE_INSTALL_RPATH=#{rpath}",
+      "-DENABLE_DOCS=off",
+      "-DENABLE_EXAMPLES=on",
+      "-DENABLE_TESTDATA=off",
+      "-DENABLE_TESTS=off",
+      "-DENABLE_TOOLS=off",
+      "-DBUILD_SHARED_LIBS=on",
+    ]
+    # Runtime CPU detection is not currently enabled for ARM on macOS.
+    args << "-DCONFIG_RUNTIME_CPU_DETECT=0" if Hardware::CPU.arm?
+    # Make unconditional when `jpeg-xl` is bottled on Linux
+    if OS.mac?
+      args += [
+        "-DCONFIG_TUNE_BUTTERAUGLI=1",
+        "-DCONFIG_TUNE_VMAF=1",
+      ]
+    end
+    system "cmake", "-S", ".", "-B", "brewbuild", *args
+    system "cmake", "--build", "brewbuild"
+    system "cmake", "--install", "brewbuild"
+  end
+  test do
+    resource("homebrew-bus_qcif_15fps.y4m").stage do
+      system "#{bin}/aomenc", "--webm",
+                              "--tile-columns=2",
+                              "--tile-rows=2",
+                              "--cpu-used=8",
+                              "--output=bus_qcif_15fps.webm",
+                              "bus_qcif_15fps.y4m"
+      system "#{bin}/aomdec", "--output=bus_qcif_15fps_decode.y4m",
+                              "bus_qcif_15fps.webm"
+    end
+  end
+end
+
+
+distributable:
+  url: https://aomedia.googlesource.com/aom/+archive/v{{version}}.tar.gz
+
+versions:
+  - 3.5.0
+
+build:
+  dependencies:
+    x86-64:
+      nasm.us: 2
+    tea.xyz/gx/cc: c99
+    cmake.org: ^3
+    tea.xyz/gx/make: '*'
+  working-directory:
+    out
+  script: |
+    cmake .. $ARGS
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+    linux:
+      CFLAGS: -fPIC
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+test: |
+  aomenc --help
+  aomdec --help
+
+provides:
+  - bin/aomenc
+  - bin/aomdec
+
+
+class Libdap < Formula
+  homepage "https://www.opendap.org/"
+  stable do
+    url "https://www.opendap.org/pub/source/libdap-3.20.11.tar.gz"
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+    end
+  end
+  livecheck do
+    url "https://www.opendap.org/pub/source/"
+    regex(/href=.*?libdap[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  head do
+    url "https://github.com/OPENDAP/libdap4.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+  depends_on "bison" => :build
+  depends_on "pkg-config" => :build
+  depends_on "libxml2"
+  depends_on "openssl@1.1"
+  uses_from_macos "flex" => :build
+  uses_from_macos "curl"
+  on_linux do
+    depends_on "util-linux"
+  end
+  def install
+    args = %W[
+      --prefix=#{prefix}
+      --disable-dependency-tracking
+      --disable-debug
+      --with-included-regex
+    ]
+    system "autoreconf", "-fvi" if build.head?
+    system "./configure", *args
+    system "make"
+    system "make", "check"
+    system "make", "install"
+    # Ensure no Cellar versioning of libxml2 path in dap-config entries
+    xml2 = Formula["libxml2"]
+    inreplace bin/"dap-config", xml2.opt_prefix.realpath, xml2.opt_prefix
+  end
+  test do
+    assert_match version.to_s, shell_output("#{bin}/dap-config --version")
+  end
+end
+
+
+libdap

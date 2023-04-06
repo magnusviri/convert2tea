@@ -1,0 +1,33 @@
+
+distributable:
+  url: https://downloads.sourceforge.net/project/gts/gts/{{ version.raw }}/gts-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions: 
+  - 0.7.6
+  - 2
+
+provides:
+  - bin/gtscheck
+
+build:
+  dependencies:
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+    pkg-config: '*'
+    glib: '*'
+    netpbm: '*'
+    gettext: '*'
+
+  script: |
+    autoreconf --force --install --verbose
+    ./configure {{ configure_flags }}
+    make install
+
+test:
+  dependencies:
+    pkg-config: '*'
+  script: |
+    cc gtstest.c $(pkg-config --cflags --libs gts) -lm -o gtstest
+    ./gtstest

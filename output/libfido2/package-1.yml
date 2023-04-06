@@ -1,0 +1,34 @@
+
+distributable:
+  url: https://github.com/Yubico/libfido2/archive/{{version}}.tar.gz
+
+versions:
+  github: Yubico/libfido2
+  strip: /^libfido2-/
+
+dependencies:
+  cmake: '*'
+  mandoc: '*'
+  pkg-config: '*'
+  libcbor: '*'
+  openssl@1.1: '*'
+  systemd: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    mkdir build
+    cd build
+    cmake .. -DUDEV_RULES_DIR={{lib}}/udev/rules.d
+    make
+    make man_symlink_html
+    make man_symlink
+    make install
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  script: |
+    cc test.c -

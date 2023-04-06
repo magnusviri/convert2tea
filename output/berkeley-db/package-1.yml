@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://download.oracle.com/berkeley-db/db-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  url: https://www.oracle.com/database/technologies/related/berkeleydb-downloads.html
+  regex: /Berkeley\s*DB[^(]*?\(\s*v?(\d+(?:\.\d+)+)\s*\)/i
+
+dependencies:
+  openssl.org: ^1.1
+
+build:
+  script: |
+    cd build_unix && ../dist/configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+    - --disable-debug
+    - --disable-static
+    - --prefix={{prefix}}
+    - --mandir={{man}}
+    - --enable-cxx
+    - --enable-compat185
+    - --enable-sql
+    - --enable-sql_codegen
+    - --enable-dbm
+    - --enable-

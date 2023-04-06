@@ -1,0 +1,32 @@
+
+distributable:
+  url: https://fftw.org/fftw-{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: https://fftw.org
+  livecheck:
+    url: https://fftw.org
+    regex: latest official release.*? <b>v?(\d+(?:\.\d+)+)</b>
+  ignore:
+    - '3.3.8' # old versions
+
+dependencies:
+  open-mpi.org: '*'
+  gcc.gnu.org: '*'
+
+fails-with:
+  clang.llvm.org: '*'
+
+build:
+  script: |
+    ./configure \
+        --prefix={{prefix}} \
+        --enable-threads \
+        --enable-shared \
+        --disable-debug \
+        --disable-dependency-tracking \
+        --enable-mpi \
+        --enable-openmp \
+        $(if hardware.cpu.intel? ; then
+            echo '--enable-sse2 --enable-avx

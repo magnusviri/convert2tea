@@ -1,0 +1,33 @@
+
+distributable:
+  url: https://ftp.gnu.org/gnu/findutils/findutils-{{version}}.tar.xz
+  mirrors:
+    - https://ftpmirror.gnu.org/findutils/findutils-{{version}}.tar.xz
+
+dependencies:
+  '*': '*'
+
+build:
+  script: |
+    ./configure $ARGS
+    make --jobs {{ hw.concurrency }} install
+  env:
+    ARGS:
+      - --prefix={{prefix}}
+      - --localstatedir={{var/locate}}
+      - --disable-dependency-tracking
+      - --disable-debug
+      - --disable-nls
+      - --with-packager=Homebrew
+      - --with-packager-bug-reports={{tap.issues_url}}
+
+provides:
+  - bin/find
+  - bin/locate
+  - bin/updatedb
+
+on_macos:
+  provides:
+    - bin/gfind
+    - bin/glocate
+    - bin/gupdatedb

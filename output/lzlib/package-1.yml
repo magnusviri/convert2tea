@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://download.savannah.gnu.org/releases/lzip/lzlib/lzlib-{{version}}.tar.gz
+  mirror: https://download-mirror.savannah.gnu.org/releases/lzip/lzlib/lzlib-{{version}}.tar.gz
+
+versions: 
+  - 1.13
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure --prefix={{prefix}} CC=$CC CFLAGS=$CFLAGS
+    make
+    make check
+    make install
+  test:
+    make test
+
+test:
+  dependencies:
+    tea.xyz/gx/cc: c99
+  env:
+    cflags: $(pkg-config --cflags lzlib)
+  fixture: |
+    #include <stdio.h>
+    #include <stdint.h>
+    #include "lzlib.h"
+    int main (

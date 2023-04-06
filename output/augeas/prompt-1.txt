@@ -1,0 +1,127 @@
+bcrypt
+
+class Bcrypt < Formula
+  homepage "https://bcrypt.sourceforge.io/"
+  url "https://bcrypt.sourceforge.io/bcrypt-1.1.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?bcrypt[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  uses_from_macos "zlib"
+  def install
+    system "make", "CC=#{ENV.cc}",
+                   "CFLAGS=#{ENV.cflags}",
+                   "LDFLAGS=-lz"
+    bin.install "bcrypt"
+    man1.install Utils::Gzip.compress("bcrypt.1")
+  end
+  test do
+    (testpath/"test.txt").write("Hello World!")
+    pipe_output("#{bin}/bcrypt -r test.txt", "12345678\n12345678\n")
+    mv "test.txt.bfe", "test.out.txt.bfe"
+    pipe_output("#{bin}/bcrypt -r test.out.txt.bfe", "12345678\n")
+    assert_equal File.read("test.txt"), File.read("test.out.txt")
+  end
+end
+
+
+distributable:
+  url: https://bcrypt.sourceforge.net/bcrypt-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.1.0
+
+dependencies:
+  zlib.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make LDFLAGS=-lz PREFIX={{prefix}} install
+
+provides:
+  - bin/bcrypt
+
+test:
+  script: |
+    echo "Hello World!" > test.txt
+    printf '12345678\n12345678\n' | bcrypt -r test.txt
+    mv test.txt.bfe test.out.txt.bfe
+    printf '12345678\n' | bcrypt -r test.out.txt.bfe
+    cat test.out.txt
+
+
+
+class Augeas < Formula
+  homepage "https://augeas.net/"
+  revision 1
+  head "https://github.com/hercules-team/augeas.git", branch: "master"
+  # Remove stable block when patch is no longer needed.
+  stable do
+    url "https://github.com/hercules-team/augeas/releases/download/release-1.14.0/augeas-1.14.0.tar.gz"
+    # Remove `#include <malloc.h>`, add `#include <libgen.h>`.
+    # Remove on next release.
+    patch do
+      url "https://github.com/hercules-team/augeas/commit/7b26cbb74ed634d886ed842e3d5495361d8fd9b1.patch?full_index=1"
+    end
+  end
+  livecheck do
+    url :stable
+    regex(%r{href=["']?[^"' >]*?/tag/\D*?(\d+(?:\.\d+)+)["' >]}i)
+    strategy :github_latest
+  end
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "bison" => :build
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
+  depends_on "readline"
+  uses_from_macos "libxml2"
+  def install
+    if build.head?
+      system "./autogen.sh", *std_configure_args
+    else
+      # autoreconf is needed to work around
+      # https://debbugs.gnu.org/cgi/bugreport.cgi?bug=44605.
+      system "autoreconf", "--force", "--install"
+      system "./configure", *std_configure_args
+    end
+    system "make", "install"
+  end
+  def caveats
+    <<~EOS
+      Lenses have been installed to:
+        #{HOMEBREW_PREFIX}/share/augeas/lenses/dist
+    EOS
+  end
+  test do
+    assert_match version.to_s, shell_output("#{bin}/augtool --version 2>&1")
+    (testpath/"etc/hosts").write <<~EOS
+      192.168.0.1 brew.sh test
+    EOS
+    expected_augtool_output = <<~EOS
+      /files/etc/hosts/1
+      /files/etc/hosts/1/ipaddr = "192.168.0.1"
+      /files/etc/hosts/1/canonical = "brew.sh"
+      /files/etc/hosts/1/alias = "test"
+    EOS
+    assert_equal expected_augtool_output,
+                 shell_output("#{bin}/augtool --root #{testpath} 'print /files/etc/hosts/1'")
+    expected_augprint_output = <<~EOS
+      setm /augeas/load/*[incl='/etc/hosts' and label() != 'hosts']/excl '/etc/hosts'
+      transform hosts incl /etc/hosts
+      load-file /etc/hosts
+      set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/ipaddr '192.168.0.1'
+      set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/canonical 'brew.sh'
+      set /files/etc/hosts/seq::*[ipaddr='192.168.0.1']/alias 'test'
+    EOS
+    assert_equal expected_augprint_output,
+                 shell_output("#{bin}/augprint --lens=hosts --target=/etc/hosts #{testpath}/etc/hosts")
+  end
+end
+
+
+augeas

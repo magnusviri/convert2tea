@@ -1,0 +1,72 @@
+wumpus
+
+class Wumpus < Formula
+  homepage "http://www.catb.org/~esr/wumpus/"
+  url "http://www.catb.org/~esr/wumpus/wumpus-1.9.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?wumpus[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  def install
+    system "make"
+    system "make", "prefix=#{prefix}", "install"
+  end
+  test do
+    assert_match("HUNT THE WUMPUS",
+                 pipe_output(bin/"wumpus", "^C"))
+  end
+end
+
+
+distributable:
+  url: https://gitlab.com/esr/wumpus/-/archive/{{ version.raw }}/wumpus-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.9
+
+provides:
+  - bin/wumpus
+  - bin/superhack
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    #pagure.io/xmlto: '*'
+
+  script: |
+    make wumpus superhack
+    # When xmlto is packaged then switch the to `make ... install`
+    mkdir -p "{{prefix}}"/bin
+    mv wumpus superhack "{{prefix}}"/bin
+    # make prefix={{prefix}} install
+
+test:
+  script: |
+    wumpus > wumpus.out &
+    superhack > superhack.out &
+    sleep 1
+    test "x$(head -n1 wumpus.out)" = "xINSTRUCTIONS (Y-N)" && \
+    test "x$(head -n1 superhack.out)" = "xHunt the Superhack"
+
+
+class Hiredis < Formula
+  homepage "https://github.com/redis/hiredis"
+  url "https://github.com/redis/hiredis/archive/v1.1.0.tar.gz"
+  head "https://github.com/redis/hiredis.git", branch: "master"
+  def install
+    system "make", "install", "PREFIX=#{prefix}"
+    pkgshare.install "examples"
+  end
+  test do
+    # running `./test` requires a database to connect to, so just make
+    # sure it compiles
+    system ENV.cc, pkgshare/"examples/example.c", "-o", testpath/"test",
+                   "-I#{include}/hiredis", "-L#{lib}", "-lhiredis"
+    assert_predicate testpath/"test", :exist?
+  end
+end
+
+
+hiredis

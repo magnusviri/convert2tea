@@ -1,0 +1,35 @@
+
+distributable:
+  url: https://github.com/webmproject/libvpx/archive/{{ version.raw }}.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/vpxdec
+  - bin/vpxenc
+  - bin/vpx-annexb
+  - bin/vpx-rates
+  - lib/libvpx.a
+  - lib/pkgconfig/vpx.pc
+
+versions:
+  github: webmproject/libvpx
+  strip: /^v/
+
+dependencies:
+  yasm.tortall.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure $ARGS
+    make -j {{hw.concurrency}}
+    make install
+  env:
+    CC: cc
+    CXX: c++
+    LD: ld
+    ARGS:
+      - --prefix={{prefix}}
+      - --disable-dependency

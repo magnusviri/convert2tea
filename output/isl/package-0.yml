@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://libisl.sourceforge.io/isl-{{ version.raw }}.tar.xz
+  strip-components: 1
+
+versions:
+  homepage: https://libisl.sourceforge.io/
+  regex: /href=.*?isl[._-]v?(\d+(?:\.\d+)+)\.t/i
+  head:
+    url: https://repo.or.cz/isl.git
+    depends_on:
+      autoconf: build
+      automake: build
+      libtool: build
+
+build:
+  dependencies:
+    gnu.org/gcc: *
+    gmp: *
+    tea.xyz/gx/make: *
+  script: |
+    ./configure --disable-dependency-tracking --disable-silent-rules --prefix="{{prefix}}" --with-gmp=system --with-gmp-prefix="{{ dependencies.gmp.prefix }}"
+    make --jobs {{ hw.concurrency }} install
+
+test:
+  dependencies:
+    tea.xyz/gx/

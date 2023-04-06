@@ -1,0 +1,27 @@
+
+distributable:
+  url: https://github.com/abseil/abseil-cpp/archive/refs/tags/{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: abseil/abseil-cpp/releases/tags
+
+provides:
+  - bins/absl_strings
+  - lib/libabsl_strings.a
+  - include/absl/strings/str_join.h
+
+build:
+  dependencies:
+    cmake.org: '*'
+  script: |
+    cmake -S . -B build \
+      -DCMAKE_INSTALL_RPATH=${{rpath}} \
+      -DCMAKE_CXX_STANDARD=17 \
+      -DBUILD_SHARED_LIBS=ON \
+      -DABSL_PROPAGATE_CXX_STD=ON \
+      *std_cmake_args
+    cmake --build build
+    cmake --install build
+    # Remove bad flags in .pc files
+    # https://github.com/ab

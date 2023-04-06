@@ -1,0 +1,106 @@
+bcrypt
+
+class Bcrypt < Formula
+  homepage "https://bcrypt.sourceforge.io/"
+  url "https://bcrypt.sourceforge.io/bcrypt-1.1.tar.gz"
+  livecheck do
+    url :homepage
+    regex(/href=.*?bcrypt[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+  uses_from_macos "zlib"
+  def install
+    system "make", "CC=#{ENV.cc}",
+                   "CFLAGS=#{ENV.cflags}",
+                   "LDFLAGS=-lz"
+    bin.install "bcrypt"
+    man1.install Utils::Gzip.compress("bcrypt.1")
+  end
+  test do
+    (testpath/"test.txt").write("Hello World!")
+    pipe_output("#{bin}/bcrypt -r test.txt", "12345678\n12345678\n")
+    mv "test.txt.bfe", "test.out.txt.bfe"
+    pipe_output("#{bin}/bcrypt -r test.out.txt.bfe", "12345678\n")
+    assert_equal File.read("test.txt"), File.read("test.out.txt")
+  end
+end
+
+
+distributable:
+  url: https://bcrypt.sourceforge.net/bcrypt-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.1.0
+
+dependencies:
+  zlib.net: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    make LDFLAGS=-lz PREFIX={{prefix}} install
+
+provides:
+  - bin/bcrypt
+
+test:
+  script: |
+    echo "Hello World!" > test.txt
+    printf '12345678\n12345678\n' | bcrypt -r test.txt
+    mv test.txt.bfe test.out.txt.bfe
+    printf '12345678\n' | bcrypt -r test.out.txt.bfe
+    cat test.out.txt
+
+
+
+class Gnuplot < Formula
+  homepage "http://www.gnuplot.info/"
+  url "https://downloads.sourceforge.net/project/gnuplot/gnuplot/5.4.6/gnuplot-5.4.6.tar.gz"
+  head do
+    url "https://git.code.sf.net/p/gnuplot/gnuplot-main.git", branch: "master"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+  depends_on "pkg-config" => :build
+  depends_on "gd"
+  depends_on "libcerf"
+  depends_on "lua"
+  depends_on "pango"
+  depends_on "qt@5"
+  depends_on "readline"
+  fails_with gcc: "5"
+  def install
+    # Qt5 requires c++11 (and the other backends do not care)
+    ENV.cxx11
+    args = %W[
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --prefix=#{prefix}
+      --with-readline=#{Formula["readline"].opt_prefix}
+      --without-tutorial
+      --disable-wxwidgets
+      --with-qt
+      --without-x
+      --without-latex
+    ]
+    system "./prepare" if build.head?
+    system "./configure", *args
+    ENV.deparallelize # or else emacs tries to edit the same file with two threads
+    system "make"
+    system "make", "install"
+  end
+  test do
+    system "#{bin}/gnuplot", "-e", <<~EOS
+      set terminal dumb;
+      set output "#{testpath}/graph.txt";
+      plot sin(x);
+    EOS
+    assert_predicate testpath/"graph.txt", :exist?
+  end
+end
+
+
+gnuplot

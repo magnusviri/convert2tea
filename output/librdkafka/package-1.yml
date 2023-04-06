@@ -1,0 +1,30 @@
+
+distributable:
+  url: https://github.com/edenhill/librdkafka/archive/refs/tags/v{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: edenhill/librdkafka/tags
+  ignore: /-rc\d/
+
+detect:
+  cmd: librdkafka/version.h
+  regex: \#define LIBRDKAFKA_VERSION "v?(\d+(?:\.\d+)+)
+
+dependencies:
+  python@3.11: '*'
+  openssl@1.1: '>=1.1.1'
+  lz4.org: '*'
+  lzlib.org: '*'
+  zstd.net: '>=1.1.2'
+
+provides:
+  darwin:
+  - lib/librdkafka.dylib
+  linux:
+  - lib/librdkafka.so
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+   

@@ -1,0 +1,34 @@
+
+distributable:
+  url: https://github.com/weaveworks/eksctl.git
+  revision: 3f5a7c5e0f7a13c534103ad297a04823bb6c3998
+
+versions:
+  github: weaveworks/eksctl/tags
+
+detect:
+  cmd: eksctl version
+  regex: eksctl version: \v
+
+dependencies:
+  aws-iam-authenticator: '*'
+
+provides:
+  - bin/eksctl
+
+build:
+  dependencies:
+    go: 1.15
+    go-bindata: '*'
+    counterfeiter: '*'
+    mockery: '*'
+    ifacemaker: module
+  script: |-
+    export GOBIN={{prefix}}/bin
+    make build
+  env:
+    MODULEX: github.com/weaveworks/eksctl
+    RESOURCEF: github.com/weaveworks/eksctl/pkg/svc/ifacemaker
+  resource:
+    ifacemaker:
+      url: https://gerrit.

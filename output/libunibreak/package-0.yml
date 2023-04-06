@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://github.com/adah1972/libunibreak/releases/download/libunibreak_{{ version.raw }}/libunibreak-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+provides:
+  - lib/libunibreak.a
+  - include/unibreakdef.h
+  - include/unibreakbase.h
+  - include/linebreak.h
+
+versions:
+  git: adah1972/libunibreak
+  strip: /v/
+
+dependencies:
+  gnu.org/libtool: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/make: '*'
+  script: |
+    ./configure $ARGS
+    make -j {{hw.concurrency}}
+    make install
+  env:
+    ARGS:
+      - --disable-debug
+      - --disable-silent-rules
+      - --prefix={{

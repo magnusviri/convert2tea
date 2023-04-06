@@ -1,0 +1,26 @@
+
+distributable:
+  url: https://files.dyne.org/frei0r/releases/frei0r-plugins-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+provides:
+  - bin/frei0r-test-load-plugin
+  - include/frei0r.h
+  - lib/frei0r-1/invert.so
+  - lib/frei0r-1/noise.so
+  - lib/frei0r-1/rgb2yuv.so
+  - lib/frei0r-1/saturation.so
+
+versions:
+  url: https://files.dyne.org/frei0r/releases/
+  strip: /^frei0r-plugins-/
+
+dependencies:
+  cmake.org: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    export ERL_TOP=$(pwd)

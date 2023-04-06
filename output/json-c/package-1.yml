@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/json-c/json-c/archive/refs/tags/json-c-{{version.raw}}.tar.gz
+  strip-components: 1
+
+versions:
+  github: json-c/json-c/tags
+
+dependencies:
+  cmake.org: '*'
+
+provides:
+  - include/json-c/json.h
+  - lib/libjson-c.a
+  - lib/libjson-c.dylib
+  - lib/libjson-c.so.{{version}}
+
+build:
+  dependencies:
+    cmake.org: '*'
+  script: |
+    mkdir build
+    cd build
+    cmake .. {{std_cmake_args.join ' '}}
+    make install
+
+test:
+  script: |
+    cc -I{{include}} -L{{lib}} -ljson-c test.c -o test
+    ./test

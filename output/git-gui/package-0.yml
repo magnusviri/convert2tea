@@ -1,0 +1,17 @@
+
+distributable:
+   url: https://mirrors.edge.kernel.org/pub/software/scm/git/git-{{version}}.tar.xz
+
+versions:
+  - 2.40.0
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  working-directory: git-gui # FIXME: here I use the git-gui directory provided by the ruby formula, not sure if this is correct
+  script: |
+    make --jobs {{ hw.concurrency }} V=1 TKFRAMEWORK=/dev/null prefix={{prefix}} \
+      gitexecdir={{bin}} sysconfdir={{etc}} CC={{env.cc}} CFLAGS={{env.cflags}} \
+      LDFLAGS={{env.ldflags}} TCL_PATH={{deps.tcl-tk.bin}}/tclsh TCLTK_PATH={{deps.tcl-tk.bin}}/wish
+    make --jobs {{ hw.con

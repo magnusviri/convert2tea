@@ -1,0 +1,28 @@
+
+distributable:
+  url: https://github.com/maxmind/libmaxminddb/releases/download/{{version.marketing}}/libmaxminddb-{{version.marketing}}.tar.gz
+  strip-components: 1
+
+versions:
+  - 1.7.1
+
+head_dependencies:
+  autoconf.gnu.org: '*'
+  automake.gnu.org: '*'
+  libtool.gnu.org: '*'
+  
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  script: |
+    ./bootstrap
+    mkdir -p {{prefix}}/share/examples
+    make LDFLAGS=-lz PREFIX={{prefix}} install
+
+provides:
+  - bin/mmdblookup
+
+test:
+  script: |
+    mmdblookup -f {{prefix}}/share/examples/GeoIP2-City-Test.mmdb -i 175.16.199.0

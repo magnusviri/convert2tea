@@ -1,0 +1,29 @@
+distributable:
+  url: https://github.com/google/googletest/archive/v{{version}}.tar.gz
+
+versions:
+  - 1.13.0
+
+build:
+  dependencies:
+    cmake.org: ^3
+  script: |
+    cmake . $ARGS
+    make
+    make install
+  env:
+    ARGS:
+      - -DCMAKE_INSTALL_PREFIX="{{prefix}}"
+    linux:
+      CFLAGS: -fPIC
+      CXXFLAGS: -fPIC
+      LDFLAGS: -pie
+
+provides:
+  - libexec/libgtest.a
+  - libexec/libgtest_main.a
+  - include/googlemock/googlemock/src/
+  - include/googletest/googletest/src/
+
+test: |
+  g++ test.cpp -std=c++14 -L{{lib}} -lgtest -lgtest_main -pthread -o test && ./test

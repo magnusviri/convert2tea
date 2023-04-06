@@ -1,0 +1,22 @@
+
+distributable:
+  url: https://www.leonerd.org.uk/code/libtermkey/libtermkey-{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  homepage: https://www.leonerd.org.uk/code/libtermkey/
+  regex: /href=.*?libtermkey[._-]v?(\d+(?:\.\d+)+)\.t/i
+
+dependencies:
+  libtool: '*'
+  pkg-config: '*'
+  unibilium: '*'
+  linux:
+    glib: '*'
+  darwin:
+    ncurses: '*'
+
+build:
+  script: |
+    make PREFIX="{{ prefix }}"
+    make install PREFIX="{{ prefix }}"

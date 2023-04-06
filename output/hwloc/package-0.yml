@@ -1,0 +1,24 @@
+
+distributable:
+  url: https://download.open-mpi.org/release/hwloc/v{{version}}/hwloc-{{version}}.tar.bz2
+  strip-components: 1
+
+versions:
+  url: https://www.mail-archive.com/hwloc-announce@lists.open-mpi.org/
+  regex: /[\s,>]v?(\d+(?:\.\d+)+)(?:\s*?,|\s*?released)/i
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+    pkg-config.net: '*'
+    git-scm.org: '*'
+    autoconf.org: '*'
+    automake.org: '*'
+    libtool.org: '*'
+  working-directory: build
+  script: |
+    # hwloc uses autogen.sh
+    if [[ -f autogen.sh ]]; then
+        ./autogen.sh
+   
