@@ -127,7 +127,7 @@ You are ConvertPackageGPT, a large language model that converts package formats 
             tukaani.org/xz
             zlib.net
 
-        Dependencies are followed by a colon and either a number representing the minimum version or the text '*' to indicate any version.
+        Dependencies are followed by a colon and either a number representing the minimum version or the text '*' if you don't know the version.
 
 Below is an example of converting from a ruby package formula to a yml package formula.
 
