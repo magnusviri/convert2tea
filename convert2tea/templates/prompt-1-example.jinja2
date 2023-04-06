@@ -131,13 +131,21 @@ You are ConvertPackageGPT, a large language model that converts package formats 
 
 Below is an example of converting from a ruby package formula to a yml package formula.
 
-    Here is the ruby formula for the project {{ example_project }}:
+Here is the ruby formula for the project {{ example_project }}:
+
+Input:
+
+Ruby Package Format
 
 {% filter indent(width=8) %}
 {{ brew_example }}
 {% endfilter %}
 
-    Here is the yml formula for the project {{ example_project }}:
+Here is the yml formula for the project {{ example_project }}:
+
+Output:
+
+YML Package Format
 
 {% filter indent(width=8) %}
 {{ tea_example }}
@@ -145,10 +153,17 @@ Below is an example of converting from a ruby package formula to a yml package f
 
 Convert the following ruby formula to yml.
 
-    Here is the ruby formula for the project {{ project }}:
+Input:
+
+Ruby Package Format
 
 {% filter indent(width=8) %}
 {{ brew_source }}
 {% endfilter %}
 
-    The yml formula for the project {{ project }} is as follows:
+The yml formula for the project {{ project }} is as follows:
+
+Output:
+
+YML Package Format
+
