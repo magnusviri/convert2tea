@@ -8,19 +8,17 @@ __author__ = "James Reynolds"
 __email__ = "magnusviri@me.edu"
 __copyright__ = "2023"
 __license__ = "MIT"
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
-from pprint import pprint
-import random
 from jinja2 import Environment, PackageLoader
-import re
-import requests
-import sys
 import os
+import random
+import re
+import sys
 
 from genericAIModel import GenericAIModel
-import myParser
 import examples
+import myParser
 
 
 def getPrompt(brew_example, tea_example, example_project, brew_source, project):
@@ -84,33 +82,34 @@ def convertFiles(language, project, filepath, dry_run):
     brewfile = open(filepath, "r")
     brew_source = cleanupBrewFormula(brewfile.read())
 
-    # Get example files
-    if language not in examples.examples:
-        sys.stderr.write(f"Unknown language: {language}\n")
-        exit(-1)
-    random_example = random.choice(examples.examples[language])
-    example_project = random_example["name"]
+    model = GenericAIModel("openai", "gpt-3.5-turbo-0301")
 
-    # brew example
-    example1_url = "homebrew-core/Formula/{}".format(random_example["brew"])
-    print(example1_url)
-    example1file = open(example1_url, "r")
-    brew_example = cleanupBrewFormula(example1file.read())
+    repeat = 1
+    while True:
+        # Get example files
+        if language not in examples.examples:
+            sys.stderr.write(f"Unknown language: {language}\n")
+            exit(-1)
+        random_example = random.choice(examples.examples[language])
+        example_project = random_example["name"]
 
-    # tea example
-    example2_url = "pantry/projects/{}/package.yml".format(random_example["tea"])
-    print(example2_url)
-    example2file = open(example2_url, "r")
-    tea_example = example2file.read()
+        # brew example
+        example1_url = "homebrew-core/Formula/{}".format(random_example["brew"])
+        print(example1_url)
+        example1file = open(example1_url, "r")
+        brew_example = cleanupBrewFormula(example1file.read())
 
-    prompt = getPrompt(brew_example, tea_example, example_project, brew_source, project)
-    print(prompt)
+        # tea example
+        example2_url = "pantry/projects/{}/package.yml".format(random_example["tea"])
+        print(example2_url)
+        example2file = open(example2_url, "r")
+        tea_example = example2file.read()
 
-    if not dry_run:
-        repeat = 3
-        while True:
-            print(f"Querying model for {project}...")
-            model = GenericAIModel("openai", "gpt-3.5-turbo-0301")
+        prompt = getPrompt(brew_example, tea_example, example_project, brew_source, project)
+        print(prompt)
+
+        if not dry_run:
+            print(f"Querying model for {project}, attempt {repeat}...")
             result = model.query(prompt)
             print(result)
             if not os.path.exists(f"output/{project}"):
@@ -129,9 +128,13 @@ def convertFiles(language, project, filepath, dry_run):
             success = re.search(r"distributable", result)
             if success:
                 print("Success!")
-                repeat -= 1
-            if repeat == 0:
-                break
+                repeat += 1
+        else:
+            print("Success!")
+            repeat += 1
+        if repeat == 4:
+            break
+
 
 def main():
     options = myParser.parse(sys.argv[1:])
