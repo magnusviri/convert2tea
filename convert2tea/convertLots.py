@@ -85,7 +85,7 @@ def main():
             # "graphicsmagick",
             # "graphviz",
             # "groff",
-            "groonga",
+            # "groonga",
             # "grpc",
             # "gts",
             # "guile",
@@ -169,7 +169,7 @@ def main():
             # "openssh",
             # "openvpn",
             # "p7zip",
-            # "php", <- TOO MANY TOKENS
+            "php", #<- TOO MANY TOKENS
             # "pinentry",
             # "pkcs11-helper",
             # "podman",
@@ -287,7 +287,12 @@ def main():
     for lang, project_list in projects.items():
         for project in project_list:
             file = f"homebrew-core/Formula/{project}.rb"
-            convert2tea.convertFiles(lang, project, file, dry_run)
+            try:
+                convert2tea.convertFiles(lang, project, file, dry_run)
+            except Exception as e:
+                print(f"------------------------------------------")
+                print(f"Failed on {project}")
+                print(e)
 
 
 if __name__ == "__main__":
