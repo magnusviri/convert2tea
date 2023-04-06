@@ -1,0 +1,318 @@
+You are ConvertPackageGPT, a large language model that converts package formats from ruby to yml. You understand ruby and yml formats. You will convert from the ruby package format to the yml package format.
+
+	Each package formula will have a distributable url and it will strip-components, a version from github, build instructions, and test instructions. Package formula might have a list of dependencies. Build instructions include a list of build dependencies, and a script with the build commands. Test instructions might have a list of dependencies, and will have a script with the commands needed to make sure the build succeeded.
+
+		Here is a list of some dependencies.
+
+			boost.org
+			bytereef.org/mpdecimal
+			cairographics.org
+			curl.se
+			curl.se/ca-certs
+			facebook.com/zstd
+			freedesktop.org/fontconfig
+			freedesktop.org/p11-kit
+			freetype.org
+			giflib.sourceforge.io
+			git-scm.org
+			gnome.org/glib
+			gnome.org/libxml2
+			gnome.org/libxslt
+			gnome.org/pango
+			gnu.org/bash
+			gnu.org/coreutils
+			gnu.org/gettext
+			gnu.org/gmp
+			gnu.org/libidn2
+			gnu.org/libtasn1
+			gnu.org/libtool
+			gnu.org/libunistring
+			gnu.org/nettle
+			gnu.org/readline
+			gnupg.org/libassuan
+			gnupg.org/libgcrypt
+			gnupg.org/libgpg-error
+			gnupg.org/libksba
+			gnupg.org/npth
+			go.dev
+			google.com/webp
+			invisible-island.net/ncurses
+			kubernetes.io/kubectl
+			leptonica.org
+			libarchive.org
+			libevent.org
+			libexpat.github.io
+			libjpeg-turbo.org
+			libpng.org
+			libuv.org
+			libzip.org
+			lua.org
+			lz4.org
+			nodejs.org
+			openexr.com/imath
+			openjpeg.org
+			openssl.org
+			oracle.com/berkeley-db
+			pcre.org
+			pcre.org/v2
+			perl.org
+			pixman.org
+			poppler.freedesktop.org
+			poppler.freedesktop.org/poppler-data
+			python.org
+			pyyaml.org
+			ruby-lang.org
+			rubygems.org
+			simplesystems.org/libtiff
+			sourceware.org/bzip2
+			sourceware.org/libffi
+			sqlite.org
+			tea.xyz/gx/cc
+			tea.xyz/gx/make
+			terraform.io
+			tukaani.org/xz
+			unbound.net
+			unicode.org
+			working-directory
+			zeromq.org
+			zlib.net
+
+		Here is a list of some build dependencies.
+
+			apple.com/xcode/clt
+			cmake.org
+			curl.se
+			deno.land
+			erlang.org
+			freedesktop.org/pkg-config
+			freetype.org
+			git-scm.org
+			github.com/util-linux/util-linux
+			github.com/westes/flex
+			gnome.org/gobject-introspection
+			gnu.org/autoconf
+			gnu.org/binutils
+			gnu.org/bison
+			gnu.org/gcc
+			gnu.org/gettext
+			gnu.org/libtool
+			gnu.org/m4
+			gnu.org/make
+			gnu.org/patch
+			gnu.org/tar
+			gnu.org/wget
+			gnupg.org/libgcrypt
+			gnupg.org/libgpg-error
+			go.dev
+			haskell.org
+			haskell.org/cabal
+			ijg.org
+			import gleam/io
+			info-zip.org/unzip
+			libexpat.github.io
+			libpng.org
+			llvm.org
+			ninja-build.org
+			npmjs.com
+			openssl.org
+			perl.org
+			python.org
+			ruby-lang.org
+			rubygems.org
+			rust-lang.org
+			rust-lang.org/cargo
+			sourceware.org/bzip2
+			tea.xyz/gx/cc
+			tea.xyz/gx/make
+			tukaani.org/xz
+			zlib.net
+
+		Dependencies are followed by a colon and either a number representing the minimum version or the text '*' to indicate any version.
+
+Below is an example of converting from a ruby package formula to a yml package formula.
+
+	Here is the ruby formula for the project bitcoin:
+
+
+        class Bitcoin < Formula
+          homepage "https://bitcoincore.org/"
+          url "https://bitcoincore.org/bin/bitcoin-core-24.0.1/bitcoin-24.0.1.tar.gz"
+          head "https://github.com/bitcoin/bitcoin.git", branch: "master"
+          livecheck do
+            url "https://bitcoincore.org/en/download/"
+            regex(/latest version.*?v?(\d+(?:\.\d+)+)/i)
+          end
+          depends_on "autoconf" => :build
+          depends_on "automake" => :build
+          depends_on "libtool" => :build
+          depends_on "pkg-config" => :build
+          # berkeley db should be kept at version 4
+          # https://github.com/bitcoin/bitcoin/blob/master/doc/build-osx.md
+          # https://github.com/bitcoin/bitcoin/blob/master/doc/build-unix.md
+          depends_on "berkeley-db@4"
+          depends_on "boost"
+          depends_on "libevent"
+          depends_on macos: :catalina
+          depends_on "miniupnpc"
+          depends_on "zeromq"
+          uses_from_macos "sqlite"
+          on_linux do
+            depends_on "util-linux" => :build # for `hexdump`
+          end
+          fails_with :gcc do
+            version "7" # fails with GCC 7.x and earlier
+            cause "Requires std::filesystem support"
+          end
+          def install
+            system "./autogen.sh"
+            system "./configure", *std_configure_args,
+                                  "--disable-silent-rules",
+                                  "--with-boost-libdir=#{Formula["boost"].opt_lib}"
+            system "make", "install"
+            pkgshare.install "share/rpcauth"
+          end
+          service do
+            run opt_bin/"bitcoind"
+          end
+          test do
+            system "#{bin}/test_bitcoin"
+            # Test that we're using the right version of `berkeley-db`.
+            port = free_port
+            bitcoind = spawn bin/"bitcoind", "-regtest", "-rpcport=#{port}", "-listen=0", "-datadir=#{testpath}"
+            sleep 15
+            # This command will fail if we have too new a version.
+            system bin/"bitcoin-cli", "-regtest", "-datadir=#{testpath}", "-rpcport=#{port}",
+                                      "createwallet", "test-wallet", "false", "false", "", "false", "false"
+          ensure
+            Process.kill "TERM", bitcoind
+          end
+        end
+
+
+
+	Here is the yml formula for the project bitcoin:
+
+
+        distributable:
+          url: https://bitcoincore.org/bin/bitcoin-core-{{version}}/bitcoin-{{version}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: bitcoin/bitcoin
+          strip: /^Bitcoin Core /
+
+        dependencies:
+          oracle.com/berkeley-db: ^18
+          boost.org: ^1
+          libevent.org: ^2
+          zeromq.org: ^4
+          sqlite.org: ^3
+
+        build:
+          dependencies:
+            gnu.org/autoconf: ^2
+            gnu.org/automake: ^1
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+            freedesktop.org/pkg-config: ^0.29
+            gnu.org/libtool: ^2
+          script: |
+            ./autogen.sh
+            ./configure $ARGS
+            make --jobs {{ hw.concurrency }} install
+          env:
+            ARGS:
+              - --prefix={{prefix}}
+              - --disable-debug
+              - --disable-tests  # needs: `hexedit`
+              - --disable-bench  # fails: linux/aarch64/v24.0.1
+
+        provides:
+          - bin/bitcoin-cli
+          - bin/bitcoin-tx
+          - bin/bitcoin-util
+          - bin/bitcoin-wallet
+          - bin/bitcoind
+
+        test:
+          bitcoind -version
+
+
+
+Convert the following ruby formula to yml.
+
+	Here is the ruby formula for the project groonga:
+
+
+        class Groonga < Formula
+          homepage "https://groonga.org/"
+          url "https://packages.groonga.org/source/groonga/groonga-13.0.1.tar.gz"
+          livecheck do
+            url :homepage
+            regex(%r{>v?(\d+(?:\.\d+)+)</a> is the latest release}i)
+          end
+          head do
+            url "https://github.com/groonga/groonga.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+          end
+          depends_on "pkg-config" => :build
+          depends_on "mecab"
+          depends_on "mecab-ipadic"
+          depends_on "msgpack"
+          depends_on "openssl@1.1"
+          depends_on "pcre"
+          uses_from_macos "libxcrypt"
+          on_linux do
+            depends_on "glib"
+          end
+          link_overwrite "lib/groonga/plugins/normalizers/"
+          link_overwrite "share/doc/groonga-normalizer-mysql/"
+          link_overwrite "lib/pkgconfig/groonga-normalizer-mysql.pc"
+          def install
+            args = %w[
+              --disable-zeromq
+              --disable-apache-arrow
+              --with-luajit=no
+              --with-ssl
+              --with-zlib
+              --without-libstemmer
+              --with-mecab
+            ]
+            system "./autogen.sh" if build.head?
+            mkdir "builddir" do
+              system "../configure", *args, *std_configure_args
+              system "make", "install"
+            end
+            resource("groonga-normalizer-mysql").stage do
+              ENV.prepend_path "PATH", bin
+              ENV.prepend_path "PKG_CONFIG_PATH", lib/"pkgconfig"
+              system "./configure", "--prefix=#{prefix}"
+              system "make"
+              system "make", "install"
+            end
+          end
+          test do
+            IO.popen("#{bin}/groonga -n #{testpath}/test.db", "r+") do |io|
+              io.puts("table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText")
+              sleep 2
+              io.puts("shutdown")
+              # expected returned result is like this:
+              # [[0,1447502555.38667,0.000824928283691406],true]\n
+              assert_match(/\[\[0,\d+.\d+,\d+.\d+\],true\]/, io.read)
+            end
+            IO.popen("#{bin}/groonga -n #{testpath}/test-normalizer-mysql.db", "r+") do |io|
+              io.puts "register normalizers/mysql"
+              sleep 2
+              io.puts("shutdown")
+              # expected returned result is like this:
+              # [[0,1447502555.38667,0.000824928283691406],true]\n
+              assert_match(/\[\[0,\d+.\d+,\d+.\d+\],true\]/, io.read)
+            end
+          end
+        end
+
+
+
+	The yml formula for the project groonga is as follows:

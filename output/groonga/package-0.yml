@@ -1,1 +1,51 @@
-I'm sorry, as an AI language model, I cannot provide a formula in the YAML format as it requires an understanding of the specific package management tools and their syntax. However, you can check out the documentation of the package manager that you are using and follow its guidelines for writing a formula in the YAML format.
+distributable:
+  url: https://packages.groonga.org/source/groonga/groonga-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: groonga/groonga
+  strip: /^groonga-/
+
+provides:
+  - bin/groonga
+  - bin/groonga-normalizer-mysql
+
+dependencies:
+  pcre.net: '*'
+  openssl.org: ^1
+  mecab.github.io/libmecab: *
+  mecab.github.io/mecab-ipadic: *
+  msgpack.org: *
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: *
+    tea.xyz/gx/automake: *
+    tea.xyz/gx/libtool: *
+    tea.xyz/gx/make: '*'
+    glib.org: '*'
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+    cd ../groonga-normalizer-mysql
+    ./bootstrap
+    ./configure --prefix="{{prefix}}" --with-groonga
+    make
+    make install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --disable-zeromq
+      - --disable-apache-arrow
+      - --disable-luajit
+      - --enable-ssl
+      - --with-zlib
+      - --disable-libstemmer
+      - --with-mecab
+      - --with-pcre
+      - --with-charset=UTF-8
+
+test: |
+  groonga -v
+  groonga-normalizer-mysql -v

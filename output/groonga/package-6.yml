@@ -1,55 +1,64 @@
-distributable:
-  url: https://packages.groonga.org/source/groonga/groonga-{{ version }}.tar.gz
+Here's an example yml formula for the project groonga:
 
-versions:
-  github: groonga/groonga
-  strip: /^groonga-/
+    distributable:
+      url: https://packages.groonga.org/source/groonga/groonga-{{version.semver}}.tar.gz
 
-provides:
-  - bin/groonga
-  - bin/groonga-ablog
-  - bin/groonga-httpd
-  - bin/groonga-normalizer-mysql
-  - bin/groonga-suggest-create-dictionary
-  - bin/groonga-suggest-server
+    versions:
+      github: groonga/groonga/tags
+      filter: /^v\d+\.\d+(\.\d+)?(-\w+\d+)?$/
 
-dependencies:
-  mecab.github.io: '*'
-  mecab.github.io: ipadic
-  msgpack.org: '^3.2'
-  openssl.org: '^1.1'
-  pcre.org: '^8.40'
+    dependencies:
+      homebrew/core/pkg-config: '*'
+      homebrew/core/mecab: '*'
+      homebrew/core/mecab-ipadic: '*'
+      homebrew/core/msgpack: '*'
+      homebrew/core/openssl@1.1: '*'
+      homebrew/core/pcre: '*'
+      homebrew/core/libxcrypt: '*'
+      homebrew/linuxbrew-core/glib: '*'
+      build:
+        homebrew/core/autoconf: '*'
+        homebrew/core/automake: '*'
+        homebrew/core/libtool: '*'
 
-build:
-  dependencies:
-    tea.xyz/gx/cc: c99
-    tea.xyz/gx/make: '*'
-    freedesktop.org/pkg-config: '*'
-    groonga.org/mruby: '^3.0.0'
-    groonga.org/libevent: '^2.1.12'
-    groonga.org/zlib: '*'
-  script: |
-    ./configure $ARGS
-    make --jobs {{hw.concurrency}}
-    make install
-  env:
-    ARGS:
-      - --prefix="{{prefix}}"
-      - --disable-zeromq
-      - --disable-apache-arrow
-      - --with-luajit=no
-      - --with-ssl
-      - --with-zlib
-      - --without-libstemmer
-      - --with-mecab
-      - --with-msgpack="{{brew_prefix}}/opt/msgpack"
+    provides:
+      - bin/groonga
+      - bin/groonga-normalizer-mysql
+      - lib/groonga/plugins/normalizers/
+      - share/doc/groonga-normalizer-mysql/
+      - lib/pkgconfig/groonga-normalizer-mysql.pc
 
-test: |
-  groonga -n test.db <<-EOS
-    table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText
-    shutdown
-  EOS
-  groonga -n test-normalizer-mysql.db <<-EOS
-    register normalizers/mysql
-    shutdown
-  EOS
+    build:
+      dependencies:
+        homebrew/linuxbrew-core/make: '*'
+        homebrew/linuxbrew-core/gcc: '*'
+        homebrew/linuxbrew-core/binutils: '*'
+        homebrew/linuxbrew-core/gawk: '*'
+        homebrew/linuxbrew-core/coreutils: '*'
+        homebrew/linuxbrew-core/findutils: '*'
+      script: |
+        ./configure \
+          --disable-zeromq \
+          --disable-apache-arrow \
+          --with-luajit=no \
+          --with-ssl \
+          --with-zlib \
+          --without-libstemmer \
+          --with-mecab
+        make
+        make install
+        cd groonga-normalizer-mysql
+        ./configure --prefix={{prefix}}
+        make
+        make install
+
+    test:
+      script: |
+        groonga -n test.db <<EOF
+        table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText
+        shutdown
+        EOF
+        groonga -n test-normalizer-mysql.db <<EOF
+        register normalizers/mysql
+        shutdown
+        EOF

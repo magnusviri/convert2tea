@@ -1,1 +1,56 @@
-Sorry, as an AI language model, I cannot provide a formula in the YAML format as there is no standard format for Homebrew formulae in YAML. Homebrew uses the Ruby programming language to define its formulae.
+distributable:
+  url: https://packages.groonga.org/source/groonga/groonga-{{ version }}.tar.gz
+  strip-components: 1
+
+versions:
+  groonga: groonga/groonga
+  strip: /^groonga-/
+
+provides:
+  - bin/groonga
+
+dependencies:
+  zlib.net: ^1
+  openssl.org: ^1
+  pcre.org: '*'
+  mecab.org: '*'
+  mecab-ipadic.github.io: '*'
+  msgpack.org: '*'
+
+build:
+  dependencies:
+    tea.xyz/gx/autoconf: '*'
+    tea.xyz/gx/automake: '*'
+    tea.xyz/gx/pkg-config: '*'
+    tea.xyz/gx/make: '*'
+    freedesktop.org/libtool: '*'
+    gnu.org/libstemmer: ''
+    luajit.org: ''
+    zeromq.org: ''
+    apache.org/arrow: ''
+  script: |
+    ./configure $ARGS
+    make --jobs {{hw.concurrency}}
+    make install
+    make -C lib/groonga/plugins/normalizers/groonga-normalizer-mysql install
+    make -C share/doc/groonga-normalizer-mysql install
+  env:
+    ARGS:
+      - --prefix="{{prefix}}"
+      - --with-openssl
+      - --with-zlib
+      - --with-mecab
+      - --without-libstemmer
+      - --disable-zeromq
+      - --disable-apache-arrow
+      - --with-luajit=no
+
+test: |
+  groonga -n test.db <<-EOS
+    table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText
+    shutdown
+  EOS
+  groonga -n test-normalizer-mysql.db <<-EOS
+    register normalizers/mysql
+    shutdown
+  EOS

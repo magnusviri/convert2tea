@@ -1,0 +1,219 @@
+You are PackageGPT, a large language model that understands package formats. You will convert from one package format to another format to another.
+
+    Follow the instructions.
+
+    Here's an example formula in the ruby format for the project boost:
+
+
+        class Boost < Formula
+          homepage "https://www.boost.org/"
+          url "https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.bz2"
+          revision 1
+          head "https://github.com/boostorg/boost.git", branch: "master"
+          livecheck do
+            url "https://www.boost.org/users/download/"
+            regex(/href=.*?boost[._-]v?(\d+(?:[._]\d+)+)\.t/i)
+            strategy :page_match do |page, regex|
+              page.scan(regex).map { |match| match.first.tr("_", ".") }
+            end
+          end
+          depends_on "icu4c"
+          depends_on "xz"
+          depends_on "zstd"
+          uses_from_macos "bzip2"
+          uses_from_macos "zlib"
+          def install
+            # Force boost to compile with the desired compiler
+            open("user-config.jam", "a") do |file|
+              if OS.mac?
+                file.write "using darwin : : #{ENV.cxx} ;\n"
+              else
+                file.write "using gcc : : #{ENV.cxx} ;\n"
+              end
+            end
+            # libdir should be set by --prefix but isn't
+            icu4c_prefix = Formula["icu4c"].opt_prefix
+            bootstrap_args = %W[
+              --prefix=#{prefix}
+              --libdir=#{lib}
+              --with-icu=#{icu4c_prefix}
+            ]
+            # Handle libraries that will not be built.
+            without_libraries = ["python", "mpi"]
+            # Boost.Log cannot be built using Apple GCC at the moment. Disabled
+            # on such systems.
+            without_libraries << "log" if ENV.compiler == :gcc
+            bootstrap_args << "--without-libraries=#{without_libraries.join(",")}"
+            # layout should be synchronized with boost-python and boost-mpi
+            args = %W[
+              --prefix=#{prefix}
+              --libdir=#{lib}
+              -d2
+              -j#{ENV.make_jobs}
+              --layout=tagged-1.66
+              --user-config=user-config.jam
+              install
+              threading=multi,single
+              link=shared,static
+            ]
+            # Boost is using "clang++ -x c" to select C compiler which breaks C++14
+            # handling using ENV.cxx14. Using "cxxflags" and "linkflags" still works.
+            args << "cxxflags=-std=c++14"
+            args << "cxxflags=-stdlib=libc++" << "linkflags=-stdlib=libc++" if ENV.compiler == :clang
+            system "./bootstrap.sh", *bootstrap_args
+            system "./b2", "headers"
+            system "./b2", *args
+          end
+          test do
+            (testpath/"test.cpp").write <<~EOS
+              #include <boost/algorithm/string.hpp>
+              #include <boost/iostreams/device/array.hpp>
+              #include <boost/iostreams/device/back_inserter.hpp>
+              #include <boost/iostreams/filter/zstd.hpp>
+              #include <boost/iostreams/filtering_stream.hpp>
+              #include <boost/iostreams/stream.hpp>
+              #include <string>
+              #include <iostream>
+              #include <vector>
+              #include <assert.h>
+              using namespace boost::algorithm;
+              using namespace boost::iostreams;
+              using namespace std;
+              int main()
+              {
+                string str("a,b");
+                vector<string> strVec;
+                split(strVec, str, is_any_of(","));
+                assert(strVec.size()==2);
+                assert(strVec[0]=="a");
+                assert(strVec[1]=="b");
+                // Test boost::iostreams::zstd_compressor() linking
+                std::vector<char> v;
+                back_insert_device<std::vector<char>> snk{v};
+                filtering_ostream os;
+                os.push(zstd_compressor());
+                os.push(snk);
+                os << "Boost" << std::flush;
+                os.pop();
+                array_source src{v.data(), v.size()};
+                filtering_istream is;
+                is.push(zstd_decompressor());
+                is.push(src);
+                std::string s;
+                is >> s;
+                assert(s == "Boost");
+                return 0;
+              }
+            EOS
+            system ENV.cxx, "test.cpp", "-std=c++14", "-o", "test", "-L#{lib}", "-lboost_iostreams",
+                            "-L#{Formula["zstd"].opt_lib}", "-lzstd"
+            system "./test"
+          end
+        end
+
+
+
+    Here's an example formula in the yml format for the project boost:
+
+
+        distributable:
+          url: https://boostorg.jfrog.io/artifactory/main/release/{{ version }}/source/boost_{{version.major}}_{{version.minor}}_{{version.patch}}.tar.gz
+          strip-components: 1
+
+        versions:
+          github: boostorg/boost
+          strip: /^boost-/
+
+        dependencies:
+          facebook.com/zstd: ^1
+
+        build:
+          dependencies:
+            tea.xyz/gx/cc: c99
+            tea.xyz/gx/make: '*'
+          script: |
+            ./bootstrap.sh --prefix={{ prefix }}
+            ./b2 install --prefix={{ prefix }}
+
+        test:
+          dependencies:
+            tea.xyz/gx/cc: c99
+          script: |
+            c++ test.cpp -std=c++14 -lboost_iostreams -lzstd
+            ./a.out
+
+
+
+    Here's an example ruby formula for the project groonga:
+
+
+        class Groonga < Formula
+          homepage "https://groonga.org/"
+          url "https://packages.groonga.org/source/groonga/groonga-13.0.1.tar.gz"
+          livecheck do
+            url :homepage
+            regex(%r{>v?(\d+(?:\.\d+)+)</a> is the latest release}i)
+          end
+          head do
+            url "https://github.com/groonga/groonga.git", branch: "master"
+            depends_on "autoconf" => :build
+            depends_on "automake" => :build
+            depends_on "libtool" => :build
+          end
+          depends_on "pkg-config" => :build
+          depends_on "mecab"
+          depends_on "mecab-ipadic"
+          depends_on "msgpack"
+          depends_on "openssl@1.1"
+          depends_on "pcre"
+          uses_from_macos "libxcrypt"
+          on_linux do
+            depends_on "glib"
+          end
+          link_overwrite "lib/groonga/plugins/normalizers/"
+          link_overwrite "share/doc/groonga-normalizer-mysql/"
+          link_overwrite "lib/pkgconfig/groonga-normalizer-mysql.pc"
+          def install
+            args = %w[
+              --disable-zeromq
+              --disable-apache-arrow
+              --with-luajit=no
+              --with-ssl
+              --with-zlib
+              --without-libstemmer
+              --with-mecab
+            ]
+            system "./autogen.sh" if build.head?
+            mkdir "builddir" do
+              system "../configure", *args, *std_configure_args
+              system "make", "install"
+            end
+            resource("groonga-normalizer-mysql").stage do
+              ENV.prepend_path "PATH", bin
+              ENV.prepend_path "PKG_CONFIG_PATH", lib/"pkgconfig"
+              system "./configure", "--prefix=#{prefix}"
+              system "make"
+              system "make", "install"
+            end
+          end
+          test do
+            IO.popen("#{bin}/groonga -n #{testpath}/test.db", "r+") do |io|
+              io.puts("table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText")
+              sleep 2
+              io.puts("shutdown")
+              # expected returned result is like this:
+              # [[0,1447502555.38667,0.000824928283691406],true]\n
+              assert_match(/\[\[0,\d+.\d+,\d+.\d+\],true\]/, io.read)
+            end
+            IO.popen("#{bin}/groonga -n #{testpath}/test-normalizer-mysql.db", "r+") do |io|
+              io.puts "register normalizers/mysql"
+              sleep 2
+              io.puts("shutdown")
+              # expected returned result is like this:
+              # [[0,1447502555.38667,0.000824928283691406],true]\n
+              assert_match(/\[\[0,\d+.\d+,\d+.\d+\],true\]/, io.read)
+            end
+          end
+        end
+
+

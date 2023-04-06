@@ -1,59 +1,57 @@
-Here is an example YML formula for the project groonga:
-
-```
 distributable:
-  url: https://packages.groonga.org/source/groonga/groonga-{{version}}.tar.gz
-  strip-components: 1
+          url: https://packages.groonga.org/source/groonga/groonga-{{version}}.tar.gz
+          strip-components: 1
 
-versions:
-  github: groonga/groonga
-  strip: /^groonga-/
+        versions:
+          head: groonga/groonga
+          regex: groonga-(\d+(?:\.\d+)+)
 
-dependencies:
-  facebook.com/msgpack: '*'
-  facebook.com/mecab: '*'
-  facebook.com/mecab-ipadic: '*'
-  tea.xyz/gx/pcre: '*'
-  security.framework: '*'
-  libxcrypt: '*'
-  {% if target.os == 'linux' %}
-  tea.xyz/gx/glib: '*'
-  {% endif %}
+        dependencies:
+          pcre.org: '*'
+          pkg-config: '*'
+          openssl.org: ^1.1
+          mecab.org: '*'
+          mecab-ipadic.org: '*'
+          msgpack.org: '*'
+          ruby-lang.org: '*'
 
-build:
-  dependencies:
-    tea.xyz/gx/autoconf: '*'
-    tea.xyz/gx/automake: '*'
-    tea.xyz/gx/libtool: '*'
-    tea.xyz/gx/pkg-config: '*'
-    {% if target.os == 'linux' %}
-    tea.xyz/gx/gcc: c++
-    {% endif %}
-  script: |
-    ./configure --prefix={{prefix}} \
-                --disable-zeromq \
-                --disable-apache-arrow \
-                --enable-mruby \
-                --with-luajit=no \
-                --with-ssl \
-                --with-zlib \
-                --without-libstemmer \
-                --with-mecab \
-                --with-message-pack={{ dependencies['facebook.com/msgpack'].prefix }} \
-                {% if target.os == 'linux' %}--with-glib \
-                {% endif %}
-    make install
+        on:
+          linux:
+            dependencies:
+              freedesktop.org/glib: '*'
+              libcrypt: '*'
 
-test:
-  script: |
-    {{bin}}/groonga -n {{temp_dir}}/test.db << EOS
-      table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText
-      shutdown
-    EOS
-    {{bin}}/groonga -n {{temp_dir}}/test-normalizer-mysql.db << EOS
-      register normalizers/mysql
-      shutdown
-    EOS
-```
+        build:
+          dependencies:
+            gnu.org/autoconf: '*'
+            gnu.org/automake: '*'
+            gnu.org/libtool: '*'
+            pkg-config: '*'
+          script: |
+            ./autogen.sh
+            ./configure --prefix={{prefix}} --disable-zeromq --disable-apache-arrow --with-luajit=no --with-ssl --with-zlib --without-libstemmer --with-mecab
+            make
+            make install
 
-This formula uses the `distributable` section to specify the source distribution, and `versions` to specify the versioning scheme. It also takes advantage of `dependencies` to declare external dependencies, and `build` to specify the build process. Finally, it defines a `test` section to run unit tests.
+        link_overwrite:
+          - lib/groonga/plugins/normalizers/
+          - share/doc/groonga-normalizer-mysql/
+          - lib/pkgconfig/groonga-normalizer-mysql.pc
+
+        resource:
+          - groonga-normalizer-mysql:
+              url: https://packages.groonga.org/source/groonga-normalizer-mysql/groonga-normalizer-mysql-1.1.198.tar.gz
+              build:
+                script: |
+                  ./configure --prefix={{prefix}}
+                  make
+                  make install
+
+        test:
+          commands:
+            - groonga -n {{testpath}}/test.db < <(echo 'table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText')
+            - sleep {{sleep: 2}}
+            - groonga -n {{testpath}}/test.db < <(echo shutdown)
+            - groonga -n {{testpath}}/test-normalizer-mysql.db < <(echo register normalizers/mysql)
+            - sleep {{sleep: 2}}
+            - groonga -n {{testpath}}/test-normalizer-mysql.db < <(echo shutdown)

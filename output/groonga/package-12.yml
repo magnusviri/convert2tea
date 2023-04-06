@@ -3,47 +3,50 @@ distributable:
   strip-components: 1
 
 versions:
-  github: groonga/groonga
-  strip: /^groonga-/
+  github: groonga/groonga.git
+  regex: ^v.*$
+
+detect:
+  cmd: groonga --version
+  regex: ^{{version}}\.\d+\.\d+
 
 dependencies:
-  mecab.org: latest
-  msgpack.org: latest
-  openssl.org: 1.1.*
-  pcre.org: latest
-  lua.org: 5.3.*
-  libstemmer: '*'
-  glib: '*'
+  pkg-config: '*'
+  mecab: '*'
+  mecab-ipadic: '*'
+  msgpack: '*'
+  openssl.org: '>=1.1'
+  pcre.org: '*'
+  libxcrypt: macos
+
+provides:
+  darwin:
+    - bin/groonga
+    - lib/groonga
+    - include/groonga
+    - share/doc/groonga-normalizer-mysql
+  linux:
+    - bin/groonga
 
 build:
   dependencies:
-    tea.xyz/gx/cc: c99
-    tea.xyz/gx/make: '*'
-  script: |
-    ./configure --prefix={{ prefix }} \\
-      --disable-zeromq \\
-      --disable-apache-arrow \\
-      --enable-mruby \\
-      --with-luajit=no \\
-      --with-ssl \\
-      --with-zlib \\
-      --with-mecab \\
-      --with-msgpack=#{msgpack.org.prefix} \\
-      --with-openssl=#{openssl.org.prefix} \\
-      --with-pcre=#{pcre.org.prefix} \\
-      --with-libstemmer=#{libstemmer.prefix} \\
-      --with-glib=#{glib.prefix} \\
-      LUA_LIBS=-llua \\
-      LUA_CFLAGS="-I#{lua.org.include}" \\
-      LDFLAGS="-L#{lua.org.lib} -L#{libstemmer.lib} -L#{glib.lib}" \\
-      CPPFLAGS="-I#{lua.org.include} -I#{libstemmer.include} -I#{glib.include}"
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |-
+    ./autogen.sh
+    ./configure --disable-zeromq --disable-apache-arrow --with-luajit=no --with-ssl --with-zlib --without-libstemmer --with-mecab
+    make
     make install
+    cd data
+    ln -s /usr/local/Cellar/mecab-ipadic/2.7.0/libexec/dic/mecab-ipadic-neologd
+  env:
+    PKG_CONFIG_PATH: "{{prefix}}/lib/pkgconfig:{{prefix}}/opt/mecab/lib/pkgconfig:{{prefix}}/opt/mecab-ipadic/lib/pkgconfig:{{prefix}}/opt/pcre/lib/pkgconfig:{{prefix}}/opt/msgpack/lib/pkgconfig"
+    CPPFLAGS: "-I{{prefix}}/opt/mecab/include -I{{prefix}}/opt/mecab-ipadic/include -I{{prefix}}/opt/pcre/include -I{{prefix}}/opt/msgpack/include"
+    LDFLAGS: "-L{{prefix}}/opt/mecab/lib -L{{prefix}}/opt/mecab-ipadic/lib -L{{prefix}}/opt/pcre/lib -L{{prefix}}/opt/msgpack/lib"
+  error-log:
+    configure.log
 
 test:
-  dependencies:
-    tea.xyz/gx/cc: c99
-  script: |
-    echo 'assert("2.2.2" >= groonga.version)' | groonga --query -
-    groonga -n #{tmpdir}/test.db < #{home}/share/doc/groonga/samples/db/create-tables.sql
-    groonga -n #{tmpdir}/test-normalizer-mysql.db < #{home}/share/doc/groonga-normalizer-mysql/samples/normalizer-create.sql
-    groonga -n #{tmpdir}/test.db < #{home}/share/doc/groonga-normalizer-mysql/samples/filter.sql
+  script:
+    groonga --version

@@ -1,0 +1,35 @@
+distributable:
+  url: https://packages.groonga.org/source/groonga/groonga-{{version}}.tar.gz
+
+versions:
+  github: groonga/groonga
+  strip: groonga-
+
+dependencies:
+  mecab: '*'
+  mecab-ipadic: '*'
+  msgpack: '*'
+  openssl.org: '1.1'
+  pcre: '*'
+
+build:
+  dependencies:
+    pkg-config: '*'
+    autoconf: '*'
+    automake: '*'
+    libtool: '*'
+  script: |
+    ./configure --prefix={{prefix}} --disable-zeromq --disable-apache-arrow --with-luajit=no --with-ssl --with-zlib --without-libstemmer --with-mecab
+    make
+    make install
+
+test:
+  script: |
+    groonga -n {{testroot}}/test.db <<-EOS
+      table_create --name TestTable --flags TABLE_HASH_KEY --key_type ShortText
+      shutdown
+    EOS
+    groonga -n {{testroot}}/test-normalizer-mysql.db <<-EOS
+      register normalizers/mysql
+      shutdown
+    EOS
