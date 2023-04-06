@@ -15,7 +15,6 @@ examples = {
             "tea": "fastlane.tools",
             "name": "fastlane",
         },
-
     ],
     "python": [
         {
@@ -33,27 +32,19 @@ examples = {
             "tea": "aws.amazon.com/cli",
             "name": "awscli",
         },
-        {
-            "brew": "s4cmd.rb",
-            "tea": "bloomreach.com/s4cmd",
-            "name": "s4cmd"
-        },
-        {
-            "brew": "docutils.rb",
-            "tea": "docutils.org",
-            "name": "docutils"
-        },
+        {"brew": "s4cmd.rb", "tea": "bloomreach.com/s4cmd", "name": "s4cmd"},
+        {"brew": "docutils.rb", "tea": "docutils.org", "name": "docutils"},
     ],
     "meson": [
         {
             "brew": "dav1d.rb",
             "tea": "code.videolan.org/videolan/dav1d",
-            "name": "dav1d"
+            "name": "dav1d",
         },
         {
             "brew": "librist.rb",
             "tea": "code.videolan.org/rist/librist",
-            "name": "librist"
+            "name": "librist",
         },
         {
             "brew": "libslirp.rb",
@@ -63,7 +54,7 @@ examples = {
         {
             "brew": "shared-mime-info.rb",
             "tea": "freedesktop.org/shared-mime-info",
-            "name": "shared-mime-info"
+            "name": "shared-mime-info",
         },
     ],
     "go": [
@@ -72,16 +63,8 @@ examples = {
             "tea": "charm.sh/glow",
             "name": "glow",
         },
-        {
-            "brew": "gum.rb",
-            "tea": "charm.sh/gum",
-            "name": "gum"
-        },
-        {
-            "brew": "vhs.rb",
-            "tea": "charm.sh/vhs",
-            "name": "vhs"
-        },
+        {"brew": "gum.rb", "tea": "charm.sh/gum", "name": "gum"},
+        {"brew": "vhs.rb", "tea": "charm.sh/vhs", "name": "vhs"},
         {
             "brew": "chezmoi.rb",
             "tea": "chezmoi.io",
@@ -92,11 +75,7 @@ examples = {
             "tea": "circleci.com",
             "name": "circleci",
         },
-        {
-            "brew": "dagger.rb",
-            "tea": "dagger.io",
-            "name": "dagger"
-        },
+        {"brew": "dagger.rb", "tea": "dagger.io", "name": "dagger"},
     ],
     "c": [
         {
@@ -124,16 +103,8 @@ examples = {
             "tea": "boost.org",
             "name": "boost",
         },
-        {
-            "brew": "mpdecimal.rb",
-            "tea": "bytereef.org/mpdecimal",
-            "name": "mpdecimal"
-        },
-        {
-            "brew": "wumpus.rb",
-            "tea": "catb.org/wumpus",
-            "name": "wumpus"
-        },
+        {"brew": "mpdecimal.rb", "tea": "bytereef.org/mpdecimal", "name": "mpdecimal"},
+        {"brew": "wumpus.rb", "tea": "catb.org/wumpus", "name": "wumpus"},
         {
             "brew": "cmake.rb",
             "tea": "cmake.org",
@@ -144,21 +115,9 @@ examples = {
             "tea": "cpanmin.us",
             "name": "cpanminus",
         },
-        {
-            "brew": "curl.rb",
-            "tea": "curl.se",
-            "name": "curl"
-        },
-        {
-            "brew": "jansson.rb",
-            "tea": "digip.org/jansson",
-            "name": "jansson"
-        },
-        {
-            "brew": "direnv.rb",
-            "tea": "direnv.net",
-            "name": "direnv"
-        },
+        {"brew": "curl.rb", "tea": "curl.se", "name": "curl"},
+        {"brew": "jansson.rb", "tea": "digip.org/jansson", "name": "jansson"},
+        {"brew": "direnv.rb", "tea": "direnv.net", "name": "direnv"},
         {
             "brew": "doxygen.rb",
             "tea": "doxygen.nl",
@@ -181,45 +140,13 @@ examples = {
         },
     ],
     "rust": [
-        {
-            "brew": "broot.rb",
-            "tea": "crates.io/broot",
-            "name": "broot"
-        },
-        {
-            "brew": "dua-cli.rb",
-            "tea": "crates.io/dua",
-            "name": "dua-cli"
-        },
-        {
-            "brew": "exa.rb",
-            "tea": "crates.io/exa",
-            "name": "exa"
-        },
-        {
-            "brew": "hyperfine.rb",
-            "tea": "crates.io/hyperfine",
-            "name": "hyperfine"
-        },
-        {
-            "brew": "licensor.rb",
-            "tea": "crates.io/licensor",
-            "name": "licensor"
-        },
-        {
-            "brew": "mdcat.rb",
-            "tea": "crates.io/mdcat",
-            "name": "mdcat"
-        },
-        {
-            "brew": "ripgrep.rb",
-            "tea": "crates.io/ripgrep",
-            "name": "ripgrep"
-        },
-        {
-            "brew": "zoxide.rb",
-            "tea": "crates.io/zoxide",
-            "name": "zoxide"
-        },
+        {"brew": "broot.rb", "tea": "crates.io/broot", "name": "broot"},
+        {"brew": "dua-cli.rb", "tea": "crates.io/dua", "name": "dua-cli"},
+        {"brew": "exa.rb", "tea": "crates.io/exa", "name": "exa"},
+        {"brew": "hyperfine.rb", "tea": "crates.io/hyperfine", "name": "hyperfine"},
+        {"brew": "licensor.rb", "tea": "crates.io/licensor", "name": "licensor"},
+        {"brew": "mdcat.rb", "tea": "crates.io/mdcat", "name": "mdcat"},
+        {"brew": "ripgrep.rb", "tea": "crates.io/ripgrep", "name": "ripgrep"},
+        {"brew": "zoxide.rb", "tea": "crates.io/zoxide", "name": "zoxide"},
     ],
 }
