@@ -1,0 +1,31 @@
+distributable:
+  url: https://github.com/mozilla/mozjpeg/archive/v{{version}}.tar.gz
+  strip-components: 1
+
+versions: 
+  github: mozilla/mozjpeg
+
+# dependencies:
+#   cmake.org: ^3
+#   nasm.us: ^2
+#   libpng.org: ^1
+# 
+# build:
+#   script: |
+#     mkdir build
+#     cd build
+#     cmake .. $ARGS
+#     make
+#   env:
+#     ARGS:
+#       - -DCMAKE_INSTALL_LIBDIR={{lib}}
+# 
+# provides:
+#   - bin/cjpeg
+#   - bin/djpeg
+#   - bin/jpegtran
+#   - bin/rdjpgcom
+#   - bin/wrjpgcom
+# 
+# test:
+#   jpegtran -crop 1x1 -transpose -optimize -outfile out.jpg {{ test_fixtures('test.jpg') }}

@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://github.com/KhronosGroup/MoltenVK/archive/v{{ version.raw }}.tar.gz
+  strip-components: 1
+
+versions:
+  github: KhronosGroup/MoltenVK/tags
+  strip: /^v/
+  head:
+    url: https://github.com/KhronosGroup/MoltenVK.git
+    branch: master
+
+build:
+  dependencies:
+    cmake: '*'
+    python@3.11: '*'
+    xcode:
+      - 11.7
+    macos:
+      - sierra
+    linux:
+      - Metal
+  script: |
+    resources.each do |res|
+      res.stage(buildpath/"External"/res.name)
+    end
+    mv "External/SPIRV-Tools", "External/glslang/External/spirv-tools"
+    mv "External/SPIRV-Headers", "External/glslang/External/spirv-tools/external/spirv-headers"
+    #

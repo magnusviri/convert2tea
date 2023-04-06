@@ -1,0 +1,21 @@
+
+distributable:
+  url: https://zlib.net/zlib-{{version}}.tar.gz
+  mirror: https://downloads.sourceforge.net/project/libpng/zlib/{{version}}/zlib-{{version}}.tar.gz
+
+# if there’s a website then we can parse the versions
+versions:
+  website: https://www.winimage.com/zLibDll/minizip.html
+
+build:
+  dependencies:
+    autoconf: ^2.64
+    automake: ^1.16
+    libtool: '*'
+    tea.xyz/gx/cc: c99
+    tea.xyz/gx/make: '*'
+  working-directory: contrib/minizip
+  script: |
+    # edits to statically link to libz.a
+    sed -i "" 's/-L$(zlib_top_builddir)/$(zlib_top_builddir)\/libz.a/' Makefile.am
+    sed -i "" 's/-version-info 1:0:0 -

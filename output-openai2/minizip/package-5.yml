@@ -1,0 +1,23 @@
+
+distributable:
+  url: https://zlib.net/zlib-{{version}}.tar.gz
+  mirror: https://downloads.sourceforge.net/project/libpng/zlib/{{version}}/zlib-{{version}}.tar.gz
+
+versions:
+  - 1.2.11
+  - 1.2.13
+
+build:
+  dependencies:
+    autoconf.gnu.org: '*'
+    automake.org: '*'
+    libtool.org: '*'
+  working-directory: contrib/minizip
+  script:
+    build: |
+      autoreconf -fi
+      ./configure --prefix={{prefix}}
+      make install
+    darwin: |
+      # edits to statically link to libz.a
+      perl -i -pe 's/-L\\$(zlib_top_builddir)/\\$(zlib_top_builddir)\/libz.a/;s/-version-info 1:0:0 -lz/-version-info 1:0:0/;s/libminizip.

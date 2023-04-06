@@ -1,0 +1,29 @@
+
+distributable:
+  url: https://zlib.net/zlib-{{version}}.tar.gz
+  mirror: https://downloads.sourceforge.net/project/libpng/zlib/{{version}}/zlib-{{version}}.tar.gz
+  strip-components: 1
+
+versions:
+  livecheck:
+    formula: zlib
+
+provides:
+  - lib/libminizip.a
+  - include/minizip/unzip.h
+  - include/minizip/ioapi.h
+
+build:
+  dependencies:
+    gnu.org/autoconf: '*'
+    gnu.org/automake: '*'
+    gnu.org/libtool: '*'
+    gnu.org/zlib: '*'
+  script: |
+    ./configure --prefix="{{ prefix }}"
+    make
+    cd contrib/minizip
+    autoreconf -fi
+    ./configure --prefix="{{ prefix }}"
+    if [ [[ os.family ]] = 'macos' ]; then
+       

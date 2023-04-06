@@ -1,0 +1,31 @@
+
+distributable:
+  url: https://github.com/KhronosGroup/MoltenVK.git
+  strip-components: 0
+  branch: master
+
+versions:
+  github: KhronosGroup/MoltenVK
+  strip: /^v/
+
+provides:
+  - lib/libMoltenVK.dylib
+  - bin/MoltenVKShaderConverter
+
+dependencies:
+  python@3.11: ^3
+  cmake.org: ^3
+  xcode: 11.7
+  macos: sierra
+
+build:
+  dependencies:
+    tea.xyz/gx/cc: '*'
+    tea.xyz/gx/make: '*'
+  script: |
+  # Build Glslang
+  cd External/glslang
+  ./build_info.py . -i build_info.h.tmpl -o build/include/glslang/build_info.h
+  
+  # Build Spirv-tools
+  mkdir -p External/glslang/External/spirv-tools/build
